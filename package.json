@@ -1,0 +1,12 @@
+{
+  "name": "vysn",
+  "version": "1.0.0",
+  "description": "A project for vysn",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
