@@ -63,3 +63,20 @@ footer{background:#061120;color:#dce5ef;padding:68px 0 28px}.footer-grid{display
 @media(max-width:1050px){.interactive-dashboard.detailed{grid-template-columns:165px 1fr}.detailed .dash-main{padding:18px}.dash-metrics.four{grid-template-columns:repeat(2,1fr)}.dash-bottom-grid{grid-template-columns:1fr 1fr}.dash-bottom-grid>article:last-child{display:none}.invoice-row{grid-template-columns:.7fr 1.2fr .65fr}.invoice-row em{display:none}}
 @media(max-width:900px){.proof-band-grid{grid-template-columns:1fr 1fr}.proof-band-grid>div:nth-child(2){border-right:0}.value-grid,.product-module-grid,.solution-grid,.single-price-card,.workflow-inner,.contact-section{grid-template-columns:1fr}.workflow-demo{margin-top:20px}.benefit-grid{grid-template-columns:1fr 1fr}.single-price-features{padding:40px}.contact-section{gap:40px}.detailed .dash-overview-grid.wide{grid-template-columns:1fr}.dash-invoices{display:none}.report-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:600px){.proof-band-grid>div{padding:20px 10px}.home-value{padding:80px 0}.value-grid,.product-module-grid,.solution-grid,.pain-grid,.benefit-grid,.process-grid.three{grid-template-columns:1fr}.value-grid article{min-height:auto}.interactive-dashboard.detailed{grid-template-columns:1fr;min-height:720px}.detailed .dash-nav{gap:5px}.detailed .dash-nav button{padding:9px}.dash-metrics.four{grid-template-columns:1fr 1fr}.dash-bottom-grid{grid-template-columns:1fr}.dash-bottom-grid>article:nth-child(2){display:none}.workflow-inner h2{font-size:37px}.workflow-inner ul{grid-template-columns:1fr}.workflow-demo{display:grid}.workflow-demo>svg{transform:rotate(90deg);margin:auto}.single-price-copy,.single-price-features{padding:30px}.contact-section{padding:75px 0}.contact-card{padding:26px}.form-row{grid-template-columns:1fr}.settings-grid{grid-template-columns:1fr}.report-grid{grid-template-columns:1fr 1fr}}
+
+@media(max-width:600px){
+  .nav-actions .button{font-size:11px;padding:10px 12px}.nav-actions .button svg{display:none}
+  .interactive-dashboard.detailed{grid-template-columns:minmax(0,1fr);min-height:auto}
+  .detailed .dash-sidebar{width:100%;min-width:0;overflow:hidden;padding:11px}
+  .detailed .dash-nav{width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain;padding-bottom:3px;scrollbar-width:thin}
+  .detailed .dash-main{width:100%;min-width:0;padding:16px}
+  .dash-metrics.four{grid-template-columns:1fr 1fr}
+  .dash-metrics.four article:last-child,.finance-kpis article:last-child{display:block}
+  .detailed .dash-overview-grid.wide{grid-template-columns:minmax(0,1fr)}
+  .detailed .dash-invoices{display:block}
+  .detailed .dash-bottom-grid{grid-template-columns:minmax(0,1fr)}
+  .detailed .dash-bottom-grid>article:nth-child(2),.detailed .dash-bottom-grid>article:last-child{display:block}
+  .invoice-row{grid-template-columns:.75fr 1.25fr .65fr}.invoice-row em{display:none}
+  .dash-chart{height:210px}.dash-top{margin-bottom:18px}.dash-top small{font-size:8px}.dash-user>i{display:none}
+  .report-grid{grid-template-columns:1fr 1fr}.settings-grid{grid-template-columns:1fr}
+}
