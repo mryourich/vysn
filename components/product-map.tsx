@@ -1,83 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { BriefcaseBusiness, FileText, LayoutDashboard, Users, WalletCards } from 'lucide-react';
+import { BarChart3, Boxes, BriefcaseBusiness, FileCheck2, LayoutDashboard, ReceiptText, Settings, Users, WalletCards } from 'lucide-react';
 
-type ViewId = 'uebersicht' | 'auftraege' | 'kunden' | 'finanzen' | 'dokumente';
+type ViewId='dashboard'|'auftraege'|'material'|'angebote'|'rechnungen'|'finanzen'|'kunden'|'berichte'|'einstellungen';
+const navigation=[
+  ['dashboard','Dashboard',LayoutDashboard],['auftraege','Aufträge',BriefcaseBusiness],['material','Materialbestand',Boxes],['angebote','Angebote',FileCheck2],['rechnungen','Rechnungen',ReceiptText],['finanzen','Einnahmen & Ausgaben',WalletCards],['kunden','Kunden',Users],['berichte','Berichte',BarChart3],['einstellungen','Einstellungen',Settings]
+] as const;
 
-const navigation = [
-  { id: 'uebersicht' as ViewId, label: 'Übersicht', icon: LayoutDashboard },
-  { id: 'auftraege' as ViewId, label: 'Aufträge', icon: BriefcaseBusiness },
-  { id: 'kunden' as ViewId, label: 'Kunden', icon: Users },
-  { id: 'finanzen' as ViewId, label: 'Finanzen', icon: WalletCards },
-  { id: 'dokumente' as ViewId, label: 'Dokumente', icon: FileText },
-];
+const data:Record<string,{title:string;kicker:string;copy:string;columns:string[];rows:string[][]}>={
+  auftraege:{title:'Aktive Aufträge',kicker:'AUFTRÄGE',copy:'Termine, Fortschritt und Auftragswerte zentral verfolgen.',columns:['Nummer','Projekt','Auftragswert','Status'],rows:[['BA-2026-018','Neubau Einfamilienhaus','18.750 €','65% · In Arbeit'],['BA-2026-017','Sanierung Altbau','12.340 €','40% · In Arbeit'],['BA-2026-016','Anbau Wohnhaus','8.950 €','20% · Geplant'],['BA-2026-015','Dachgeschossausbau','14.500 €','80% · In Arbeit']]},
+  material:{title:'Materialbestand',kicker:'LAGER & MATERIAL',copy:'Bestände, Mindestmengen und Lagerwert im Blick behalten.',columns:['Artikel','Bestand','Mindestmenge','Status'],rows:[['Zement 25kg','12 Sack','20 Sack','Nachbestellen'],['Holzlatten 4×6cm','18 Stück','25 Stück','Niedrig'],['Dämmwolle 10cm','5 Rollen','10 Rollen','Niedrig'],['Rigipsplatte 12,5mm','8 Platten','20 Platten','Nachbestellen']]},
+  angebote:{title:'Angebote',kicker:'VERKAUF',copy:'Angebote erstellen, nachverfolgen und in Aufträge überführen.',columns:['Nummer','Kunde / Projekt','Betrag','Status'],rows:[['ANG-2026-028','Neubau Müller','18.750 €','In Bearbeitung'],['ANG-2026-027','Sanierung Schule','12.340 €','Versendet'],['ANG-2026-026','Anbau Weber','8.950 €','Entwurf'],['ANG-2026-025','Dachausbau Klein','14.500 €','Angenommen']]},
+  rechnungen:{title:'Rechnungen',kicker:'ABRECHNUNG',copy:'Zahlungsstände und Fälligkeiten zuverlässig kontrollieren.',columns:['Nummer','Kunde / Projekt','Betrag','Status'],rows:[['RE-2026-045','Bauprojekt Schmidt','2.850 €','Bezahlt'],['RE-2026-044','Müller Innenausbau','4.120 €','Teilweise bezahlt'],['RE-2026-043','Architektur König','1.980 €','Bezahlt'],['RE-2026-042','Privatkunde Wagner','3.450 €','Überfällig']]},
+  kunden:{title:'Kunden',kicker:'KUNDENVERWALTUNG',copy:'Kontakte, Vorgänge und die gesamte Historie an einem Ort.',columns:['Kürzel','Unternehmen','Ansprechpartner','Status'],rows:[['MM','Müller Innenausbau','Max Müller','3 Vorgänge'],['AK','Architektur König','Anna König','1 Angebot'],['WL','Wohnbau Lange','Stefan Lange','Aktiv'],['PW','Privatkunde Wagner','Petra Wagner','Rechnung offen']]}
+};
 
-const orders = [
-  ['BA-2026-018', 'Neubau Müller', '18.750 €', 'In Arbeit'],
-  ['BA-2026-017', 'Sanierung Altbau', '12.340 €', 'In Arbeit'],
-  ['BA-2026-016', 'Anbau Wohnhaus', '8.950 €', 'Geplant'],
-  ['BA-2026-015', 'Dachgeschossausbau', '14.500 €', 'Freigabe'],
-];
+function LineChart(){return <div className="dash-chart"><div className="dash-gridlines"/><svg viewBox="0 0 700 240" role="img" aria-label="Einnahmen und Ausgaben im Jahresverlauf"><path className="dash-area" d="M0 190 C65 185 85 145 140 150 S230 105 290 125 S380 72 440 98 S545 58 600 70 S665 35 700 43 L700 240 L0 240Z"/><path className="dash-line" d="M0 190 C65 185 85 145 140 150 S230 105 290 125 S380 72 440 98 S545 58 600 70 S665 35 700 43"/><path className="dash-line expense" d="M0 208 C90 207 100 185 170 192 S280 168 350 184 S470 166 535 187 S630 161 700 169"/></svg><div className="dash-months"><span>Jan</span><span>Mär</span><span>Mai</span><span>Jul</span><span>Sep</span><span>Nov</span></div></div>}
 
-const customers = [
-  ['MM', 'Müller Innenausbau', 'Max Müller', '3 offene Vorgänge'],
-  ['AK', 'Architektur König', 'Anna König', '1 offenes Angebot'],
-  ['WL', 'Wohnbau Lange', 'Stefan Lange', 'Aktiver Kunde'],
-  ['PW', 'Privatkunde Wagner', 'Petra Wagner', 'Rechnung offen'],
-];
+function Dashboard(){return <>
+  <div className="dash-metrics four"><article><small>Offene Aufträge</small><strong>18</strong><em>Gesamtwert: 157.430 €</em></article><article><small>Lagerwert</small><strong>86.250 €</strong><em>152 Positionen</em></article><article><small>Offene Angebote</small><strong>11</strong><em>Gesamtwert: 68.540 €</em></article><article><small>Offene Rechnungen</small><strong>9</strong><em>Gesamtwert: 34.280 €</em></article></div>
+  <div className="dash-overview-grid wide"><article className="dash-chart-card"><div className="dash-card-head"><div><small>GESCHÄFTSENTWICKLUNG</small><h4>Einnahmen vs. Ausgaben</h4></div><button type="button">Dieses Jahr⌄</button></div><div className="chart-legend"><span><i/>Einnahmen</span><span><i/>Ausgaben</span></div><LineChart/></article><article className="dash-invoices"><div className="dash-card-head"><h4>Letzte Rechnungen</h4><button type="button">Alle anzeigen</button></div>{[['RE-2026-045','Bauprojekt Schmidt','2.850 €','Bezahlt'],['RE-2026-044','Müller Innenausbau','4.120 €','Teilbezahlt'],['RE-2026-043','Architektur König','1.980 €','Bezahlt'],['RE-2026-042','Privatkunde Wagner','3.450 €','Überfällig']].map((r,i)=><div className="invoice-row" key={r[0]}><small>{r[0]}</small><strong>{r[1]}</strong><span>{r[2]}</span><em className={`mini-status s-${i}`}>{r[3]}</em></div>)}</article></div>
+  <div className="dash-bottom-grid"><article><div className="dash-card-head"><h4>Niedriger Materialbestand</h4><button type="button">Alle</button></div>{[['Zement 25kg','12 Sack'],['Holzlatten 4×6cm','18 Stück'],['Dämmwolle 10cm','5 Rollen']].map(x=><div className="compact-row" key={x[0]}><b>{x[0]}</b><span>{x[1]}</span><em>Unter Mindestbestand</em></div>)}</article><article><div className="dash-card-head"><h4>Angebote in Bearbeitung</h4><button type="button">Alle</button></div>{[['ANG-028','Neubau Müller','18.750 €'],['ANG-027','Sanierung Schule','12.340 €'],['ANG-026','Anbau Weber','8.950 €']].map(x=><div className="compact-row" key={x[0]}><b>{x[0]}</b><span>{x[1]}</span><em>{x[2]}</em></div>)}</article><article><div className="dash-card-head"><h4>Aktive Aufträge</h4><button type="button">Alle</button></div>{[['Neubau Einfamilienhaus','65%'],['Sanierung Altbau','40%'],['Dachgeschossausbau','80%']].map(x=><div className="progress-row" key={x[0]}><b>{x[0]}</b><i><em style={{width:x[1]}}/></i><span>{x[1]}</span></div>)}</article></div>
+  </>}
 
-const documents = [
-  ['RE-2026-045', 'Bauprojekt Schmidt', '2.850,00 €', 'Bezahlt'],
-  ['RE-2026-044', 'Müller Innenausbau', '4.120,00 €', 'Teilweise bezahlt'],
-  ['ANG-2026-028', 'Neubau Müller', '18.750,00 €', 'In Bearbeitung'],
-  ['RE-2026-042', 'Privatkunde Wagner', '3.450,00 €', 'Überfällig'],
-];
+function TableView({kind}:{kind:'auftraege'|'material'|'angebote'|'rechnungen'|'kunden'}){const view=data[kind];return <div className="dash-list-view"><div className="dash-view-head"><div><small>{view.kicker}</small><h3>{view.title}</h3><p>{view.copy}</p></div><button type="button">+ Neu anlegen</button></div><div className="dash-table"><div className="dash-table-row dash-table-head">{view.columns.map(x=><span key={x}>{x}</span>)}</div>{view.rows.map((row,index)=><div className="dash-table-row" key={row[0]}>{row.map((cell,i)=><span key={cell} className={i===3?`status status-${index}`:''}>{i===0&&kind==='kunden'?<b className="customer-avatar">{cell}</b>:cell}</span>)}</div>)}</div></div>}
 
-function Overview() {
-  return <>
-    <div className="dash-metrics">
-      <article><small>Offene Aufträge</small><strong>18</strong><span>↗ 12% diesen Monat</span></article>
-      <article><small>Umsatz im September</small><strong>€ 42.850</strong><span>↗ 8,4% zum Vormonat</span></article>
-      <article><small>Offene Rechnungen</small><strong>9</strong><em>€ 12.620 ausstehend</em></article>
-    </div>
-    <div className="dash-overview-grid">
-      <article className="dash-chart-card">
-        <div className="dash-card-head"><div><small>GESCHÄFTSENTWICKLUNG</small><h4>Einnahmen &amp; Ausgaben</h4></div><button type="button">Dieses Jahr⌄</button></div>
-        <div className="dash-chart"><div className="dash-gridlines"/><svg viewBox="0 0 700 240" role="img" aria-label="Steigende Umsatzentwicklung"><path className="dash-area" d="M0 190 C65 185 85 145 140 150 S230 105 290 125 S380 72 440 98 S545 58 600 70 S665 35 700 43 L700 240 L0 240Z"/><path className="dash-line" d="M0 190 C65 185 85 145 140 150 S230 105 290 125 S380 72 440 98 S545 58 600 70 S665 35 700 43"/></svg><div className="dash-months"><span>Jan</span><span>Mär</span><span>Mai</span><span>Jul</span><span>Sep</span><span>Nov</span></div></div>
-      </article>
-      <article className="dash-tasks"><div className="dash-card-head"><div><small>HEUTE</small><h4>Nächste Schritte</h4></div><b>4</b></div>{[['Angebot Müller senden','Erledigt',true],['Rechnung RE-028 prüfen','Heute, 14:00',false],['Materialbestand aktualisieren','Heute',false]].map(([task,time,done])=><div className="dash-task" key={String(task)}><i className={done?'checked':''}>{done?'✓':''}</i><p><strong>{String(task)}</strong><small>{String(time)}</small></p></div>)}</article>
-    </div>
-  </>;
-}
+function FinanceView(){return <div><div className="dash-view-head"><div><small>EINNAHMEN & AUSGABEN</small><h3>Finanzübersicht</h3><p>Geschäftsentwicklung und Ergebnis jederzeit verstehen.</p></div><button type="button">+ Buchung</button></div><div className="finance-kpis"><article><small>Einnahmen</small><strong>86.250 €</strong><span>+14,2 %</span></article><article><small>Ausgaben</small><strong>31.480 €</strong><span className="neutral">+3,1 %</span></article><article><small>Ergebnis</small><strong>54.770 €</strong><span>+21,8 %</span></article></div><article className="finance-chart"><div className="dash-card-head"><div><small>MONATSVERLAUF</small><h4>Einnahmen vs. Ausgaben</h4></div></div><LineChart/></article></div>}
 
-function ListView({ kind }: { kind: Exclude<ViewId, 'uebersicht' | 'finanzen'> }) {
-  const config = kind === 'auftraege'
-    ? { kicker:'AUFTRAGSMANAGEMENT', title:'Aktive Aufträge', copy:'Alle laufenden Vorgänge mit Status und Auftragswert.', data:orders, columns:['Nummer','Projekt','Wert','Status'] }
-    : kind === 'kunden'
-      ? { kicker:'KUNDENMANAGEMENT', title:'Kunden', copy:'Kontakte, Unternehmen und offene Themen im Überblick.', data:customers, columns:['Kontakt','Unternehmen','Ansprechpartner','Status'] }
-      : { kicker:'DOKUMENTE', title:'Angebote & Rechnungen', copy:'Dokumente und Zahlungsstände zentral verwalten.', data:documents, columns:['Nummer','Kunde / Projekt','Betrag','Status'] };
-  return <div className="dash-list-view"><div className="dash-view-head"><div><small>{config.kicker}</small><h3>{config.title}</h3><p>{config.copy}</p></div><button type="button">+ Neu anlegen</button></div><div className="dash-table"><div className="dash-table-row dash-table-head">{config.columns.map(x=><span key={x}>{x}</span>)}</div>{config.data.map((row,index)=><div className="dash-table-row" key={row[0]}>{row.map((cell,i)=><span key={cell} className={i===3?`status status-${index}`:''}>{i===0&&kind==='kunden'?<b className="customer-avatar">{cell}</b>:cell}</span>)}</div>)}</div></div>;
-}
+function ReportsView(){return <div><div className="dash-view-head"><div><small>BERICHTE</small><h3>Unternehmenskennzahlen</h3><p>Die wichtigsten Entwicklungen kompakt ausgewertet.</p></div><button type="button">PDF exportieren</button></div><div className="report-grid">{[['Umsatzentwicklung','+14,2%','gegenüber Vorjahr'],['Angebotsquote','62%','7 von 11 angenommen'],['Ø Zahlungsdauer','12 Tage','2 Tage schneller'],['Materialumschlag','4,8×','im laufenden Jahr']].map(x=><article key={x[0]}><small>{x[0]}</small><strong>{x[1]}</strong><span>{x[2]}</span></article>)}</div><article className="finance-chart"><div className="dash-card-head"><h4>Entwicklung der letzten 12 Monate</h4></div><LineChart/></article></div>}
 
-function FinanceView() {
-  return <div className="dash-finance-view"><div className="dash-view-head"><div><small>FINANZEN</small><h3>Finanzübersicht</h3><p>Einnahmen, Ausgaben und offene Posten auf einen Blick.</p></div><button type="button">Bericht exportieren</button></div><div className="finance-kpis"><article><small>Einnahmen</small><strong>86.250 €</strong><span>+14,2 %</span></article><article><small>Ausgaben</small><strong>31.480 €</strong><span className="neutral">+3,1 %</span></article><article><small>Ergebnis</small><strong>54.770 €</strong><span>+21,8 %</span></article></div><article className="finance-chart"><div className="dash-card-head"><div><small>MONATSVERLAUF</small><h4>Einnahmen vs. Ausgaben</h4></div></div><div className="finance-bars">{[42,55,48,68,73,88,81,96].map((height,i)=><div key={height}><i style={{height:`${height}%`}}/><em style={{height:`${Math.max(25,height-31)}%`}}/><small>{['Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep'][i]}</small></div>)}</div></article></div>;
-}
+function SettingsView(){return <div><div className="dash-view-head"><div><small>EINSTELLUNGEN</small><h3>Unternehmen konfigurieren</h3><p>Firmendaten, Nutzer und Dokumenteinstellungen verwalten.</p></div></div><div className="settings-grid">{[['Firmendaten','Musterbau GmbH','Adresse, Steuerdaten und Bankverbindung'],['Nutzer & Rollen','5 aktive Nutzer','Zugriffe und Verantwortlichkeiten'],['Nummernkreise','2026 fortlaufend','Angebote, Aufträge und Rechnungen'],['Dokumentvorlagen','Standardvorlage','Logo, Farben und Zahlungsbedingungen']].map(x=><button type="button" key={x[0]}><span><strong>{x[0]}</strong><small>{x[2]}</small></span><em>{x[1]}</em></button>)}</div></div>}
 
-export function ProductMap() {
-  const [active, setActive] = useState<ViewId>('uebersicht');
-  const currentLabel = navigation.find(item => item.id === active)?.label ?? 'Übersicht';
-  return (
-    <div className="interactive-dashboard">
-      <aside className="dash-sidebar">
-        <div className="dash-logo"><span className="mini-brand-mark"><i/><i/></span><b>VYSN</b></div>
-        <div className="dash-nav" aria-label="Interaktive Produktnavigation">{navigation.map(item=>{const Icon=item.icon;return <button type="button" key={item.id} className={active===item.id?'active':''} onClick={()=>setActive(item.id)} aria-pressed={active===item.id}><Icon/><span>{item.label}</span></button>})}</div>
-        <div className="dash-plan"><strong>VYSN ONE</strong><small>Dein aktueller Plan</small></div>
-      </aside>
-      <section className="dash-main" aria-live="polite">
-        <div className="dash-top"><div><small>DIENSTAG, 1. SEPTEMBER · {currentLabel.toUpperCase()}</small><h2>{active==='uebersicht'?'Guten Morgen, Max.':currentLabel}</h2></div><span>MM</span></div>
-        {active === 'uebersicht' ? <Overview /> : active === 'finanzen' ? <FinanceView /> : <ListView kind={active} />}
-      </section>
-    </div>
-  );
-}
+export function ProductMap(){const[active,setActive]=useState<ViewId>('dashboard');const current=navigation.find(x=>x[0]===active)?.[1]??'Dashboard';return <div className="interactive-dashboard detailed"><aside className="dash-sidebar"><div className="dash-logo"><span className="mini-brand-mark"><i/><i/></span><b>VYSN</b></div><div className="dash-nav" aria-label="Interaktive VYSN One Navigation">{navigation.map(([id,label,Icon])=><button type="button" key={id} className={active===id?'active':''} onClick={()=>setActive(id)} aria-pressed={active===id}><Icon/><span>{label}</span></button>)}</div><div className="dash-plan"><strong>✦ VYSN ONE</strong><small>Dein aktueller Plan</small></div></aside><section className="dash-main" aria-live="polite"><div className="dash-top"><div><small>DIENSTAG, 1. SEPTEMBER · {current.toUpperCase()}</small><h2>{active==='dashboard'?'Guten Morgen, Max. 👋':current}</h2></div><div className="dash-user"><i>⌕</i><span>MM</span></div></div>{active==='dashboard'?<Dashboard/>:active==='finanzen'?<FinanceView/>:active==='berichte'?<ReportsView/>:active==='einstellungen'?<SettingsView/>:<TableView kind={active}/>}</section></div>}

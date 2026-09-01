@@ -5,52 +5,13 @@ import { SiteFooter } from '../components/site-footer';
 import { SiteHeader } from '../components/site-header';
 
 export default function Home() {
-  return (
-    <main>
-      <SiteHeader />
-      <section className="home-hero shell">
-        <div className="eyebrow"><Sparkles size={14} /> Die Arbeitsplattform für moderne Unternehmen</div>
-        <h1>Dein Unternehmen.<br /><span>Ein System.</span></h1>
-        <p>VYSN verbindet Aufträge, Kunden, Finanzen und Teamarbeit – für klare Abläufe, weniger Verwaltung und bessere Entscheidungen.</p>
-        <div className="hero-actions">
-          <Link className="button button-primary" href="/preise">VYSN One testen <ArrowRight size={17} /></Link>
-          <Link className="button button-ghost" href="/produkt">Produkt ansehen</Link>
-        </div>
-        <div className="trust-row"><span><Check />14 Tage kostenlos</span><span><Check />Keine Kreditkarte</span><span><ShieldCheck />DSGVO-orientiert</span></div>
-        <div className="hero-map">
-          <div className="hero-map-label">
-            <span><i /> INTERAKTIVE PRODUKTÜBERSICHT</span>
-            <p>Bereich anklicken und VYSN durchstöbern</p>
-          </div>
-          <ProductMap />
-        </div>
-      </section>
-
-      <section className="version-section shell">
-        <div className="section-heading centered"><span className="section-kicker">ZWEI VERSIONEN. EIN ANSPRUCH.</span><h2>VYSN wächst mit dir.</h2></div>
-        <div className="version-grid">
-          <article className="version-card">
-            <span className="version-name">VYSN ONE</span>
-            <h3>Einfach professionell starten.</h3>
-            <p>Für kleine Unternehmen und Teams, die ihr Tagesgeschäft zentral organisieren möchten.</p>
-            <strong>ab 39 € <small>/ Monat</small></strong>
-            <Link href="/preise">One entdecken <ArrowRight /></Link>
-          </article>
-          <article className="version-card pro">
-            <span className="version-name">VYSN PRO</span>
-            <h3>Gebaut für Ihre Prozesse.</h3>
-            <p>Für größere Firmen, mehrere Standorte und individuelle Anforderungen.</p>
-            <strong>Individuell</strong>
-            <Link href="/loesungen#pro">Pro entdecken <ArrowRight /></Link>
-          </article>
-        </div>
-      </section>
-
-      <section className="home-cta shell">
-        <div><span className="section-kicker light">BEREIT FÜR KLARE ABLÄUFE?</span><h2>Entdecke, was VYSN für dein Unternehmen tun kann.</h2></div>
-        <Link className="button button-light" href="/preise">Passende Version finden <ArrowRight /></Link>
-      </section>
-      <SiteFooter />
-    </main>
-  );
+  return <main><SiteHeader/>
+    <section className="home-hero shell"><div className="eyebrow"><Sparkles size={14}/> Die Unternehmenssoftware für kleine Betriebe</div><h1>Weniger verwalten.<br/><span>Mehr unternehmen.</span></h1><p>VYSN One verbindet Aufträge, Material, Kunden, Angebote, Rechnungen und Finanzen in einem übersichtlichen System – damit dein Betrieb jeden Tag klarer läuft.</p><div className="hero-actions"><Link className="button button-primary" href="/kontakt">Kostenlose Demo anfragen <ArrowRight size={17}/></Link><Link className="button button-ghost" href="/produkt">Produkt entdecken</Link></div><div className="trust-row"><span><Check/>Schnell startklar</span><span><Check/>Für kleine Teams</span><span><ShieldCheck/>Sicher konzipiert</span></div>
+      <div className="hero-map"><div className="hero-map-label"><span><i/> INTERAKTIVE VYSN ONE PRODUKTVORSCHAU</span><p>Navigation anklicken und Funktionen entdecken</p></div><ProductMap/></div>
+    </section>
+    <section className="proof-band"><div className="shell proof-band-grid"><div><strong>1</strong><span>Zentrales System</span></div><div><strong>9</strong><span>Verbundene Bereiche</span></div><div><strong>360°</strong><span>Unternehmensüberblick</span></div><div><strong>0</strong><span>Tabellen-Chaos</span></div></div></section>
+    <section className="home-value shell"><div className="section-heading"><div><span className="section-kicker">FÜR DEN ARBEITSALLTAG</span><h2>Alles Wichtige.<br/>Direkt griffbereit.</h2></div><p>VYSN One begleitet den kompletten Weg vom ersten Kundenkontakt bis zur bezahlten Rechnung.</p></div><div className="value-grid">{[['01','Auftrag im Griff','Termine, Status, Material und Verantwortliche bleiben miteinander verbunden.'],['02','Zahlen im Blick','Angebote, Rechnungen, Einnahmen und Ausgaben ergeben ein klares Gesamtbild.'],['03','Team auf Kurs','Jeder sieht Aufgaben, Prioritäten und den aktuellen Stand – ohne Nachfragen.']].map(([n,t,d])=><article key={n}><span>{n}</span><h3>{t}</h3><p>{d}</p></article>)}</div></section>
+    <section className="home-cta shell"><div><span className="section-kicker light">BEREIT FÜR EINEN KLAREN BETRIEB?</span><h2>Sieh VYSN One mit deinen eigenen Abläufen.</h2></div><Link className="button button-light" href="/kontakt">Persönliche Demo vereinbaren <ArrowRight/></Link></section>
+    <SiteFooter/>
+  </main>;
 }
