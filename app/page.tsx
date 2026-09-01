@@ -17,14 +17,13 @@ export default function Home() {
           <Link className="button button-ghost" href="/produkt">Produkt ansehen</Link>
         </div>
         <div className="trust-row"><span><Check />14 Tage kostenlos</span><span><Check />Keine Kreditkarte</span><span><ShieldCheck />DSGVO-orientiert</span></div>
-      </section>
-
-      <section className="map-section shell">
-        <div className="section-heading map-heading">
-          <div><span className="section-kicker">VYSN DURCHSTÖBERN</span><h2>Alles greift ineinander.</h2></div>
-          <p>Wähle einen Bereich und entdecke, wie VYSN dein Tagesgeschäft zusammenführt.</p>
+        <div className="hero-map">
+          <div className="hero-map-label">
+            <span><i /> INTERAKTIVE PRODUKTÜBERSICHT</span>
+            <p>Bereich anklicken und VYSN durchstöbern</p>
+          </div>
+          <ProductMap />
         </div>
-        <ProductMap />
       </section>
 
       <section className="version-section shell">
