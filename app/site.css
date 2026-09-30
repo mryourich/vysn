@@ -41,6 +41,7 @@
 .hero-pill { display: inline-flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.04); font-size: 13.5px; color: #d0d5dd; margin-bottom: 30px; transition: border-color 0.2s; }
 .hero-pill:hover { border-color: rgba(255, 255, 255, 0.28); }
 .hero-pill span { background: var(--gradient); color: #fff; font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 999px; }
+.hero-line { display: block; }
 .hero h1 { color: #fff; font-size: clamp(44px, 7.2vw, 88px); line-height: 1; letter-spacing: -0.045em; margin-bottom: 26px; }
 .lead { font-size: 18.5px; line-height: 1.6; color: #98a2b3; max-width: 640px; }
 .hero-actions { display: flex; gap: 12px; margin: 34px 0 26px; flex-wrap: wrap; justify-content: center; }
@@ -55,7 +56,7 @@
   display: grid; grid-template-columns: 200px 1fr; min-height: 440px; border-radius: 16px 16px 0 0; overflow: hidden;
   background: #fff; border: 1px solid rgba(255, 255, 255, 0.14); border-bottom: none;
   box-shadow: 0 0 0 8px rgba(255, 255, 255, 0.03), 0 -20px 80px -20px rgba(0, 124, 251, 0.55);
-  transform: rotateX(8deg); transform-origin: 50% 100%;
+  transform: rotateX(var(--tilt, 8deg)); transform-origin: 50% 100%; transition: transform 0.2s linear;
 }
 .app-mock-side { background: var(--night-2); padding: 18px 12px; display: flex; flex-direction: column; gap: 2px; }
 .mock-brand { display: flex; gap: 8px; align-items: center; padding: 0 8px 18px; }
@@ -311,4 +312,140 @@
   .cta { padding: 56px 20px; border-radius: 22px; }
   .footer-grid { grid-template-columns: 1fr 1fr; }
   .footer-brand { grid-column: 1 / -1; }
+}
+
+/* =====================================================================
+   Animationen
+   ===================================================================== */
+@keyframes rise-in { from { opacity: 0; transform: translateY(26px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes stage-in { from { opacity: 0; transform: translateY(80px) scale(0.96); } to { opacity: 1; transform: none; } }
+@keyframes grid-pan { from { background-position: 0 0, 0 0; } to { background-position: 0 56px, 56px 0; } }
+@keyframes breathe { 0%, 100% { opacity: 0.85; transform: translate(-50%, 0) scale(1); } 50% { opacity: 1; transform: translate(-50%, -2%) scale(1.07); } }
+@keyframes shimmer { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pop { 0% { opacity: 0; transform: scale(0.6); } 70% { transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes spin-border { to { --angle: 360deg; } }
+@keyframes sheen { from { transform: translateX(-120%) skewX(-20deg); } to { transform: translateX(220%) skewX(-20deg); } }
+@keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 rgba(0, 216, 216, 0.55); } 70% { box-shadow: 0 0 0 10px rgba(0, 216, 216, 0); } }
+
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+/* Hero – gestaffelt beim Laden */
+.hero-pill, .hero-line, .lead, .hero .hero-actions, .hero-points { animation: rise-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.hero-pill { animation-delay: 0.05s; }
+.hero-line:nth-child(1) { animation-delay: 0.15s; }
+.hero-line:nth-child(2) { animation-delay: 0.3s; }
+.lead { animation-delay: 0.45s; }
+.hero .hero-actions { animation-delay: 0.6s; }
+.hero-points { animation-delay: 0.75s; }
+.hero-stage { animation: stage-in 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.7s both; }
+.hero .hero-grid-bg { animation: grid-pan 14s linear infinite; }
+.hero-glow { animation: breathe 9s ease-in-out infinite; }
+.gradient-text { background-size: 200% 100%; animation: shimmer 6s ease-in-out infinite alternate; }
+.hero .gradient-text { animation: rise-in 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both, shimmer 6s ease-in-out 1.2s infinite alternate; }
+.hero-pill span { animation: pulse-dot 2.6s ease-out 1.5s infinite; }
+.float-a { animation: float 6s ease-in-out 2s infinite; }
+.float-b { animation: float 7s ease-in-out 1.4s infinite; }
+.spark i { transform-origin: bottom; animation: grow-y 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.spark i:nth-child(n) { animation-delay: calc(1.6s + var(--i, 0) * 60ms); }
+.app-mock-table > div { animation: rise-in 0.6s ease both; }
+.app-mock-table > div:nth-child(1) { animation-delay: 1.4s; }
+.app-mock-table > div:nth-child(2) { animation-delay: 1.5s; }
+.app-mock-table > div:nth-child(3) { animation-delay: 1.6s; }
+.app-mock-table > div:nth-child(4) { animation-delay: 1.7s; }
+.app-mock-table > div:nth-child(5) { animation-delay: 1.8s; }
+
+/* Buttons: Lichtreflex beim Hover */
+.btn-glow, .btn-primary { position: relative; overflow: hidden; }
+.btn-glow::after, .site .btn-primary::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent); transform: translateX(-120%) skewX(-20deg); pointer-events: none; }
+.btn-glow:hover::after, .site .btn-primary:hover::after { animation: sheen 0.8s ease; }
+.btn-glow { transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s; }
+.btn-glow:hover { transform: translateY(-2px); box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.3), 0 14px 40px -8px rgba(0, 124, 251, 0.75); }
+
+/* Laufband */
+.ticker { overflow: hidden; border-bottom: 1px solid var(--line); background: var(--surface); padding: 16px 0; mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
+.ticker-track { display: flex; width: max-content; animation: ticker 40s linear infinite; }
+.ticker:hover .ticker-track { animation-play-state: paused; }
+.ticker-group { display: flex; }
+.ticker-group span { display: inline-flex; align-items: center; gap: 28px; padding-right: 28px; font-family: var(--font-display); font-size: 15px; font-weight: 500; color: #98a2b3; white-space: nowrap; letter-spacing: -0.01em; }
+.ticker-group span::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--gradient); }
+
+/* Einblenden beim Scrollen (nur mit JavaScript aktiv) */
+.js-motion [data-reveal] { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) var(--d, 0ms); }
+.js-motion [data-reveal='scale'] { transform: translateY(24px) scale(0.96); }
+.js-motion [data-reveal].in { opacity: 1; transform: none; }
+
+/* Kacheln: Inhalte animieren, sobald sichtbar */
+.js-motion .tile .mini-bars i, .js-motion .dash-bars i { transform: scaleY(0); transform-origin: bottom; }
+.js-motion .tile.in .mini-bars i, .js-motion .tile.in .dash-bars i { animation: grow-y 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.js-motion .tile.in .mini-bars i:nth-child(1), .js-motion .tile.in .dash-bars div:nth-child(1) i { animation-delay: 0.2s; }
+.js-motion .tile.in .mini-bars i:nth-child(2), .js-motion .tile.in .dash-bars div:nth-child(2) i { animation-delay: 0.27s; }
+.js-motion .tile.in .mini-bars i:nth-child(3), .js-motion .tile.in .dash-bars div:nth-child(3) i { animation-delay: 0.34s; }
+.js-motion .tile.in .mini-bars i:nth-child(4), .js-motion .tile.in .dash-bars div:nth-child(4) i { animation-delay: 0.41s; }
+.js-motion .tile.in .mini-bars i:nth-child(5), .js-motion .tile.in .dash-bars div:nth-child(5) i { animation-delay: 0.48s; }
+.js-motion .tile.in .mini-bars i:nth-child(6), .js-motion .tile.in .dash-bars div:nth-child(6) i { animation-delay: 0.55s; }
+.js-motion .tile.in .mini-bars i:nth-child(7), .js-motion .tile.in .dash-bars div:nth-child(7) i { animation-delay: 0.62s; }
+.js-motion .tile.in .mini-bars i:nth-child(8), .js-motion .tile.in .dash-bars div:nth-child(8) i { animation-delay: 0.69s; }
+.js-motion .tile.in .dash-bars div:nth-child(9) i { animation-delay: 0.76s; }
+.js-motion .stock s { transform: scaleX(0); transform-origin: left; }
+.js-motion .tile.in .stock s { animation: grow-x 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) 0.3s both; }
+.js-motion .flow-card, .js-motion .flow-line { opacity: 0; }
+.js-motion .tile.in .flow-card { animation: rise-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.js-motion .tile.in .flow-line { animation: grow-y 0.4s ease both; transform-origin: top; opacity: 0.5; }
+.js-motion .tile.in .flow-card:nth-child(1) { animation-delay: 0.2s; }
+.js-motion .tile.in .flow-line:nth-child(2) { animation-delay: 0.55s; }
+.js-motion .tile.in .flow-card:nth-child(3) { animation-delay: 0.75s; }
+.js-motion .tile.in .flow-line:nth-child(4) { animation-delay: 1.1s; }
+.js-motion .tile.in .flow-card:nth-child(5) { animation-delay: 1.3s; }
+.js-motion .swatch-row i { opacity: 0; }
+.js-motion .tile.in .swatch-row i { animation: pop 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.js-motion .tile.in .swatch-row i:nth-child(1) { animation-delay: 0.2s; }
+.js-motion .tile.in .swatch-row i:nth-child(2) { animation-delay: 0.3s; }
+.js-motion .tile.in .swatch-row i:nth-child(3) { animation-delay: 0.4s; }
+.js-motion .tile.in .swatch-row i:nth-child(4) { animation-delay: 0.5s; }
+.js-motion .tile.in .swatch-row i:nth-child(5) { animation-delay: 0.6s; }
+.tile-icon { transition: transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.tile:hover .tile-icon { transform: rotate(-8deg) scale(1.08); }
+
+/* Lichtkegel unter dem Mauszeiger */
+.tile::after, .plan::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 0.3s; background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 124, 251, 0.1), transparent 60%); }
+.tile-dark::after, .plan-featured::after { background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 216, 216, 0.14), transparent 60%); }
+.tile:hover::after, .plan:hover::after { opacity: 1; }
+
+/* Zeitleiste zeichnet sich */
+.js-motion .timeline::before { transform: scaleX(0); transform-origin: left; transition: transform 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s; }
+.js-motion .timeline.in::before { transform: scaleX(1); }
+.js-motion .timeline .node { opacity: 0; }
+.js-motion .timeline.in li:nth-child(1) .node { animation: pop 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s both; }
+.js-motion .timeline.in li:nth-child(2) .node { animation: pop 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.7s both; }
+.js-motion .timeline.in li:nth-child(3) .node { animation: pop 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 1.2s both; }
+
+/* Tarife: gestaffelt, empfohlener Tarif mit umlaufendem Verlaufsrahmen */
+.js-motion [data-reveal] .plan { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1), box-shadow 0.3s; }
+.js-motion [data-reveal].in .plan { opacity: 1; transform: none; }
+.js-motion [data-reveal].in .plan:nth-child(2) { transition-delay: 0.12s; }
+.js-motion [data-reveal].in .plan:nth-child(3) { transition-delay: 0.24s; }
+.plan { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+.plan:hover { transform: translateY(-4px); box-shadow: 0 24px 50px -28px rgba(11, 18, 32, 0.35); }
+.plan-featured::before { background: conic-gradient(from var(--angle), #0050c4, #007cfb, #00d8d8, #007cfb, #0050c4); animation: spin-border 6s linear infinite; }
+
+/* CTA */
+.cta-glow { animation: breathe 8s ease-in-out infinite; }
+.cta .hero-grid-bg { animation: grid-pan 18s linear infinite; }
+.cta-spark { animation: float 4s ease-in-out infinite; }
+
+/* FAQ: weiches Aufklappen */
+.faq details[open] p { animation: rise-in 0.4s ease both; }
+
+@media (max-width: 860px) {
+  .js-motion .timeline::before { transform: scaleY(0); transform-origin: top; }
+  .js-motion .timeline.in::before { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site *, .site *::before, .site *::after { animation: none !important; transition: none !important; }
+  .js-motion [data-reveal], .js-motion [data-reveal] .plan { opacity: 1 !important; transform: none !important; }
 }
