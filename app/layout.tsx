@@ -1,41 +1,27 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Inter, Source_Serif_4 } from 'next/font/google';
 import './globals.css';
 
-const inter = Inter({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
+const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const serif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif', display: 'swap', weight: ['400', '500', '600'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://springgreen-cormorant-809283.hostingersite.com'),
-  title: 'VYSN One — Weniger verwalten. Mehr unternehmen.',
-  description: 'VYSN One verbindet Aufträge, Material, Kunden, Angebote, Rechnungen und Finanzen für kleine Unternehmen.',
+  title: 'VYSN One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
+  description: 'Angebote und Rechnungen im eigenen Design, Material und Lager, Ausgaben und GuV – übersichtlich in einer Software für KMU und Handwerk.',
   openGraph: {
-    title: 'VYSN One — Die Unternehmenssoftware für kleine Betriebe',
-    description: 'Aufträge, Material, Kunden, Dokumente und Finanzen in einem übersichtlichen System.',
-    images: ['/og.png'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'VYSN One — Die Unternehmenssoftware für kleine Betriebe',
-    description: 'Aufträge, Material, Kunden, Dokumente und Finanzen in einem übersichtlichen System.',
+    title: 'VYSN One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
+    description: 'Angebote, Rechnungen, Material, Ausgaben und GuV in einer übersichtlichen Software.',
     images: ['/og.png'],
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#f6f5f1' };
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de">
-      <body
-        className={inter.variable}
-      >
-        {children}
-      </body>
+    <html lang="de" className={`${sans.variable} ${serif.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
