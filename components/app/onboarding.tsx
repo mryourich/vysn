@@ -15,7 +15,7 @@ const STEPS: { title: string; text: string; sections: CompanySection[] }[] = [
 ];
 
 export function Onboarding() {
-  const { saveCompany, loadDemo } = useStore();
+  const { saveCompany, loadDemo, auth } = useStore();
   const [company, setCompany] = useState(emptyCompany);
   const [step, setStep] = useState(0);
   const current = STEPS[step];
@@ -36,7 +36,10 @@ export function Onboarding() {
             ))}
           </ol>
         </div>
-        <button className="demo-link" onClick={loadDemo}><Sparkles size={15} /> Stattdessen mit Beispieldaten ausprobieren</button>
+        <div className="onboarding-foot">
+          <button className="demo-link" onClick={loadDemo}><Sparkles size={15} /> Stattdessen mit Beispieldaten ausprobieren</button>
+          {auth.mode === 'supabase' ? <button className="demo-link" onClick={() => auth.signOut()}>Abmelden ({auth.email})</button> : null}
+        </div>
       </aside>
       <main className="onboarding-main">
         <div className="onboarding-card">

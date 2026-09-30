@@ -27,8 +27,8 @@ export default function CustomersPage() {
     .filter((c) => !q || `${c.name} ${c.contactPerson} ${c.city} ${c.number} ${c.email}`.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-  const newDoc = (kind: 'invoice' | 'offer', customerId: string) => {
-    const doc = createDoc(kind, customerId);
+  const newDoc = async (kind: 'invoice' | 'offer', customerId: string) => {
+    const doc = await createDoc(kind, customerId);
     router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
   };
 

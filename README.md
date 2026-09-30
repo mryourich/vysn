@@ -17,13 +17,21 @@ npm run build && npm start   # Produktion
 | `app/page.tsx` | Startseite (Funktionen, Rechnungsdesign-Demo, Preise, FAQ, Kontakt) |
 | `app/app/*` | Anwendung: Dashboard, Angebote, Rechnungen, Kunden, Material, Ausgaben, GuV, Firmendaten, Rechnungsdesign |
 | `components/pdf/*` | Rechnungs- und GuV-Vorlagen. Eine Vorlage erzeugt sowohl die HTML-Vorschau als auch das echte PDF (`@react-pdf/renderer`) |
-| `lib/store.tsx` | Datenhaltung und alle Aktionen (Nummernkreise, Lagerbuchung, Angebot → Rechnung) |
+| `lib/store.tsx` | Zustand, Login und alle Aktionen (Nummernkreise, Lagerbuchung, Angebot → Rechnung) |
+| `lib/db/*` | Speicher-Adapter: `local.ts` (Browser) und `supabase.ts` (Datenbank), Mapping in `mappers.ts` |
 | `lib/calc.ts` | Summen, USt., Status, GuV (Ist-/Soll-Prinzip) |
 | `components/site/pricing.tsx` | Preise der Startseite (`PLANS`) |
 
-## Daten
+## Daten & Supabase
 
-Alle Daten werden aktuell lokal im Browser (localStorage) gespeichert. Unter *Firmendaten → Datensicherung* lassen sich Sicherungen als JSON exportieren und wieder einspielen. Für Mehrbenutzerbetrieb und Zugriff von mehreren Geräten muss `lib/store.tsx` an ein Backend (z. B. Datenbank + Login) angebunden werden – die Oberfläche bleibt dabei unverändert.
+Die App hat zwei Betriebsarten, gesteuert über Umgebungsvariablen (siehe `.env.example`):
+
+- **Lokal** (Standard, keine Variablen): Daten im Browser (localStorage), kein Login.
+- **Supabase** (`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`): Login per E-Mail/Passwort, Daten in PostgreSQL mit Row Level Security, auf allen Geräten verfügbar.
+
+Einrichtung, Datenmodell und Sicherheitskonzept: [`supabase/README.md`](supabase/README.md). Das Schema liegt in `supabase/migrations/`.
+
+Unter *Firmendaten → Datensicherung* lassen sich in beiden Modi Sicherungen als JSON exportieren und einspielen – darüber lassen sich auch lokal erfasste Daten nach Supabase übernehmen.
 
 ## Vor dem Livegang
 

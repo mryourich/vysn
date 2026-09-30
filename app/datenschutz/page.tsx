@@ -15,11 +15,19 @@ export default function PrivacyPage() {
         <h2>Verantwortlicher</h2>
         <p>[Firmenname, Anschrift, E-Mail]</p>
         <h2>Speicherung Ihrer Geschäftsdaten</h2>
-        <p>
-          Die in der Anwendung erfassten Daten (Firmendaten, Kunden, Material, Angebote, Rechnungen und Ausgaben) werden ausschließlich lokal
-          im Speicher Ihres Browsers (localStorage) auf Ihrem Gerät abgelegt und nicht an unsere Server übertragen. Über die Funktion
-          „Datensicherung“ können Sie Ihre Daten jederzeit exportieren oder löschen.
-        </p>
+        {process.env.NEXT_PUBLIC_SUPABASE_URL ? (
+          <p>
+            Die in der Anwendung erfassten Daten (Firmendaten, Kunden, Material, Angebote, Rechnungen und Ausgaben) sowie Ihre
+            Anmeldedaten werden bei unserem Auftragsverarbeiter Supabase [Region/Rechenzentrum ergänzen] gespeichert. Zugriff haben
+            ausschließlich Sie und die von Ihnen berechtigten Mitglieder Ihrer Firma.
+          </p>
+        ) : (
+          <p>
+            Die in der Anwendung erfassten Daten (Firmendaten, Kunden, Material, Angebote, Rechnungen und Ausgaben) werden ausschließlich lokal
+            im Speicher Ihres Browsers (localStorage) auf Ihrem Gerät abgelegt und nicht an unsere Server übertragen. Über die Funktion
+            „Datensicherung“ können Sie Ihre Daten jederzeit exportieren oder löschen.
+          </p>
+        )}
         <h2>Server-Logfiles</h2>
         <p>Beim Aufruf der Website verarbeitet der Hosting-Anbieter technisch notwendige Verbindungsdaten (z. B. IP-Adresse, Zeitpunkt, aufgerufene Seite).</p>
         <h2>Ihre Rechte</h2>

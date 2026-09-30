@@ -36,8 +36,8 @@ export function DocList({ kind }: { kind: DocKind }) {
   });
 
   const sum = (list: typeof docs, field: 'net' | 'gross' = 'gross') => list.reduce((s, d) => s + docTotals(d.items, small)[field], 0);
-  const create = () => {
-    const doc = createDoc(kind);
+  const create = async () => {
+    const doc = await createDoc(kind);
     router.push(`${base}/bearbeiten?id=${doc.id}`);
   };
   const year = String(new Date().getFullYear());

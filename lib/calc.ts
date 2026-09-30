@@ -192,13 +192,6 @@ export function monthlySeries(data: Data, year: number, basis: Basis) {
   return rows.map((r) => ({ ...r, revenue: round2(r.revenue), expenses: round2(r.expenses), result: round2(r.revenue - r.expenses) }));
 }
 
-export function nextNumber(data: Data, kind: 'invoice' | 'offer', date: string) {
-  const prefix = (kind === 'invoice' ? data.company?.invoicePrefix : data.company?.offerPrefix) || (kind === 'invoice' ? 'RE' : 'AN');
-  const year = date.slice(0, 4);
-  const n = (data.counters[kind][year] || 0) + 1;
-  return { number: `${prefix}-${year}-${String(n).padStart(4, '0')}`, year, n };
-}
-
 export function companyAddressLine(data: Data) {
   const c = data.company;
   if (!c) return '';

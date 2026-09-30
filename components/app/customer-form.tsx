@@ -11,15 +11,22 @@ export function CustomerModal({ initial, onClose, onSaved }: { initial?: Custome
   const [c, setC] = useState<Customer>(initial || emptyCustomer());
   const text = (key: keyof Customer) => ({ value: String(c[key] ?? ''), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setC({ ...c, [key]: e.target.value }) });
   const valid = c.name.trim().length > 0;
-  const submit = () => {
-    if (!valid) return;
-    const saved = saveCustomer({ ...c, name: c.name.trim() });
-    onSaved?.(saved);
-    onClose();
+  const [busy, setBusy] = useState(false);
+  const submit = async () => {
+    if (!valid || busy) return;
+    setBusy(true);
+    try {
+      const saved = await saveCustomer({ ...c, name: c.name.trim() });
+      onSaved?.(saved);
+      onClose();
+    } catch (e) {
+      alert((e as Error).message);
+      setBusy(false);
+    }
   };
   return (
     <Modal title={initial?.id ? 'Kunde bearbeiten' : 'Neuer Kunde'} onClose={onClose}
-      footer={<><button className="btn btn-quiet" onClick={onClose}>Abbrechen</button><button className="btn btn-primary" disabled={!valid} onClick={submit}>Speichern</button></>}>
+      footer={<><button className="btn btn-quiet" onClick={onClose}>Abbrechen</button><button className="btn btn-primary" disabled={!valid || busy} onClick={submit}>Speichern</button></>}>
       <form className="form-grid" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <Field label="Firma bzw. Name *" span={2}><input {...text('name')} autoFocus /></Field>
         <Field label="Kundennummer" hint={c.id ? undefined : 'Leer lassen für automatische Vergabe'}><input {...text('number')} /></Field>

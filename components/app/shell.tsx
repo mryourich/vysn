@@ -9,6 +9,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { Brand } from './brand';
+import { Login } from './login';
 import { Onboarding } from './onboarding';
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -41,13 +42,17 @@ const MOBILE_TABS: NavItem[] = [
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready } = useStore();
+  const { data, ready, authenticated, auth, sync } = useStore();
   const pathname = usePathname() || '/app';
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => setMoreOpen(false), [pathname]);
 
   if (!ready) return <div className="app-loading"><span className="spinner" /></div>;
-  if (!data.company) return <Onboarding />;
+  if (!authenticated) return <Login />;
+  if (!data.company) {
+    if (sync.state === 'error') return <LoadError message={sync.error} />;
+    return <Onboarding />;
+  }
 
   const company = data.company;
   const current = NAV.flatMap((g) => g.items).filter((i) => isActive(pathname, i.href)).pop();
@@ -68,11 +73,17 @@ function Shell({ children }: { children: React.ReactNode }) {
             </div>
           ))}
         </nav>
+        <div className="sidebar-foot">
         <Link href="/app/firma" className="company-card">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           {company.logo ? <img src={company.logo} alt="" /> : <span className="company-initial">{company.name.slice(0, 1)}</span>}
-          <span><strong>{company.name}</strong><small>{company.city || 'Firmendaten'}</small></span>
+          <span><strong>{company.name}</strong><small>{auth.email || company.city || 'Firmendaten'}</small></span>
         </Link>
+        <div className="sidebar-meta">
+          <SyncStatus />
+          {auth.mode === 'supabase' ? <button className="link" onClick={() => auth.signOut()}>Abmelden</button> : null}
+        </div>
+        </div>
       </aside>
 
       <div className="app-main">
@@ -80,6 +91,12 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Brand href="/app" />
           <span className="topbar-title">{current?.label}</span>
         </header>
+        {sync.state === 'error' ? (
+          <div className="sync-banner" role="alert">
+            <span><strong>Änderung konnte nicht gespeichert werden.</strong> {sync.error}</span>
+            <button className="btn btn-small" onClick={() => window.location.reload()}>Neu laden</button>
+          </div>
+        ) : null}
         <main className="app-content">{children}</main>
       </div>
 
@@ -105,10 +122,33 @@ function Shell({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </div>
+            {auth.mode === 'supabase' ? <button className="sheet-footer-link link" onClick={() => auth.signOut()}>Abmelden ({auth.email})</button> : null}
             <Link href="/" className="sheet-footer-link">Zur Startseite</Link>
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function SyncStatus() {
+  const { sync, auth } = useStore();
+  const label = sync.state === 'saving' ? 'Speichert…' : sync.state === 'error' ? 'Fehler beim Speichern' : auth.mode === 'supabase' ? 'Gespeichert' : 'Lokal gespeichert';
+  return <span className={`sync-status ${sync.state}`} title={sync.error || undefined}><i />{label}</span>;
+}
+
+function LoadError({ message }: { message: string | null }) {
+  const { auth } = useStore();
+  return (
+    <div className="app-loading">
+      <div className="empty">
+        <h3>Daten konnten nicht geladen werden</h3>
+        <p>{message || 'Bitte prüfen Sie Ihre Internetverbindung.'}</p>
+        <div className="secondary-actions">
+          <button className="btn btn-primary" onClick={() => window.location.reload()}>Erneut versuchen</button>
+          {auth.mode === 'supabase' ? <button className="btn" onClick={() => auth.signOut()}>Abmelden</button> : null}
+        </div>
+      </div>
     </div>
   );
 }

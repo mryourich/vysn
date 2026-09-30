@@ -81,10 +81,14 @@ function MaterialModal({ material, onClose }: { material: Material; onClose: () 
   const [markup, setMarkup] = useState(material.purchasePrice ? Math.round(((material.salePrice - material.purchasePrice) / material.purchasePrice) * 100) : 0);
   const isNew = !material.id;
   const categories = [...new Set(data.materials.map((x) => x.category).filter(Boolean))];
-  const submit = () => {
+  const submit = async () => {
     if (!m.name.trim()) return;
-    saveMaterial({ ...m, name: m.name.trim() });
-    onClose();
+    try {
+      await saveMaterial({ ...m, name: m.name.trim() });
+      onClose();
+    } catch (e) {
+      alert((e as Error).message);
+    }
   };
   return (
     <Modal title={isNew ? 'Neuer Artikel' : m.name} onClose={onClose} wide

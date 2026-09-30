@@ -102,8 +102,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
       {isInvoice && doc.status === 'sent' ? <button className="btn btn-primary" onClick={() => setPayDate(today())}><CheckCircle2 size={16} /> Zahlung erfassen</button> : null}
       {!isInvoice && doc.status === 'draft' ? <button className="btn" disabled={!canSend} onClick={() => setDocStatus(doc.id, 'sent')}><Send size={16} /> Als versendet markieren</button> : null}
       {!isInvoice && doc.status !== 'declined' ? (
-        <button className="btn btn-primary" disabled={!doc.items.length} onClick={() => {
-          const inv = offerToInvoice(doc.id);
+        <button className="btn btn-primary" disabled={!doc.items.length} onClick={async () => {
+          const inv = await offerToInvoice(doc.id);
           if (inv) router.push(`/app/rechnungen/bearbeiten?id=${inv.id}`);
         }}><FileOutput size={16} /> In Rechnung umwandeln</button>
       ) : null}
@@ -250,8 +250,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
               {isInvoice && (doc.status === 'sent' || doc.status === 'paid') ? (
                 <button className="btn btn-quiet" onClick={() => confirm('Rechnung stornieren? Das Material wird dem Lager wieder gutgeschrieben.') && setDocStatus(doc.id, 'cancelled')}><Ban size={16} /> Stornieren</button>
               ) : null}
-              <button className="btn btn-quiet" onClick={() => {
-                const copy = duplicateDoc(doc.id);
+              <button className="btn btn-quiet" onClick={async () => {
+                const copy = await duplicateDoc(doc.id);
                 if (copy) router.push(`${base}/bearbeiten?id=${copy.id}`);
               }}><Copy size={16} /> Duplizieren</button>
               {!locked ? (

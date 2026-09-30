@@ -31,8 +31,8 @@ export default function DashboardPage() {
 
   const hour = new Date().getHours();
   const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
-  const newDoc = (kind: 'invoice' | 'offer') => {
-    const doc = createDoc(kind);
+  const newDoc = async (kind: 'invoice' | 'offer') => {
+    const doc = await createDoc(kind);
     router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
   };
 

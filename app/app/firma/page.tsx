@@ -10,7 +10,7 @@ import { CompanyForm } from '../../../components/app/company-form';
 import { PageHeader } from '../../../components/app/ui';
 
 export default function CompanyPage() {
-  const { data, saveCompany, replaceAll, reset } = useStore();
+  const { data, saveCompany, replaceAll, reset, auth } = useStore();
   const [company, setCompany] = useState<Company>(data.company!);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -50,7 +50,9 @@ export default function CompanyPage() {
       </form>
 
       <section className="card">
-        <div className="card-head"><div><h2>Datensicherung</h2><p>Ihre Daten werden lokal in diesem Browser gespeichert. Legen Sie regelmäßig eine Sicherung an oder übertragen Sie damit Ihre Daten auf ein anderes Gerät.</p></div></div>
+        <div className="card-head"><div><h2>Datensicherung</h2><p>{auth.mode === 'supabase'
+          ? `Ihre Daten werden in der Cloud gespeichert (angemeldet als ${auth.email}). Zusätzlich können Sie jederzeit eine vollständige Sicherung herunterladen.`
+          : 'Ihre Daten werden lokal in diesem Browser gespeichert. Legen Sie regelmäßig eine Sicherung an oder übertragen Sie damit Ihre Daten auf ein anderes Gerät.'}</p></div></div>
         <div className="secondary-actions">
           <button className="btn" onClick={backup}><Download size={16} /> Sicherung herunterladen</button>
           <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={async (e) => {
@@ -67,7 +69,7 @@ export default function CompanyPage() {
           }} />
           <button className="btn" onClick={() => fileRef.current?.click()}><Upload size={16} /> Sicherung einspielen</button>
           <button className="btn btn-quiet danger" onClick={() => {
-            if (confirm('Wirklich alle Daten in diesem Browser löschen? Dies kann nicht rückgängig gemacht werden.')) reset();
+            if (confirm(auth.mode === 'supabase' ? 'Wirklich die Firma mit allen Daten endgültig löschen? Dies kann nicht rückgängig gemacht werden.' : 'Wirklich alle Daten in diesem Browser löschen? Dies kann nicht rückgängig gemacht werden.')) reset();
           }}><RotateCcw size={16} /> Alle Daten löschen</button>
         </div>
       </section>

@@ -22,7 +22,9 @@ const FAQ = [
   ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten alle Pflichtangaben nach § 14 UStG: Anschriften, Steuernummer bzw. USt-IdNr., fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der Hinweis nach § 19 UStG gesetzt.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
   ['Funktioniert VYSN One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
-  ['Wo werden meine Daten gespeichert?', 'In der aktuellen Version bleiben alle Daten lokal in Ihrem Browser auf Ihrem Gerät. Über „Datensicherung“ laden Sie jederzeit eine vollständige Sicherung herunter und können sie auf einem anderen Gerät einspielen.'],
+  ['Wo werden meine Daten gespeichert?', process.env.NEXT_PUBLIC_SUPABASE_URL
+    ? 'In einer gesicherten Datenbank, auf die nur Sie und Ihr Team Zugriff haben. So sind Ihre Daten auf allen Geräten verfügbar. Über „Datensicherung“ laden Sie zusätzlich jederzeit eine vollständige Sicherung herunter.'
+    : 'In der aktuellen Version bleiben alle Daten lokal in Ihrem Browser auf Ihrem Gerät. Über „Datensicherung“ laden Sie jederzeit eine vollständige Sicherung herunter und können sie auf einem anderen Gerät einspielen.'],
   ['Ersetzt VYSN One meine Steuerberatung?', 'Nein. VYSN One gibt Ihnen jederzeit einen klaren Überblick über Ihre Zahlen. Den Jahresabschluss und die Steuererklärung übernimmt weiterhin Ihre Steuerberatung – die Exporte erleichtern die Zusammenarbeit.'],
 ];
 
