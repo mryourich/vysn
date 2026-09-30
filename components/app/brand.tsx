@@ -1,11 +1,12 @@
 import Link from 'next/link';
 
-export function BrandMark({ size = 26 }: { size?: number }) {
+export function BrandMark({ size = 28 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" className="brand-mark">
-      <rect width="32" height="32" rx="7" fill="currentColor" />
-      <path d="M8.5 9.5 L16 23 L23.5 9.5" fill="none" stroke="var(--brand-contrast, #fff)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <span className="brand-mark" style={{ width: size, height: size }} aria-hidden="true">
+      <svg width={size * 0.62} height={size * 0.62} viewBox="0 0 20 20">
+        <path d="M3.5 4.5 L10 16 L16.5 4.5" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   );
 }
 

@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Source_Serif_4 } from 'next/font/google';
+import { Inter, Sora } from 'next/font/google';
 import './globals.css';
 
 const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
-const serif = Source_Serif_4({ subsets: ['latin'], variable: '--font-serif', display: 'swap', weight: ['400', '500', '600'] });
+const display = Sora({ subsets: ['latin'], variable: '--font-display-face', display: 'swap', weight: ['400', '500', '600', '700'] });
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://springgreen-cormorant-809283.hostingersite.com'),
@@ -16,11 +16,11 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#f6f5f1' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#070b16' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="de" className={`${sans.variable} ${serif.variable}`}>
+    <html lang="de" className={`${sans.variable} ${display.variable}`}>
       <body>{children}</body>
     </html>
   );

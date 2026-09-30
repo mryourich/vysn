@@ -6,8 +6,8 @@ import { money } from '../../lib/calc';
 type Point = { label: string; revenue: number; expenses: number };
 
 export const SERIES = [
-  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#2860a8' },
-  { key: 'expenses' as const, label: 'Ausgaben', color: '#b87a3d' },
+  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#3656f5' },
+  { key: 'expenses' as const, label: 'Ausgaben', color: '#b8762f' },
 ];
 
 function niceMax(v: number) {

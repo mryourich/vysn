@@ -1,31 +1,37 @@
 :root {
-  --bg: #f6f5f1;
+  --bg: #f4f6f9;
   --surface: #ffffff;
-  --surface-2: #fafaf7;
-  --line: #e6e3dc;
-  --line-strong: #d4d0c7;
-  --ink: #17202a;
-  --ink-2: #3a434e;
-  --muted: #6b717a;
-  --primary: #1f3a5f;
-  --primary-hover: #182f4d;
-  --primary-soft: #e9eef5;
-  --success: #1c7a4f;
-  --success-soft: #e5f3ec;
-  --warning: #9a6200;
-  --warning-soft: #fbf1dc;
-  --danger: #b42318;
-  --danger-soft: #fbe9e7;
-  --info: #2860a8;
-  --info-soft: #e6eef9;
+  --surface-2: #f8f9fb;
+  --line: #e3e7ee;
+  --line-strong: #cfd6e1;
+  --ink: #0b1220;
+  --ink-2: #344054;
+  --muted: #667085;
+  --primary: #3656f5;
+  --primary-hover: #2743d6;
+  --primary-soft: #edf1ff;
+  --accent-2: #22d3ee;
+  --gradient: linear-gradient(120deg, #3656f5 0%, #6d5dfc 45%, #22d3ee 100%);
+  --night: #070b16;
+  --night-2: #0d1426;
+  --night-line: rgba(255, 255, 255, 0.08);
+  --success: #067647;
+  --success-soft: #e7f6ee;
+  --warning: #9a5b00;
+  --warning-soft: #fdf3e1;
+  --danger: #c01f14;
+  --danger-soft: #fdecea;
+  --info: #3656f5;
+  --info-soft: #edf1ff;
   --radius: 10px;
-  --radius-lg: 14px;
-  --shadow: 0 1px 2px rgba(23, 32, 42, 0.04), 0 1px 1px rgba(23, 32, 42, 0.03);
-  --shadow-lg: 0 18px 50px rgba(23, 32, 42, 0.14);
+  --radius-lg: 16px;
+  --shadow: 0 1px 2px rgba(11, 18, 32, 0.05);
+  --shadow-md: 0 4px 16px -6px rgba(11, 18, 32, 0.12);
+  --shadow-lg: 0 24px 60px -12px rgba(11, 18, 32, 0.28);
   --font: var(--font-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-display: var(--font-serif), Georgia, 'Times New Roman', serif;
-  --chart-grid: #ebe8e1;
-  --chart-hover: rgba(31, 58, 95, 0.06);
+  --font-display: var(--font-display-face), var(--font-sans), system-ui, sans-serif;
+  --chart-grid: #e9edf3;
+  --chart-hover: rgba(54, 86, 245, 0.06);
 }
 
 * { box-sizing: border-box; }
@@ -42,27 +48,27 @@ body {
 a { color: inherit; text-decoration: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 img { max-width: 100%; }
-h1, h2, h3 { margin: 0; line-height: 1.2; }
+h1, h2, h3 { margin: 0; line-height: 1.2; font-family: var(--font-display); letter-spacing: -0.02em; }
 p { margin: 0; }
 body.no-scroll { overflow: hidden; }
 
 /* Brand */
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: 0.02em; color: var(--primary); }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--ink); }
 .brand span { color: var(--ink); }
-.brand em { font-style: normal; font-weight: 500; color: var(--muted); margin-left: 5px; letter-spacing: 0; }
-.brand-mark { flex: none; }
+.brand em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 5px; }
+.brand-mark { flex: none; display: inline-grid; place-items: center; border-radius: 30%; background: var(--gradient); box-shadow: 0 4px 12px -4px rgba(84, 97, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
 
 /* Buttons (shared by site and app) */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  height: 38px; padding: 0 14px; border-radius: 8px;
+  height: 38px; padding: 0 14px; border-radius: 9px;
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
   font-size: 14px; font-weight: 550; cursor: pointer; white-space: nowrap;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .btn:hover:not(:disabled) { background: var(--surface-2); border-color: #bfbab0; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn-primary { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 1px 2px rgba(11, 18, 32, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.14); }
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
 .btn-quiet { border-color: transparent; background: transparent; color: var(--ink-2); }
 .btn-quiet:hover:not(:disabled) { background: rgba(23, 32, 42, 0.05); border-color: transparent; }
