@@ -1,4 +1,8 @@
+export type PlanId = 'start' | 'business' | 'team';
+
 export type Company = {
+  /** Tarif – in Supabase serverseitig verwaltet, lokal frei wählbar (Testmodus) */
+  plan: PlanId;
   name: string;
   owner: string;
   street: string;
@@ -149,6 +153,9 @@ export type InvoiceDesign = {
   offerIntro: string;
   offerOutro: string;
 };
+
+/** Kurzinfo einer Firma für den Firmenwechsler */
+export type CompanySummary = { id: string; name: string; logo: string; plan: PlanId; role?: string };
 
 export type Data = {
   version: 1;

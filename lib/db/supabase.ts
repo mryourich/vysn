@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { emptyData } from '../defaults';
-import type { Data } from '../types';
+import type { CompanySummary, Data } from '../types';
 import { counterMap, countersFromMap, diffById } from './adapter';
 import type { StorageAdapter } from './adapter';
 import {
@@ -24,6 +24,22 @@ export function getSupabase(): SupabaseClient {
 }
 
 const PAGE = 1000;
+const ACTIVE_KEY = 'vysn-one-active-company';
+
+const remember = (id: string | null) => {
+  try {
+    if (id) window.localStorage.setItem(ACTIVE_KEY, id);
+  } catch {
+    /* optional */
+  }
+};
+const remembered = () => {
+  try {
+    return window.localStorage.getItem(ACTIVE_KEY);
+  } catch {
+    return null;
+  }
+};
 const CHUNK = 500;
 
 function check<T>(res: { data: T; error: { message: string } | null }): T {
@@ -49,11 +65,31 @@ export class SupabaseAdapter implements StorageAdapter {
     }
   }
 
-  async load(): Promise<Data> {
+  async listCompanies(): Promise<CompanySummary[]> {
+    const rows = check(await this.db.rpc('my_companies')) as Record<string, unknown>[] | null;
+    return (rows || []).map((r) => ({
+      id: String(r.id),
+      name: String(r.name ?? ''),
+      logo: String(r.logo ?? ''),
+      plan: (r.plan as CompanySummary['plan']) || 'start',
+      role: String(r.role ?? ''),
+    }));
+  }
+
+  activeCompanyId() {
+    return this.companyId;
+  }
+
+  detach() {
+    this.companyId = null;
+  }
+
+  async load(companyId?: string | null): Promise<Data> {
     const data = emptyData();
-    const membership = check(await this.db.from('company_members').select('company_id, role').order('created_at').limit(1));
-    this.companyId = (membership?.[0]?.company_id as string) || null;
+    const ids = (await this.listCompanies()).map((c) => c.id);
+    this.companyId = [companyId, remembered(), ids[0]].find((x): x is string => !!x && ids.includes(x)) || null;
     if (!this.companyId) return data;
+    remember(this.companyId);
 
     const companyRow = check(await this.db.from('companies').select('*').eq('id', this.companyId).single());
     const { company, design } = companyFromRow(companyRow as Record<string, unknown>);
@@ -105,6 +141,7 @@ export class SupabaseAdapter implements StorageAdapter {
 
     if (!this.companyId) {
       this.companyId = check(await this.db.rpc('create_company', { p_name: next.company.name })) as string;
+      remember(this.companyId);
       prev = emptyData(); // alles Vorhandene (z. B. Beispieldaten) erstmalig übertragen
     }
     const cid = this.companyId;

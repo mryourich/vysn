@@ -2,6 +2,7 @@ import { addDays, toISO, uid } from './calc';
 import type { Company, Customer, Data, Expense, InvoiceDesign, LineItem, Material, SalesDoc } from './types';
 
 export const emptyCompany = (): Company => ({
+  plan: 'start',
   name: '',
   owner: '',
   street: '',

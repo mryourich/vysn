@@ -7,7 +7,8 @@ import { demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
-import type { Company, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc } from './types';
+import { invoiceQuota } from './plans';
+import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc } from './types';
 
 export type SyncState = 'idle' | 'saving' | 'error';
 
@@ -28,13 +29,25 @@ type Store = {
   /** Angemeldet bzw. im lokalen Modus ohne Anmeldung nutzbar */
   authenticated: boolean;
   sync: { state: SyncState; error: string | null };
+  /** Alle Firmen des Nutzers und die gerade geöffnete */
+  companies: CompanySummary[];
+  activeCompanyId: string | null;
+  /** true, während eine weitere Firma angelegt wird (Onboarding mit „Abbrechen“) */
+  creatingCompany: boolean;
+  switchCompany: (id: string) => Promise<void>;
+  startNewCompany: () => Promise<void>;
+  cancelNewCompany: () => Promise<void>;
+  /** Hinweis „Rechnungslimit erreicht“ */
+  upgradeNotice: boolean;
+  dismissUpgrade: () => void;
   saveCompany: (company: Company) => void;
   saveCustomer: (customer: Customer) => Promise<Customer>;
   deleteCustomer: (id: string) => void;
   saveMaterial: (material: Material) => Promise<Material>;
   deleteMaterial: (id: string) => void;
   bookStock: (materialId: string, quantity: number, note: string, date?: string) => void;
-  createDoc: (kind: DocKind, customerId?: string) => Promise<SalesDoc>;
+  /** Legt einen Beleg an; `null`, wenn das Rechnungslimit des Tarifs erreicht ist. */
+  createDoc: (kind: DocKind, customerId?: string) => Promise<SalesDoc | null>;
   saveDoc: (doc: SalesDoc) => void;
   deleteDoc: (id: string) => void;
   setDocStatus: (id: string, status: SalesDoc['status'], paidDate?: string) => void;
@@ -71,6 +84,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(!supabaseConfigured);
   const [sync, setSync] = useState<{ state: SyncState; error: string | null }>({ state: 'idle', error: null });
+  const [companies, setCompanies] = useState<CompanySummary[]>([]);
+  const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
+  const [creatingCompany, setCreatingCompany] = useState(false);
+  const [upgradeNotice, setUpgradeNotice] = useState(false);
+  const previousCompany = useRef<string | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
   /** Last snapshot that was handed to the adapter – the next save persists the difference to it. */
@@ -91,30 +109,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  /** Lädt eine Firma (oder die zuletzt genutzte) – vorher werden offene Änderungen gespeichert. */
+  const loadCompany = useCallback(async (companyId?: string | null) => {
+    await queue.current;
+    setReady(false);
+    persisted.current = null;
+    try {
+      const loaded = await adapter.load(companyId);
+      persisted.current = loaded;
+      setData(loaded);
+      setActiveCompanyId(adapter.activeCompanyId());
+      setCompanies(await adapter.listCompanies());
+      setCreatingCompany(false);
+      setSync({ state: 'idle', error: null });
+    } catch (e) {
+      setSync({ state: 'error', error: (e as Error).message });
+    } finally {
+      setReady(true);
+    }
+  }, [adapter]);
+
   // Daten laden (lokal sofort, bei Supabase nach der Anmeldung bzw. bei Nutzerwechsel)
   useEffect(() => {
     if (!authChecked) return;
-    let cancelled = false;
-    setReady(false);
-    persisted.current = null;
     if (supabaseConfigured && !userId) {
+      persisted.current = null;
       setData(emptyData());
+      setCompanies([]);
+      setActiveCompanyId(null);
       setReady(true);
       return;
     }
-    adapter.load()
-      .then((loaded) => {
-        if (cancelled) return;
-        persisted.current = loaded;
-        setData(loaded);
-        setSync({ state: 'idle', error: null });
-      })
-      .catch((e: Error) => !cancelled && setSync({ state: 'error', error: e.message }))
-      .finally(() => !cancelled && setReady(true));
-    return () => {
-      cancelled = true;
-    };
-  }, [adapter, authChecked, userId]);
+    loadCompany();
+  }, [authChecked, userId, loadCompany]);
 
   // Änderungen der Reihe nach speichern
   useEffect(() => {
@@ -122,14 +149,43 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!ready || !prev || prev === data) return;
     persisted.current = data;
     setSync((s) => ({ ...s, state: 'saving' }));
+    const companyBefore = adapter.activeCompanyId();
     queue.current = queue.current
       .then(() => adapter.persist(prev, data))
-      .then(() => setSync({ state: 'idle', error: null }))
+      .then(async () => {
+        setSync({ state: 'idle', error: null });
+        if (prev.company && !data.company) {
+          // Firma gelöscht → nächste vorhandene Firma öffnen (oder Einrichtung)
+          setTimeout(() => loadCompany(null), 0);
+          return;
+        }
+        if (adapter.activeCompanyId() !== companyBefore || prev.company !== data.company) {
+          setActiveCompanyId(adapter.activeCompanyId());
+          setCompanies(await adapter.listCompanies());
+          if (data.company) setCreatingCompany(false);
+        }
+      })
       .catch((e: Error) => {
         console.error(e);
         setSync({ state: 'error', error: e.message || 'Speichern fehlgeschlagen' });
       });
-  }, [adapter, data, ready]);
+  }, [adapter, data, ready, loadCompany]);
+
+  const switchCompany = useCallback((id: string) => loadCompany(id), [loadCompany]);
+
+  const startNewCompany = useCallback(async () => {
+    await queue.current;
+    previousCompany.current = adapter.activeCompanyId();
+    adapter.detach();
+    const blank = emptyData();
+    persisted.current = blank;
+    setData(blank);
+    setActiveCompanyId(null);
+    setCreatingCompany(true);
+  }, [adapter]);
+
+  const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
+  const dismissUpgrade = useCallback(() => setUpgradeNotice(false), []);
 
   const auth = useMemo<Auth>(() => ({
     mode: supabaseConfigured ? 'supabase' : 'local',
@@ -194,7 +250,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }));
   }, [update]);
 
-  const createDoc = useCallback(async (kind: DocKind, customerId = '') => {
+  const createDoc = useCallback(async (kind: DocKind, customerId = ''): Promise<SalesDoc | null> => {
+    if (kind === 'invoice' && invoiceQuota(dataRef.current).reached) {
+      setUpgradeNotice(true);
+      return null;
+    }
     const date = today();
     const year = date.slice(0, 4);
     const n = await adapter.allocate(`${kind}:${year}`, (dataRef.current.counters[kind][year] || 0) + 1);
@@ -263,6 +323,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const offer = dataRef.current.documents.find((x) => x.id === offerId);
     if (!offer) return null;
     const invoice = await createDoc('invoice', '');
+    if (!invoice) return null;
     const full: SalesDoc = {
       ...invoice,
       customerId: offer.customerId,
@@ -282,6 +343,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const src = dataRef.current.documents.find((x) => x.id === id);
     if (!src) return null;
     const copy = await createDoc(src.kind, '');
+    if (!copy) return null;
     const full: SalesDoc = { ...copy, customerId: src.customerId, recipient: { ...src.recipient }, subject: src.subject, intro: src.intro, outro: src.outro, items: src.items.map((i) => ({ ...i, id: uid() })) };
     update((d) => ({ ...d, documents: d.documents.map((x) => (x.id === copy.id ? full : x)) }));
     return full;
@@ -301,9 +363,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => setData(emptyData()), []);
 
   const value = useMemo<Store>(() => ({
-    data, ready, auth, authenticated, sync, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
+    data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, replaceAll, loadDemo, reset,
-  }), [data, ready, auth, authenticated, sync, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
+  }), [data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, replaceAll, loadDemo, reset]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

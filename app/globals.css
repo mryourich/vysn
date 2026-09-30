@@ -53,10 +53,10 @@ p { margin: 0; }
 body.no-scroll { overflow: hidden; }
 
 /* Brand */
-.brand { display: inline-flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.01em; color: var(--ink); }
-.brand span { color: var(--ink); }
-.brand em { font-style: normal; font-weight: 400; color: var(--muted); margin-left: 5px; }
-.brand-mark { flex: none; display: inline-grid; place-items: center; border-radius: 30%; background: var(--gradient); box-shadow: 0 4px 12px -4px rgba(84, 97, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25); }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); line-height: 1; }
+.brand svg { display: block; flex: none; }
+.brand-word { margin-left: 2px; }
+.brand em { font-style: normal; font-family: var(--font-display); font-weight: 400; font-size: 14px; letter-spacing: 0.02em; color: var(--muted); margin-left: -2px; }
 
 /* Buttons (shared by site and app) */
 .btn {

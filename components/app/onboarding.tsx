@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, Check, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Sparkles, X } from 'lucide-react';
 import { emptyCompany } from '../../lib/defaults';
 import { useStore } from '../../lib/store';
 import { CompanyForm } from './company-form';
@@ -15,7 +15,8 @@ const STEPS: { title: string; text: string; sections: CompanySection[] }[] = [
 ];
 
 export function Onboarding() {
-  const { saveCompany, loadDemo, auth } = useStore();
+  const { saveCompany, loadDemo, auth, creatingCompany, cancelNewCompany, companies } = useStore();
+  const canCancel = creatingCompany && companies.length > 0;
   const [company, setCompany] = useState(emptyCompany);
   const [step, setStep] = useState(0);
   const current = STEPS[step];
@@ -26,8 +27,8 @@ export function Onboarding() {
       <aside className="onboarding-side">
         <Brand />
         <div>
-          <h1>Willkommen bei VYSN One.</h1>
-          <p>In drei kurzen Schritten richten Sie Ihr Unternehmen ein. Danach erstellen Sie direkt Ihr erstes Angebot oder Ihre erste Rechnung.</p>
+          <h1>{canCancel ? 'Weitere Firma anlegen.' : 'Willkommen bei VYSN One.'}</h1>
+          <p>{canCancel ? 'Jede Firma hat eigene Kunden, Nummernkreise, Material, Zahlen und ein eigenes Rechnungsdesign. Sie wechseln jederzeit unten in der Seitenleiste.' : 'In drei kurzen Schritten richten Sie Ihr Unternehmen ein. Danach erstellen Sie direkt Ihr erstes Angebot oder Ihre erste Rechnung.'}</p>
           <ol className="steps">
             {STEPS.map((s, i) => (
               <li key={s.title} className={i === step ? 'active' : i < step ? 'done' : ''}>
@@ -54,7 +55,8 @@ export function Onboarding() {
           }}>
             <CompanyForm value={company} onChange={setCompany} sections={current.sections} />
             <div className="onboarding-actions">
-              {step > 0 ? <button type="button" className="btn btn-quiet" onClick={() => setStep(step - 1)}><ArrowLeft size={16} /> Zurück</button> : <span />}
+              {step > 0 ? <button type="button" className="btn btn-quiet" onClick={() => setStep(step - 1)}><ArrowLeft size={16} /> Zurück</button>
+                : canCancel ? <button type="button" className="btn btn-quiet" onClick={() => cancelNewCompany()}><X size={16} /> Abbrechen</button> : <span />}
               <button type="submit" className="btn btn-primary" disabled={!canContinue}>
                 {step < STEPS.length - 1 ? <>Weiter <ArrowRight size={16} /></> : <>Einrichtung abschließen <Check size={16} /></>}
               </button>

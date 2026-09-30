@@ -31,6 +31,8 @@ Die App hat zwei Betriebsarten, gesteuert über Umgebungsvariablen (siehe `.env.
 
 Einrichtung, Datenmodell und Sicherheitskonzept: [`supabase/README.md`](supabase/README.md). Das Schema liegt in `supabase/migrations/`.
 
+**Firmen & Tarife:** Ein Nutzer kann mehrere Firmen anlegen und über die Seitenleiste wechseln. Der Tarif gilt je Firma; im Tarif *Start* sind 10 Rechnungen pro Monat enthalten (`lib/plans.ts`, in Supabase zusätzlich per Datenbank-Trigger abgesichert). Im lokalen Modus lässt sich der Tarif unter *Firmendaten → Tarif* zum Testen umschalten.
+
 Unter *Firmendaten → Datensicherung* lassen sich in beiden Modi Sicherungen als JSON exportieren und einspielen – darüber lassen sich auch lokal erfasste Daten nach Supabase übernehmen.
 
 ## Vor dem Livegang

@@ -29,6 +29,7 @@ export default function CustomersPage() {
 
   const newDoc = async (kind: 'invoice' | 'offer', customerId: string) => {
     const doc = await createDoc(kind, customerId);
+    if (!doc) return;
     router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
   };
 

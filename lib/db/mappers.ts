@@ -13,6 +13,7 @@ const dateOrNull = (v: string) => (v ? v : null);
 const str = (v: unknown) => (v == null ? '' : String(v));
 const num = (v: unknown) => (v == null || v === '' ? 0 : Number(v));
 
+/** `plan` wird bewusst nicht geschrieben – der Tarif wird serverseitig gepflegt. */
 export const companyToRow = (c: Company, design: InvoiceDesign): Row => ({
   name: c.name,
   owner: c.owner,
@@ -44,6 +45,7 @@ export const companyToRow = (c: Company, design: InvoiceDesign): Row => ({
 export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesign } => ({
   company: {
     ...emptyCompany(),
+    plan: (['start', 'business', 'team'].includes(str(r.plan)) ? str(r.plan) : 'start') as Company['plan'],
     name: str(r.name),
     owner: str(r.owner),
     street: str(r.street),
