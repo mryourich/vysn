@@ -1,6 +1,7 @@
 'use client';
 
 import { docTotals, formatDate, lineNet, money, qty } from '../../lib/calc';
+import { formatRate, taxProfile } from '../../lib/tax';
 import type { Company, InvoiceDesign, SalesDoc } from '../../lib/types';
 import { Img, PageFrame, PageNumber, T, V } from './primitives';
 import type { Style } from './primitives';
@@ -32,6 +33,7 @@ const LINE = '#dcdfe3';
 
 export function DocumentTemplate({ company, doc, design, customerNumber }: TemplateProps) {
   const isInvoice = doc.kind === 'invoice';
+  const tax = taxProfile(company);
   const totals = docTotals(doc.items, company.smallBusiness);
   const accent = design.accent;
   const font = design.font;
@@ -93,7 +95,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       {[r.name, r.contactPerson && r.contactPerson !== r.name ? r.contactPerson : '', r.street, [r.zip, r.city].filter(Boolean).join(' '), r.country && r.country !== 'Deutschland' ? r.country : ''].filter(Boolean).map((l, i) => (
         <T key={i} style={i === 0 ? [bold, { fontSize: 10 }] : { fontSize: 10 }}>{l}</T>
       ))}
-      {r.vatId ? <T style={{ fontSize: 8, color: MUTED, marginTop: 3 }}>USt-IdNr.: {r.vatId}</T> : null}
+      {r.vatId ? <T style={{ fontSize: 8, color: MUTED, marginTop: 3 }}>{tax.idLabel}: {r.vatId}</T> : null}
     </V>
   );
 
@@ -130,7 +132,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       <T style={[headText, cell(cols.qty)]}>Menge</T>
       <T style={[headText, cell(cols.price)]}>Einzelpreis</T>
       {cols.discount ? <T style={[headText, cell(cols.discount)]}>Rabatt</T> : null}
-      {cols.vat ? <T style={[headText, cell(cols.vat)]}>USt.</T> : null}
+      {cols.vat ? <T style={[headText, cell(cols.vat)]}>{tax.label}</T> : null}
       <T style={[headText, cell(cols.total)]}>Gesamt</T>
     </V>
   );
@@ -149,7 +151,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       <T style={cell(cols.qty)}>{`${qty(item.quantity)} ${item.unit}`}</T>
       <T style={cell(cols.price)}>{money(item.unitPrice)}</T>
       {cols.discount ? <T style={cell(cols.discount)}>{item.discount ? `${qty(item.discount)} %` : ''}</T> : null}
-      {cols.vat ? <T style={cell(cols.vat)}>{`${item.vat} %`}</T> : null}
+      {cols.vat ? <T style={cell(cols.vat)}>{formatRate(item.vat)}</T> : null}
       <T style={[cell(cols.total), bold]}>{money(lineNet(item))}</T>
     </V>
   ));
@@ -165,7 +167,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
     <V wrap={false} style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
       <V style={{ width: 220 }}>
         {company.smallBusiness ? null : totalRow('Nettobetrag', money(totals.net))}
-        {company.smallBusiness ? null : totals.vatGroups.map((g) => totalRow(`zzgl. ${g.rate} % USt. auf ${money(g.net)}`, money(g.vat)))}
+        {company.smallBusiness ? null : totals.vatGroups.map((g) => totalRow(`zzgl. ${formatRate(g.rate)} ${tax.label} auf ${money(g.net)}`, money(g.vat)))}
         {totalRow(isInvoice ? 'Rechnungsbetrag' : 'Angebotssumme', money(totals.gross), true)}
       </V>
     </V>
@@ -176,7 +178,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
     [company.name, company.street, [company.zip, company.city].filter(Boolean).join(' '), company.owner ? `Inhaber/GF: ${company.owner}` : ''],
     [company.phone ? `Tel. ${company.phone}` : '', company.email, company.website],
     [company.bankName, company.iban ? `IBAN ${company.iban}` : '', company.bic ? `BIC ${company.bic}` : ''],
-    [company.taxNumber ? `St.-Nr. ${company.taxNumber}` : '', company.vatId ? `USt-IdNr. ${company.vatId}` : '', company.registerCourt, company.registerNumber],
+    [company.taxNumber ? `${tax.taxNumberShort} ${company.taxNumber}` : '', company.vatId ? `${tax.idLabel} ${company.vatId}` : '', company.registerCourt, company.registerNumber],
   ].map((c) => c.filter(Boolean)).filter((c) => c.length);
 
   const footer = design.showFooter ? (
@@ -212,7 +214,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
         {rows.length ? rows : <T style={{ padding: 10, color: MUTED }}>Noch keine Positionen erfasst.</T>}
       </V>
       {totalsBlock}
-      {company.smallBusiness ? <T style={{ marginTop: 10, fontSize: 8.5, color: MUTED }}>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</T> : null}
+      {company.smallBusiness ? <T style={{ marginTop: 10, fontSize: 8.5, color: MUTED }}>{tax.smallBusinessNote}</T> : null}
       {outro ? <T wrap={false} style={{ marginTop: 18 }}>{outro}</T> : null}
       {company.owner ? <T style={{ marginTop: 4 }}>{company.owner}</T> : null}
       {footer}

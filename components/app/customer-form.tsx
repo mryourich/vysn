@@ -31,7 +31,7 @@ export function CustomerModal({ initial, onClose, onSaved }: { initial?: Custome
         <Field label="Firma bzw. Name *" span={2}><input {...text('name')} autoFocus /></Field>
         <Field label="Kundennummer" hint={c.id ? undefined : 'Leer lassen für automatische Vergabe'}><input {...text('number')} /></Field>
         <Field label="Ansprechpartner" span={2}><input {...text('contactPerson')} /></Field>
-        <Field label="USt-IdNr."><input {...text('vatId')} /></Field>
+        <Field label="USt-IdNr. / UID"><input {...text('vatId')} /></Field>
         <Field label="Straße und Hausnummer" span={3}><input {...text('street')} /></Field>
         <Field label="PLZ"><input {...text('zip')} /></Field>
         <Field label="Ort"><input {...text('city')} /></Field>

@@ -10,7 +10,7 @@ import { Brand } from './brand';
 
 const STEPS: { title: string; text: string; sections: CompanySection[] }[] = [
   { title: 'Ihr Unternehmen', text: 'Diese Angaben erscheinen im Briefkopf Ihrer Angebote und Rechnungen.', sections: ['basics', 'contact'] },
-  { title: 'Steuern & Bank', text: 'Pflichtangaben für ordnungsgemäße Rechnungen nach § 14 UStG.', sections: ['tax', 'bank'] },
+  { title: 'Steuern & Bank', text: 'Steuer- und Bankangaben für ordnungsgemäße Rechnungen.', sections: ['tax', 'bank'] },
   { title: 'Logo & Nummern', text: 'Ihr Logo und wie Belege nummeriert werden. Alles später änderbar.', sections: ['logo', 'numbers'] },
 ];
 

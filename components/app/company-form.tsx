@@ -4,7 +4,8 @@ import { useRef, useState } from 'react';
 import { ImagePlus, Trash2 } from 'lucide-react';
 import { readLogo } from '../../lib/image';
 import type { Company } from '../../lib/types';
-import { Field, NumberInput } from './ui';
+import { COUNTRY_OPTIONS, countryCode, taxProfile } from '../../lib/tax';
+import { Field, NumberInput, VatSelect } from './ui';
 
 export type CompanySection = 'basics' | 'contact' | 'tax' | 'bank' | 'logo' | 'numbers';
 
@@ -15,6 +16,9 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => set(key, e.target.value as never),
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const tax = taxProfile(value);
+  const knownCountry = countryCode(value.country) !== null && COUNTRY_OPTIONS.some(([name]) => name === value.country);
+  const [otherCountry, setOtherCountry] = useState(!knownCountry);
   const [logoError, setLogoError] = useState('');
 
   return (
@@ -58,7 +62,18 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
             <Field label="Straße und Hausnummer" span={2}><input {...text('street')} /></Field>
             <Field label="PLZ"><input {...text('zip')} inputMode="numeric" /></Field>
             <Field label="Ort" span={2}><input {...text('city')} /></Field>
-            <Field label="Land"><input {...text('country')} /></Field>
+            <Field label="Land" hint="Bestimmt Steuersätze, Rechnungshinweise und Währung">
+              <select value={otherCountry ? 'other' : value.country} onChange={(e) => {
+                if (e.target.value === 'other') { setOtherCountry(true); onChange({ ...value, country: '' }); return; }
+                setOtherCountry(false);
+                const next = { ...value, country: e.target.value };
+                onChange({ ...next, defaultVat: taxProfile(next).defaultRate });
+              }}>
+                {COUNTRY_OPTIONS.map(([name]) => <option key={name} value={name}>{name}</option>)}
+                <option value="other">Anderes Land …</option>
+              </select>
+            </Field>
+            {otherCountry ? <Field label="Land (Name)" span={2}><input {...text('country')} placeholder="z. B. Liechtenstein" /></Field> : null}
           </div>
         </section>
       )}
@@ -77,21 +92,18 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
       {sections.includes('tax') && (
         <section className="form-section">
           <h3>Steuern & Register</h3>
+          <p className="field-hint form-hint">{tax.legalHint}</p>
           <div className="form-grid">
-            <Field label="Steuernummer"><input {...text('taxNumber')} /></Field>
-            <Field label="USt-IdNr."><input {...text('vatId')} placeholder="DE…" /></Field>
-            <Field label="Standard-Umsatzsteuer">
-              <select value={value.defaultVat} onChange={(e) => set('defaultVat', Number(e.target.value))} disabled={value.smallBusiness}>
-                <option value={19}>19 %</option>
-                <option value={7}>7 %</option>
-                <option value={0}>0 %</option>
-              </select>
+            <Field label={tax.taxNumberLabel}><input {...text('taxNumber')} /></Field>
+            <Field label={tax.idLabel}><input {...text('vatId')} placeholder={tax.idPlaceholder} /></Field>
+            <Field label={`Standard-${tax.longLabel}`} hint="Voreinstellung für neue Positionen">
+              <VatSelect value={value.defaultVat} onChange={(v) => set('defaultVat', v)} company={value} disabled={value.smallBusiness} />
             </Field>
             <Field label="Registergericht"><input {...text('registerCourt')} placeholder="optional" /></Field>
             <Field label="Registernummer"><input {...text('registerNumber')} placeholder="optional" /></Field>
             <label className="check span-3">
               <input type="checkbox" checked={value.smallBusiness} onChange={(e) => set('smallBusiness', e.target.checked)} />
-              <span><strong>Kleinunternehmer nach § 19 UStG</strong><br />Auf Rechnungen wird keine Umsatzsteuer ausgewiesen, der passende Hinweis wird automatisch ergänzt.</span>
+              <span><strong>{tax.smallBusinessLabel}</strong><br />{tax.smallBusinessHint}</span>
             </label>
           </div>
         </section>

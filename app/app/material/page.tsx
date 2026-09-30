@@ -6,7 +6,9 @@ import { formatDate, money, qty, round2, today, uid } from '../../../lib/calc';
 import { UNITS, emptyMaterial } from '../../../lib/defaults';
 import { useStore } from '../../../lib/store';
 import type { Material } from '../../../lib/types';
-import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard } from '../../../components/app/ui';
+import { currencySymbol } from '../../../lib/calc';
+import { taxProfile } from '../../../lib/tax';
+import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect } from '../../../components/app/ui';
 
 export default function MaterialPage() {
   const { data, deleteMaterial } = useStore();
@@ -103,12 +105,12 @@ function MaterialModal({ material, onClose }: { material: Material; onClose: () 
         <Field label="Einheit">
           <select value={m.unit} onChange={(e) => setM({ ...m, unit: e.target.value })}>{[...new Set([m.unit, ...UNITS])].map((u) => <option key={u}>{u}</option>)}</select>
         </Field>
-        <Field label="USt.">
-          <select value={m.vat} onChange={(e) => setM({ ...m, vat: Number(e.target.value) })}><option value={19}>19 %</option><option value={7}>7 %</option><option value={0}>0 %</option></select>
+        <Field label={taxProfile(data.company).label}>
+          <VatSelect value={m.vat} onChange={(v) => setM({ ...m, vat: v })} company={data.company} />
         </Field>
-        <Field label="Einkaufspreis (netto)"><NumberInput value={m.purchasePrice} suffix="€" onChange={(v) => setM({ ...m, purchasePrice: v, salePrice: markup ? round2(v * (1 + markup / 100)) : m.salePrice })} /></Field>
+        <Field label="Einkaufspreis (netto)"><NumberInput value={m.purchasePrice} suffix={currencySymbol()} onChange={(v) => setM({ ...m, purchasePrice: v, salePrice: markup ? round2(v * (1 + markup / 100)) : m.salePrice })} /></Field>
         <Field label="Aufschlag"><NumberInput value={markup} suffix="%" onChange={(v) => { setMarkup(v); setM({ ...m, salePrice: round2(m.purchasePrice * (1 + v / 100)) }); }} /></Field>
-        <Field label="Verkaufspreis (netto)"><NumberInput value={m.salePrice} suffix="€" onChange={(v) => { setM({ ...m, salePrice: v }); setMarkup(m.purchasePrice ? Math.round(((v - m.purchasePrice) / m.purchasePrice) * 100) : 0); }} /></Field>
+        <Field label="Verkaufspreis (netto)"><NumberInput value={m.salePrice} suffix={currencySymbol()} onChange={(v) => { setM({ ...m, salePrice: v }); setMarkup(m.purchasePrice ? Math.round(((v - m.purchasePrice) / m.purchasePrice) * 100) : 0); }} /></Field>
         {isNew ? <Field label="Anfangsbestand"><NumberInput value={m.stock} onChange={(v) => setM({ ...m, stock: v })} /></Field> : null}
         <Field label="Mindestbestand" hint="0 = keine Warnung"><NumberInput value={m.minStock} onChange={(v) => setM({ ...m, minStock: v })} min={0} /></Field>
         <Field label="Beschreibung (erscheint auf Belegen)" span={3}><textarea rows={2} value={m.description} onChange={(e) => setM({ ...m, description: e.target.value })} /></Field>
@@ -144,7 +146,7 @@ function BookingModal({ material, onClose }: { material: Material; onClose: () =
     const signed = dir === 'in' ? amount : -amount;
     bookStock(material.id, signed, note || (dir === 'in' ? 'Wareneingang' : 'Entnahme'), date);
     if (dir === 'in' && asExpense && price > 0) {
-      saveExpense({ id: uid(), date, supplier, description: `${qty(amount)} ${material.unit} ${material.name}`, category: 'Material & Waren', net: round2(amount * price), vat: data.company?.smallBusiness ? 19 : material.vat, receiptNo: '' });
+      saveExpense({ id: uid(), date, supplier, description: `${qty(amount)} ${material.unit} ${material.name}`, category: 'Material & Waren', net: round2(amount * price), vat: data.company?.smallBusiness ? taxProfile(data.company).defaultRate : material.vat, receiptNo: '' });
     }
     onClose();
   };
@@ -161,7 +163,7 @@ function BookingModal({ material, onClose }: { material: Material; onClose: () =
             <label className="check span-3"><input type="checkbox" checked={asExpense} onChange={(e) => setAsExpense(e.target.checked)} /><span>Einkauf zusätzlich als Ausgabe erfassen (erscheint in der GuV)</span></label>
             {asExpense ? (
               <>
-                <Field label="Einkaufspreis je Einheit (netto)"><NumberInput value={price} onChange={setPrice} suffix="€" /></Field>
+                <Field label="Einkaufspreis je Einheit (netto)"><NumberInput value={price} onChange={setPrice} suffix={currencySymbol()} /></Field>
                 <Field label="Lieferant"><input value={supplier} onChange={(e) => setSupplier(e.target.value)} /></Field>
                 <div className="field"><span className="field-label">Summe netto</span><strong className="field-value">{money(amount * price)}</strong></div>
               </>

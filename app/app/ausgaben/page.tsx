@@ -2,13 +2,14 @@
 
 import { useMemo, useState } from 'react';
 import { Plus, Search, Trash2, Wallet } from 'lucide-react';
-import { MONTHS_LONG, expenseGross, formatDate, money, round2, today } from '../../../lib/calc';
+import { MONTHS_LONG, currencySymbol, expenseGross, formatDate, money, round2, today } from '../../../lib/calc';
+import { formatRate, taxProfile } from '../../../lib/tax';
 import { useStore } from '../../../lib/store';
 import { EXPENSE_CATEGORIES } from '../../../lib/types';
 import type { Expense } from '../../../lib/types';
-import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard } from '../../../components/app/ui';
+import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect } from '../../../components/app/ui';
 
-const blank = (): Expense => ({ id: '', date: today(), supplier: '', description: '', category: 'Material & Waren', net: 0, vat: 19, receiptNo: '' });
+const blank = (vat: number): Expense => ({ id: '', date: today(), supplier: '', description: '', category: 'Material & Waren', net: 0, vat, receiptNo: '' });
 
 export default function ExpensesPage() {
   const { data } = useStore();
@@ -22,6 +23,7 @@ export default function ExpensesPage() {
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');
   const small = !!data.company?.smallBusiness;
+  const defaultVat = small ? taxProfile(data.company).defaultRate : data.company?.defaultVat ?? taxProfile(data.company).defaultRate;
 
   const list = data.expenses
     .filter((e) => e.date.startsWith(year))
@@ -42,8 +44,8 @@ export default function ExpensesPage() {
 
   return (
     <div className="page">
-      <PageHeader title="Ausgaben" description="Belege und Kosten erfassen – sie fließen automatisch in GuV und Umsatzsteuer ein."
-        actions={<button className="btn btn-primary" onClick={() => setEditing(blank())}><Plus size={16} /> Ausgabe erfassen</button>} />
+      <PageHeader title="Ausgaben" description="Belege und Kosten erfassen – sie fließen automatisch in GuV und Steuerauswertung ein."
+        actions={<button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Ausgabe erfassen</button>} />
 
       <div className="stats stats-3">
         <StatCard label={`Ausgaben ${year}`} value={money(yearAll.reduce((s, e) => s + (small ? expenseGross(e) : e.net), 0))} sub={small ? 'brutto' : 'netto'} />
@@ -70,7 +72,7 @@ export default function ExpensesPage() {
                     <div key={e.id} className="tr tr-exp" role="button" tabIndex={0} onClick={() => setEditing(e)} onKeyDown={(ev) => ev.key === 'Enter' && setEditing(e)}>
                       <span className="td-main"><span className="avatar avatar-sq"><Wallet size={15} /></span><span><strong>{e.supplier || e.description || 'Ausgabe'}</strong><small>{[e.description !== e.supplier ? e.description : '', formatDate(e.date)].filter(Boolean).join(' · ')}</small></span></span>
                       <span className="td-muted hide-sm">{e.category}</span>
-                      <span className="td-num">{money(small ? expenseGross(e) : e.net)}<small className="td-sub">{small ? 'brutto' : `+ ${e.vat} % USt.`}</small></span>
+                      <span className="td-num">{money(small ? expenseGross(e) : e.net)}<small className="td-sub">{small ? 'brutto' : `+ ${formatRate(e.vat)} ${taxProfile(data.company).label}`}</small></span>
                     </div>
                   ))}
                 </div>
@@ -80,7 +82,7 @@ export default function ExpensesPage() {
           </>
         ) : (
           <Empty icon={<Wallet />} title="Noch keine Ausgaben" text="Erfassen Sie Einkäufe, Miete, Fahrzeugkosten und andere Belege. So entsteht Ihre GuV ganz nebenbei."
-            action={<button className="btn btn-primary" onClick={() => setEditing(blank())}><Plus size={16} /> Erste Ausgabe erfassen</button>} />
+            action={<button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Erste Ausgabe erfassen</button>} />
         )}
       </section>
       {editing ? <ExpenseModal expense={editing} onClose={() => setEditing(null)} /> : null}
@@ -89,7 +91,9 @@ export default function ExpensesPage() {
 }
 
 function ExpenseModal({ expense, onClose }: { expense: Expense; onClose: () => void }) {
-  const { saveExpense, deleteExpense } = useStore();
+  const { saveExpense, deleteExpense, data } = useStore();
+  const company = data.company;
+  const tax = taxProfile(company);
   const [e, setE] = useState(expense);
   const [mode, setMode] = useState<'gross' | 'net'>('gross');
   const [amount, setAmount] = useState(expense.id ? expenseGross(expense) : 0);
@@ -115,13 +119,13 @@ function ExpenseModal({ expense, onClose }: { expense: Expense; onClose: () => v
         <Field label="Kategorie" span={3}>
           <select value={e.category} onChange={(ev) => setE({ ...e, category: ev.target.value })}>{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
         </Field>
-        <Field label="Betrag"><NumberInput value={amount} onChange={setAmount} suffix="€" min={0} /></Field>
+        <Field label="Betrag"><NumberInput value={amount} onChange={setAmount} suffix={currencySymbol()} min={0} /></Field>
         <Field label="Betrag ist"><Segmented value={mode} options={[['gross', 'Brutto'], ['net', 'Netto']]} onChange={setMode} /></Field>
-        <Field label="Umsatzsteuer">
-          <select value={e.vat} onChange={(ev) => setE({ ...e, vat: Number(ev.target.value) })}><option value={19}>19 %</option><option value={7}>7 %</option><option value={0}>0 %</option></select>
+        <Field label={tax.longLabel}>
+          <VatSelect value={e.vat} onChange={(v) => setE({ ...e, vat: v })} company={company} />
         </Field>
         <div className="calc-line span-3">
-          <span>Netto <b>{money(net)}</b></span><span>USt. <b>{money(round2((net * e.vat) / 100))}</b></span><span>Brutto <b>{money(round2(net * (1 + e.vat / 100)))}</b></span>
+          <span>Netto <b>{money(net)}</b></span><span>{tax.label} <b>{money(round2((net * e.vat) / 100))}</b></span><span>Brutto <b>{money(round2(net * (1 + e.vat / 100)))}</b></span>
         </div>
         <button type="submit" hidden />
       </form>

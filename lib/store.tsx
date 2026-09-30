@@ -2,12 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { addDays, today, uid } from './calc';
+import { addDays, setCurrency, today, uid } from './calc';
 import { demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
 import { invoiceQuota } from './plans';
+import { taxProfile } from './tax';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc } from './types';
 
 export type SyncState = 'idle' | 'saving' | 'error';
@@ -91,6 +92,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const previousCompany = useRef<string | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
+  // Währung für alle Beträge (EUR, in der Schweiz CHF) – vor dem Rendern der Seiten setzen
+  setCurrency(taxProfile(data.company).currency);
   /** Last snapshot that was handed to the adapter – the next save persists the difference to it. */
   const persisted = useRef<Data | null>(null);
   const queue = useRef<Promise<void>>(Promise.resolve());

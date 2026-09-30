@@ -10,7 +10,8 @@ import './site.css';
 
 const FAQ = [
   ['Brauche ich Buchhaltungskenntnisse?', 'Nein. Sie schreiben Angebote und Rechnungen und erfassen Ihre Ausgaben. Die GuV, Umsatzsteuer und Auswertungen entstehen daraus automatisch.'],
-  ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten alle Pflichtangaben nach § 14 UStG: Anschriften, Steuernummer bzw. USt-IdNr., fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der Hinweis nach § 19 UStG gesetzt.'],
+  ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten die Pflichtangaben für Deutschland (§ 14 UStG), Österreich (§ 11 UStG) und die Schweiz (Art. 26 MWSTG): Anschriften, Steuer- bzw. UID-Nummer, fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der passende Hinweis gesetzt.'],
+  ['Funktioniert VYSN One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
   ['Funktioniert VYSN One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
   ['Wo werden meine Daten gespeichert?', process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -39,7 +40,7 @@ export default function Home() {
           <ul className="hero-points">
             <li><Check size={15} /> In 3 Minuten eingerichtet</li>
             <li><Check size={15} /> Keine Kreditkarte nötig</li>
-            <li><Check size={15} /> Rechnungen nach § 14 UStG</li>
+            <li><Check size={15} /> Für Deutschland, Österreich & Schweiz</li>
           </ul>
         </div>
         <div className="shell hero-stage">
@@ -50,7 +51,7 @@ export default function Home() {
       {/* ---------- Kennzahlen ---------- */}
       <section className="metrics">
         <div className="shell metrics-grid">
-          {[['3 Min.', 'bis zur ersten Rechnung'], ['1 Klick', 'vom Angebot zur Rechnung'], ['§ 14', 'UStG-konforme Pflichtangaben'], ['100 %', 'mobil nutzbar']].map(([v, l]) => (
+          {[['3 Min.', 'bis zur ersten Rechnung'], ['1 Klick', 'vom Angebot zur Rechnung'], ['3 Länder', 'DE · AT · CH mit passenden Steuersätzen'], ['100 %', 'mobil nutzbar']].map(([v, l]) => (
             <div key={l}><strong>{v}</strong><span>{l}</span></div>
           ))}
         </div>
@@ -81,7 +82,7 @@ export default function Home() {
             <span className="tile-icon"><Palette size={18} /></span>
             <h3>Eigenes Rechnungsdesign</h3>
             <p>Logo, Farbe, Schrift und Layout – als druckfertiges PDF.</p>
-            <div className="swatch-row">{['#3656f5', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
+            <div className="swatch-row">{['#0069e6', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
           </article>
           <article className="tile">
             <span className="tile-icon"><Boxes size={18} /></span>
