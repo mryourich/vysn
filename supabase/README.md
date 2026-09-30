@@ -7,7 +7,8 @@ die Oberfläche bleibt gleich.
 ## 1. Projekt anlegen
 
 1. Auf [supabase.com](https://supabase.com) ein Projekt erstellen (Region z. B. Frankfurt `eu-central-1`).
-2. **SQL Editor** öffnen und den Inhalt von `migrations/20260930120000_init.sql` ausführen.
+2. **SQL Editor** öffnen und die Dateien aus `migrations/` **der Reihe nach** ausführen:
+   `20260930120000_init.sql`, dann `20261001090000_companies_and_plans.sql`.
    Alternativ mit der Supabase CLI: `supabase link --project-ref <ref>` und `supabase db push`.
 
 ## 2. Authentifizierung
@@ -38,6 +39,12 @@ Danach neu bauen (`npm run build`), da `NEXT_PUBLIC_*`-Variablen beim Build eing
 | `stock_movements` | Lagerbewegungen je Artikel |
 | `documents` | Angebote und Rechnungen; Empfänger und Positionen als Snapshot (jsonb) |
 | `number_counters` | Nummernkreise, atomar vergeben über `allocate_number()` |
+
+**Mehrere Firmen:** Ein Nutzer kann beliebig viele Firmen anlegen (`create_company()`), `my_companies()`
+liefert sie für den Firmenwechsler. **Tarife** gelten je Firma (`companies.plan`): Im Tarif `start` erlaubt
+der Trigger `documents_invoice_limit` höchstens 10 Rechnungen pro Kalendermonat (nach Rechnungsdatum),
+`business` und `team` sind unbegrenzt. Den Tarif setzt nur der Server (Service-Role, z. B. per Stripe-Webhook):
+`update companies set plan = 'business' where id = '…';`
 
 **Sicherheit:** Row Level Security auf allen Tabellen – Nutzer sehen ausschließlich Daten
 der Firmen, in denen sie Mitglied sind. Firmen werden nur über `create_company()` angelegt,

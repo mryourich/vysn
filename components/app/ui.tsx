@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { X } from 'lucide-react';
+import { List, X } from 'lucide-react';
 import { parseNumber, qty } from '../../lib/calc';
+import { formatRate, vatChoices } from '../../lib/tax';
+import type { Company } from '../../lib/types';
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (
@@ -123,4 +125,23 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
 
 export function useConfirm() {
   return (message: string) => typeof window !== 'undefined' && window.confirm(message);
+}
+
+/** Steuersatz-Auswahl mit den Sätzen des Firmenlandes und „Eigener Satz …“ für freie Eingabe. */
+export function VatSelect({ value, onChange, company, disabled }: { value: number; onChange: (v: number) => void; company: Pick<Company, 'country'> | null; disabled?: boolean }) {
+  const [custom, setCustom] = useState(false);
+  if (custom) {
+    return (
+      <span className="vat-custom">
+        <NumberInput value={value} onChange={(v) => onChange(Math.min(100, v))} suffix="%" min={0} aria-label="Eigener Steuersatz" />
+        <button type="button" className="icon-btn" onClick={() => setCustom(false)} title="Zur Auswahl" aria-label="Zur Auswahl"><List size={15} /></button>
+      </span>
+    );
+  }
+  return (
+    <select value={String(value)} disabled={disabled} onChange={(e) => (e.target.value === 'custom' ? setCustom(true) : onChange(Number(e.target.value)))}>
+      {vatChoices(company, value).map((r) => <option key={r} value={String(r)}>{formatRate(r)}</option>)}
+      <option value="custom">Eigener Satz …</option>
+    </select>
+  );
 }

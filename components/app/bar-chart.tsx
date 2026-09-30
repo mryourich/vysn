@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { money } from '../../lib/calc';
+import { currencySymbol, money } from '../../lib/calc';
 
 type Point = { label: string; revenue: number; expenses: number };
 
 export const SERIES = [
-  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#3656f5' },
+  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#0069e6' },
   { key: 'expenses' as const, label: 'Ausgaben', color: '#b8762f' },
 ];
 
@@ -17,7 +17,10 @@ function niceMax(v: number) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * p;
 }
 
-const short = (v: number) => (v >= 1000 ? `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(v / 1000)} T€` : `${Math.round(v)} €`);
+const short = (v: number) => {
+  const sym = currencySymbol();
+  return v >= 1000 ? `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(v / 1000)} Tsd. ${sym}` : `${Math.round(v)} ${sym}`;
+};
 
 /** Grouped monthly bar chart: revenue vs. expenses, with hover tooltip. */
 export function RevenueChart({ data, height = 240 }: { data: Point[]; height?: number }) {

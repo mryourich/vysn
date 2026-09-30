@@ -2,6 +2,7 @@
 
 import { formatDate, money, today } from '../../lib/calc';
 import type { ProfitLoss } from '../../lib/calc';
+import { taxProfile } from '../../lib/tax';
 import type { Company } from '../../lib/types';
 import { Img, PageFrame, PageNumber, T, V } from './primitives';
 import type { Style } from './primitives';
@@ -12,6 +13,7 @@ const MUTED = '#6a717a';
 const LINE = '#dcdfe3';
 
 export function ReportTemplate({ company, pl, periodLabel, basisLabel, accent }: Props) {
+  const tax = taxProfile(company);
   const bold: Style = { fontFamily: 'Helvetica', fontWeight: 'bold' };
   const row = (label: string, value: number, opts: { strong?: boolean; indent?: boolean; sign?: '-' | '+' } = {}) => (
     <V key={label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: opts.strong ? 6 : 3.5, paddingLeft: opts.indent ? 14 : 0, borderBottomWidth: 0.5, borderBottomColor: LINE, backgroundColor: opts.strong ? '#f4f5f7' : undefined, paddingHorizontal: opts.strong ? 6 : undefined }}>
@@ -44,12 +46,12 @@ export function ReportTemplate({ company, pl, periodLabel, basisLabel, accent }:
       {row(pl.result >= 0 ? 'Ergebnis (Gewinn vor Steuern)' : 'Ergebnis (Verlust vor Steuern)', pl.result, { strong: true })}
 
       {company.smallBusiness ? (
-        <T style={{ marginTop: 18, fontSize: 8.5, color: MUTED }}>Kleinunternehmer gem. § 19 UStG – Ausgaben sind brutto als Aufwand erfasst, es wird keine Umsatzsteuer ausgewiesen.</T>
+        <T style={{ marginTop: 18, fontSize: 8.5, color: MUTED }}>{`${tax.smallBusinessLabel} – Ausgaben sind brutto als Aufwand erfasst, es wird keine ${tax.longLabel} ausgewiesen.`}</T>
       ) : (
         <V style={{ marginTop: 24 }}>
-          <T style={[bold, { marginBottom: 6, color: accent }]}>Umsatzsteuer im Zeitraum</T>
-          {row('Vereinnahmte Umsatzsteuer', pl.outputVat)}
-          {row('Gezahlte Vorsteuer', pl.inputVat, { sign: '-' })}
+          <T style={[bold, { marginBottom: 6, color: accent }]}>{`${tax.longLabel} im Zeitraum`}</T>
+          {row(`Vereinnahmte ${tax.longLabel}`, pl.outputVat)}
+          {row(`Gezahlte ${tax.inputTaxLabel}`, pl.inputVat, { sign: '-' })}
           {row(pl.vatPayable >= 0 ? 'Zahllast' : 'Erstattung', Math.abs(pl.vatPayable), { strong: true })}
         </V>
       )}

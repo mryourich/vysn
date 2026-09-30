@@ -5,6 +5,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { MONTHS_LONG, money, monthlySeries, periodFor, profitLoss } from '../../../lib/calc';
 import type { Basis } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
+import { taxProfile } from '../../../lib/tax';
 import { RevenueChart } from '../../../components/app/bar-chart';
 import { downloadPdf } from '../../../components/pdf/export';
 import { ReportTemplate } from '../../../components/pdf/report-template';
@@ -15,6 +16,7 @@ type Mode = 'year' | 'q1' | 'q2' | 'q3' | 'q4' | 'month';
 export default function ProfitLossPage() {
   const { data } = useStore();
   const company = data.company!;
+  const tax = taxProfile(company);
   const years = useMemo(() => {
     const s = new Set<string>([String(new Date().getFullYear())]);
     data.documents.forEach((d) => s.add(d.date.slice(0, 4)));
@@ -86,8 +88,8 @@ export default function ProfitLossPage() {
         <StatCard label="Rohertrag" value={money(pl.grossProfit)} sub={`${pct(pl.grossProfit)} vom Umsatz`} />
         <StatCard label="Ergebnis" value={money(pl.result)} tone={pl.result < 0 ? 'danger' : 'success'} sub={`Marge ${pct(pl.result)}`} />
         {company.smallBusiness
-          ? <StatCard label="Umsatzsteuer" value="–" sub="Kleinunternehmer § 19 UStG" />
-          : <StatCard label={pl.vatPayable >= 0 ? 'USt.-Zahllast' : 'USt.-Erstattung'} value={money(Math.abs(pl.vatPayable))} sub={`${money(pl.outputVat)} USt. – ${money(pl.inputVat)} VSt.`} />}
+          ? <StatCard label={tax.longLabel} value="–" sub={tax.smallBusinessLabel} />
+          : <StatCard label={pl.vatPayable >= 0 ? `${tax.label}-Zahllast` : `${tax.label}-Erstattung`} value={money(Math.abs(pl.vatPayable))} sub={`${money(pl.outputVat)} ${tax.label} – ${money(pl.inputVat)} Vorsteuer`} />}
       </div>
 
       <div className="grid-2-1 grid-pl">

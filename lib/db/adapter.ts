@@ -1,4 +1,4 @@
-import type { Data } from '../types';
+import type { CompanySummary, Data } from '../types';
 
 /**
  * Persistence layer used by the store. The UI always works on an in-memory
@@ -9,8 +9,18 @@ import type { Data } from '../types';
  */
 export interface StorageAdapter {
   readonly mode: 'local' | 'supabase';
-  /** Loads the complete data set of the current user/company. */
-  load(): Promise<Data>;
+  /** All companies the current user can open. */
+  listCompanies(): Promise<CompanySummary[]>;
+  /**
+   * Loads the complete data set of one company and makes it the active one.
+   * Without an id the last used (or first) company is loaded; if the user has
+   * none, an empty snapshot without company is returned.
+   */
+  load(companyId?: string | null): Promise<Data>;
+  /** Id of the company that `persist` currently writes to (null = none yet). */
+  activeCompanyId(): string | null;
+  /** Detaches from the active company – the next persisted company is created as a new one. */
+  detach(): void;
   /** Persists the difference between two snapshots. */
   persist(prev: Data, next: Data): Promise<void>;
   /**

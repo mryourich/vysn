@@ -1,9 +1,19 @@
 import type { Data, Expense, LineItem, SalesDoc } from './types';
 
-const eur = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 });
 
-export const money = (value: number) => eur.format(Number.isFinite(value) ? value : 0);
+/** Währung der geöffneten Firma (EUR für DE/AT, CHF für die Schweiz) – wird vom Store gesetzt. */
+let currency: 'EUR' | 'CHF' = 'EUR';
+const formatters: Record<string, Intl.NumberFormat> = {
+  EUR: new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }),
+  CHF: new Intl.NumberFormat('de-CH', { style: 'currency', currency: 'CHF' }),
+};
+export const setCurrency = (c: 'EUR' | 'CHF') => {
+  currency = c;
+};
+export const currencySymbol = () => (currency === 'CHF' ? 'CHF' : '€');
+
+export const money = (value: number) => formatters[currency].format(Number.isFinite(value) ? value : 0);
 export const qty = (value: number) => num.format(Number.isFinite(value) ? value : 0);
 export const round2 = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
 

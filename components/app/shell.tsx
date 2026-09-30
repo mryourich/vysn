@@ -9,6 +9,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { Brand } from './brand';
+import { CompanyAvatar, CompanyList, CompanySwitcher, LogoutButton } from './company-switcher';
+import { UpgradeDialog } from './upgrade-dialog';
 import { Login } from './login';
 import { Onboarding } from './onboarding';
 
@@ -74,22 +76,21 @@ function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="sidebar-foot">
-        <Link href="/app/firma" className="company-card">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {company.logo ? <img src={company.logo} alt="" /> : <span className="company-initial">{company.name.slice(0, 1)}</span>}
-          <span><strong>{company.name}</strong><small>{auth.email || company.city || 'Firmendaten'}</small></span>
-        </Link>
-        <div className="sidebar-meta">
-          <SyncStatus />
-          {auth.mode === 'supabase' ? <button className="link" onClick={() => auth.signOut()}>Abmelden</button> : null}
-        </div>
+          <CompanySwitcher />
+          <div className="sidebar-meta">
+            <SyncStatus />
+            <LogoutButton className="logout-btn" />
+          </div>
         </div>
       </aside>
 
       <div className="app-main">
         <header className="topbar">
           <Brand href="/app" />
-          <span className="topbar-title">{current?.label}</span>
+          <button className="topbar-company" onClick={() => setMoreOpen(true)} aria-label={`Firma: ${company.name}`}>
+            <span>{current?.label}</span>
+            <CompanyAvatar name={company.name} logo={company.logo} size={30} />
+          </button>
         </header>
         {sync.state === 'error' ? (
           <div className="sync-banner" role="alert">
@@ -99,6 +100,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         ) : null}
         <main className="app-content">{children}</main>
       </div>
+      <UpgradeDialog />
 
       <nav className="tabbar" aria-label="Hauptnavigation">
         {MOBILE_TABS.map((item) => (
@@ -122,8 +124,14 @@ function Shell({ children }: { children: React.ReactNode }) {
                 </Link>
               ))}
             </div>
-            {auth.mode === 'supabase' ? <button className="sheet-footer-link link" onClick={() => auth.signOut()}>Abmelden ({auth.email})</button> : null}
-            <Link href="/" className="sheet-footer-link">Zur Startseite</Link>
+            <div className="sheet-section">
+              <span className="sheet-label">Firma wechseln</span>
+              <CompanyList onDone={() => setMoreOpen(false)} />
+            </div>
+            <div className="sheet-actions">
+              {auth.email ? <span className="muted small">{auth.email}</span> : <Link href="/" className="muted small">Zur Startseite</Link>}
+              <LogoutButton className="btn" onDone={() => setMoreOpen(false)} />
+            </div>
           </div>
         </div>
       ) : null}
@@ -133,8 +141,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function SyncStatus() {
   const { sync, auth } = useStore();
-  const label = sync.state === 'saving' ? 'Speichert…' : sync.state === 'error' ? 'Fehler beim Speichern' : auth.mode === 'supabase' ? 'Gespeichert' : 'Lokal gespeichert';
-  return <span className={`sync-status ${sync.state}`} title={sync.error || undefined}><i />{label}</span>;
+  const label = sync.state === 'saving' ? 'Speichert…' : sync.state === 'error' ? 'Fehler beim Speichern' : 'Gespeichert';
+  return <span className={`sync-status ${sync.state}`} title={sync.error || (auth.mode === 'supabase' ? 'In der Cloud gespeichert' : 'Lokal in diesem Browser gespeichert')}><i />{label}</span>;
 }
 
 function LoadError({ message }: { message: string | null }) {

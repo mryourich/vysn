@@ -6,11 +6,13 @@ import { SiteHeader } from '../components/site/site-header';
 import { SiteFooter } from '../components/site/site-footer';
 import { Pricing } from '../components/site/pricing';
 import { DesignShowcase } from '../components/site/design-showcase';
+import { Motion } from '../components/site/motion';
 import './site.css';
 
 const FAQ = [
   ['Brauche ich Buchhaltungskenntnisse?', 'Nein. Sie schreiben Angebote und Rechnungen und erfassen Ihre Ausgaben. Die GuV, Umsatzsteuer und Auswertungen entstehen daraus automatisch.'],
-  ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten alle Pflichtangaben nach § 14 UStG: Anschriften, Steuernummer bzw. USt-IdNr., fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der Hinweis nach § 19 UStG gesetzt.'],
+  ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten die Pflichtangaben für Deutschland (§ 14 UStG), Österreich (§ 11 UStG) und die Schweiz (Art. 26 MWSTG): Anschriften, Steuer- bzw. UID-Nummer, fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der passende Hinweis gesetzt.'],
+  ['Funktioniert VYSN One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
   ['Funktioniert VYSN One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
   ['Wo werden meine Daten gespeichert?', process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -23,6 +25,7 @@ export default function Home() {
   return (
     <div className="site">
       <SiteHeader />
+      <Motion />
 
       {/* ---------- Hero ---------- */}
       <section className="hero">
@@ -30,7 +33,7 @@ export default function Home() {
         <div className="hero-glow" aria-hidden="true" />
         <div className="shell hero-inner">
           <a href="#rechnungsdesign" className="hero-pill"><span>Neu</span> Rechnungsdesigner mit Live-Vorschau <ArrowRight size={14} /></a>
-          <h1>Ihr Betrieb.<br /><span className="gradient-text">Klar gesteuert.</span></h1>
+          <h1><span className="hero-line">Ihr Betrieb.</span><span className="hero-line gradient-text">Klar gesteuert.</span></h1>
           <p className="lead">Angebote, Rechnungen, Material und Zahlen in einer Software, die so präzise arbeitet wie Sie. Für kleine und mittlere Unternehmen, Handwerk und Dienstleister.</p>
           <div className="hero-actions">
             <Link href="/app" className="btn btn-glow btn-lg">Kostenlos starten <ArrowRight size={17} /></Link>
@@ -39,7 +42,7 @@ export default function Home() {
           <ul className="hero-points">
             <li><Check size={15} /> In 3 Minuten eingerichtet</li>
             <li><Check size={15} /> Keine Kreditkarte nötig</li>
-            <li><Check size={15} /> Rechnungen nach § 14 UStG</li>
+            <li><Check size={15} /> Für Deutschland, Österreich & Schweiz</li>
           </ul>
         </div>
         <div className="shell hero-stage">
@@ -50,20 +53,30 @@ export default function Home() {
       {/* ---------- Kennzahlen ---------- */}
       <section className="metrics">
         <div className="shell metrics-grid">
-          {[['3 Min.', 'bis zur ersten Rechnung'], ['1 Klick', 'vom Angebot zur Rechnung'], ['§ 14', 'UStG-konforme Pflichtangaben'], ['100 %', 'mobil nutzbar']].map(([v, l]) => (
-            <div key={l}><strong>{v}</strong><span>{l}</span></div>
+          {([[3, ' Min.', 'bis zur ersten Rechnung'], [1, ' Klick', 'vom Angebot zur Rechnung'], [3, ' Länder', 'DE · AT · CH mit passenden Steuersätzen'], [100, ' %', 'mobil nutzbar']] as const).map(([n, suffix, l], i) => (
+            <div key={l} data-reveal style={{ ['--d' as string]: `${i * 90}ms` }}><strong data-count={n} data-suffix={suffix}>{`${n}${suffix}`}</strong><span>{l}</span></div>
           ))}
         </div>
       </section>
 
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          {[0, 1].map((k) => (
+            <div key={k} className="ticker-group">
+              {['Angebote', 'Rechnungen', 'Rechnungsdesign', 'Material & Lager', 'Ausgaben', 'GuV', 'Umsatzsteuer & MWST', 'Mehrere Firmen', 'PDF-Export', 'Mobil'].map((t) => <span key={t}>{t}</span>)}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ---------- Bento-Funktionen ---------- */}
       <section id="funktionen" className="section shell">
-        <div className="section-head">
+        <div className="section-head" data-reveal>
           <span className="kicker">Funktionen</span>
           <h2>Alles, was Ihr Büro braucht.<br /><span className="muted-head">Nichts, was Sie aufhält.</span></h2>
         </div>
         <div className="bento">
-          <article className="tile tile-wide">
+          <article className="tile tile-wide" data-reveal style={{ ['--d' as string]: '0ms' }}>
             <div className="tile-copy">
               <span className="tile-icon"><ReceiptText size={18} /></span>
               <h3>Angebote & Rechnungen</h3>
@@ -77,13 +90,13 @@ export default function Home() {
               <div className="flow-card"><CheckCircle2 size={15} /><span>Zahlung<br /><b>3.418,35 €</b></span><em className="st st-ok">Bezahlt</em></div>
             </div>
           </article>
-          <article className="tile">
+          <article className="tile" data-reveal style={{ ['--d' as string]: '90ms' }}>
             <span className="tile-icon"><Palette size={18} /></span>
             <h3>Eigenes Rechnungsdesign</h3>
             <p>Logo, Farbe, Schrift und Layout – als druckfertiges PDF.</p>
-            <div className="swatch-row">{['#3656f5', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
+            <div className="swatch-row">{['#0069e6', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
           </article>
-          <article className="tile">
+          <article className="tile" data-reveal style={{ ['--d' as string]: '180ms' }}>
             <span className="tile-icon"><Boxes size={18} /></span>
             <h3>Material & Lager</h3>
             <p>EK, VK, Aufschlag und Bestand. Rechnungen buchen Material automatisch ab.</p>
@@ -92,18 +105,18 @@ export default function Home() {
               <div><span>Mineralwolle</span><b className="warn">6 Rollen</b></div><i><s className="warn" style={{ width: '18%' }} /></i>
             </div>
           </article>
-          <article className="tile">
+          <article className="tile" data-reveal style={{ ['--d' as string]: '0ms' }}>
             <span className="tile-icon"><Wallet size={18} /></span>
             <h3>Ausgaben</h3>
             <p>Belege nach Kategorie erfassen – brutto oder netto, die Steuer rechnet VYSN One.</p>
           </article>
-          <article className="tile">
+          <article className="tile" data-reveal style={{ ['--d' as string]: '90ms' }}>
             <span className="tile-icon"><BarChart3 size={18} /></span>
             <h3>GuV & Umsatzsteuer</h3>
             <p>Jahr, Quartal oder Monat. Rohertrag, Marge und USt.-Zahllast auf einen Blick.</p>
             <div className="mini-bars">{[42, 55, 48, 66, 60, 78, 71, 88].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div>
           </article>
-          <article className="tile tile-dark tile-full">
+          <article className="tile tile-dark tile-full" data-reveal style={{ ['--d' as string]: '180ms' }}>
             <div className="tile-copy">
               <span className="tile-icon"><TrendingUp size={18} /></span>
               <h3>Ein Dashboard, das Entscheidungen leichter macht.</h3>
@@ -122,22 +135,22 @@ export default function Home() {
       {/* ---------- Rechnungsdesign ---------- */}
       <section id="rechnungsdesign" className="section section-soft">
         <div className="shell">
-          <div className="section-head">
+          <div className="section-head" data-reveal>
             <span className="kicker">Rechnungsdesign</span>
             <h2>Dokumente, die nach Ihrem Unternehmen aussehen.</h2>
             <p>Probieren Sie es direkt hier aus. In VYSN One kommt Ihr eigenes Logo dazu – der Export ist ein echtes, druckfertiges PDF.</p>
           </div>
-          <DesignShowcase />
+          <div data-reveal="scale"><DesignShowcase /></div>
         </div>
       </section>
 
       {/* ---------- Ablauf ---------- */}
       <section className="section shell">
-        <div className="section-head">
+        <div className="section-head" data-reveal>
           <span className="kicker">So funktioniert es</span>
           <h2>In drei Schritten startklar.</h2>
         </div>
-        <ol className="timeline">
+        <ol className="timeline" data-reveal>
           <li><span className="node"><Building2 size={18} /></span><small>Schritt 01</small><h3>Firma anlegen</h3><p>Firmendaten, Steuernummer, Bankverbindung und Logo – einmal eingeben, überall verfügbar.</p></li>
           <li><span className="node"><FileText size={18} /></span><small>Schritt 02</small><h3>Angebot schreiben</h3><p>Kunde wählen, Positionen übernehmen, PDF senden. Angenommen? Ein Klick macht daraus die Rechnung.</p></li>
           <li><span className="node"><BarChart3 size={18} /></span><small>Schritt 03</small><h3>Zahlen im Blick</h3><p>Zahlungen und Ausgaben erfassen – GuV, Umsatzsteuer und Lager sind immer aktuell.</p></li>
@@ -147,24 +160,24 @@ export default function Home() {
       {/* ---------- Preise ---------- */}
       <section id="preise" className="section section-soft">
         <div className="shell">
-          <div className="section-head center">
+          <div className="section-head center" data-reveal>
             <span className="kicker">Preise</span>
             <h2>Transparent. Fair. Jederzeit kündbar.</h2>
             <p>Starten Sie kostenlos und wechseln Sie erst, wenn VYSN One Ihnen im Alltag Zeit spart.</p>
           </div>
-          <Pricing />
+          <div data-reveal><Pricing /></div>
           <p className="pricing-note"><ShieldCheck size={16} /> Alle Preise zzgl. gesetzlicher USt. Keine Einrichtungsgebühr, keine Mindestlaufzeit bei monatlicher Zahlung.</p>
         </div>
       </section>
 
       {/* ---------- FAQ ---------- */}
       <section id="faq" className="section shell faq-grid">
-        <div className="section-head">
+        <div className="section-head" data-reveal>
           <span className="kicker">Häufige Fragen</span>
           <h2>Gut zu wissen.</h2>
           <p>Ihre Frage ist nicht dabei? Schreiben Sie uns – wir antworten in der Regel am selben Werktag.</p>
         </div>
-        <div className="faq">
+        <div className="faq" data-reveal>
           {FAQ.map(([q, a]) => (
             <details key={q}>
               <summary>{q}</summary>
@@ -176,7 +189,7 @@ export default function Home() {
 
       {/* ---------- CTA ---------- */}
       <section id="kontakt" className="shell cta-wrap">
-        <div className="cta">
+        <div className="cta" data-reveal="scale">
           <div className="hero-grid-bg" aria-hidden="true" />
           <div className="cta-glow" aria-hidden="true" />
           <div className="cta-content">
@@ -236,7 +249,7 @@ function ProductMock() {
         </div>
       </div>
       <div className="float float-a"><CheckCircle2 size={18} /><span><small>Zahlung eingegangen</small><b>+ 1.922,41 €</b></span></div>
-      <div className="float float-b"><span><small>Ergebnis 2026</small><b>41.870 €</b></span><div className="spark">{[30, 42, 38, 55, 49, 64, 70, 82].map((h, i) => <i key={i} style={{ height: `${h}%` }} />)}</div></div>
+      <div className="float float-b"><span><small>Ergebnis 2026</small><b>41.870 €</b></span><div className="spark">{[30, 42, 38, 55, 49, 64, 70, 82].map((h, i) => <i key={i} style={{ height: `${h}%`, ['--i' as string]: i }} />)}</div></div>
     </div>
   );
 }

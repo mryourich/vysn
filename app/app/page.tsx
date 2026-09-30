@@ -33,6 +33,7 @@ export default function DashboardPage() {
   const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
   const newDoc = async (kind: 'invoice' | 'offer') => {
     const doc = await createDoc(kind);
+    if (!doc) return;
     router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
   };
 

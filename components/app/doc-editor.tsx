@@ -14,7 +14,9 @@ import { DocumentTemplate } from '../pdf/document-template';
 import { downloadPdf } from '../pdf/export';
 import { A4Preview } from './a4-preview';
 import { CustomerModal } from './customer-form';
-import { Badge, Field, Modal, NumberInput } from './ui';
+import { currencySymbol } from '../../lib/calc';
+import { formatRate, taxProfile } from '../../lib/tax';
+import { Badge, Field, Modal, NumberInput, VatSelect } from './ui';
 
 export function DocEditor() {
   const params = useSearchParams();
@@ -43,6 +45,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const totals = docTotals(doc.items, company.smallBusiness);
   const status = displayStatus(doc);
   const customer = data.customers.find((c) => c.id === doc.customerId);
+  const tax = taxProfile(company);
 
   const [view, setView] = useState<'edit' | 'preview'>('edit');
   const [picker, setPicker] = useState(false);
@@ -206,13 +209,11 @@ function Editor({ doc }: { doc: SalesDoc }) {
                         {[...new Set([item.unit, ...UNITS])].map((u) => <option key={u}>{u}</option>)}
                       </select>
                     </Field>
-                    <Field label="Einzelpreis"><NumberInput value={item.unitPrice} onChange={(v) => updateItem(item.id, { unitPrice: v })} suffix="€" /></Field>
+                    <Field label="Einzelpreis"><NumberInput value={item.unitPrice} onChange={(v) => updateItem(item.id, { unitPrice: v })} suffix={currencySymbol()} /></Field>
                     <Field label="Rabatt"><NumberInput value={item.discount} onChange={(v) => updateItem(item.id, { discount: Math.min(100, v) })} suffix="%" min={0} /></Field>
                     {!company.smallBusiness ? (
-                      <Field label="USt.">
-                        <select value={item.vat} onChange={(e) => updateItem(item.id, { vat: Number(e.target.value) })}>
-                          <option value={19}>19 %</option><option value={7}>7 %</option><option value={0}>0 %</option>
-                        </select>
+                      <Field label={tax.label}>
+                        <VatSelect value={item.vat} onChange={(v) => updateItem(item.id, { vat: v })} company={company} />
                       </Field>
                     ) : null}
                     <div className="item-total"><span>Gesamt netto</span><strong>{money(lineNet(item))}</strong></div>
@@ -227,9 +228,9 @@ function Editor({ doc }: { doc: SalesDoc }) {
             </div>
             <div className="sum">
               {!company.smallBusiness ? <div><span>Netto</span><span>{money(totals.net)}</span></div> : null}
-              {!company.smallBusiness ? totals.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {g.rate} % USt.</span><span>{money(g.vat)}</span></div>) : null}
+              {!company.smallBusiness ? totals.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {formatRate(g.rate)} {tax.label}</span><span>{money(g.vat)}</span></div>) : null}
               <div className="sum-total"><span>{isInvoice ? 'Rechnungsbetrag' : 'Angebotssumme'}</span><span>{money(totals.gross)}</span></div>
-              {company.smallBusiness ? <small className="muted">Kleinunternehmer – keine USt. gem. § 19 UStG</small> : null}
+              {company.smallBusiness ? <small className="muted">{tax.smallBusinessNote}</small> : null}
             </div>
           </fieldset>
 

@@ -12,7 +12,7 @@ import { DocumentTemplate } from '../../../components/pdf/document-template';
 import { downloadPdf } from '../../../components/pdf/export';
 import { Field, PageHeader, Segmented } from '../../../components/app/ui';
 
-const COLORS = ['#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
+const COLORS = ['#0057d8', '#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
 
 function sampleDoc(kind: 'invoice' | 'offer'): SalesDoc {
   const date = today();
