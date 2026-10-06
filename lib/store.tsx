@@ -10,6 +10,8 @@ import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase'
 import { allOutboxes, storeOutbox } from './db/outbox';
 import { SyncError, mergeOps, opsEmpty, opsSize } from './db/ops';
 import type { Ops, Rejection } from './db/ops';
+import { REMOTE_TABLES, applyRemote, changeId, remoteKey } from './db/remote';
+import type { RemoteChange } from './db/remote';
 import { countUsage, usageQuota } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
@@ -134,7 +136,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const queue = useRef<Promise<void>>(Promise.resolve());
   /** Noch nicht übertragene Änderungen (Supabase) */
   const outbox = useRef<Ops | null>(null);
+  /** Paket, das gerade gesendet wird */
+  const inflight = useRef<Ops | null>(null);
   const sending = useRef(false);
+  /** Zuletzt selbst geschriebene Zeilen („tabelle:id“ → Zeitpunkt) – deren Echo wird ignoriert */
+  const recentWrites = useRef(new Map<string, number>());
+  const remoteQueue = useRef<RemoteChange[]>([]);
+  const remoteTimer = useRef<number | null>(null);
   const retry = useRef<{ timer: number | null; attempt: number }>({ timer: null, attempt: 0 });
   const needsRefresh = useRef(false);
   const companyChanged = useRef(false);
@@ -216,12 +224,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (retry.current.timer) { window.clearTimeout(retry.current.timer); retry.current.timer = null; }
     sending.current = true;
     outbox.current = null;
+    inflight.current = batch;
     setSync((s) => ({ ...s, state: 'saving', pending: opsSize(batch) }));
     let sent = false;
     try {
       await queue.current;
       const rejected = await supa.apply(batch);
       sent = true;
+      markWritten(batch);
       if (rejected.length) onRejected(rejected);
     } catch (e) {
       if (e instanceof SyncError && !e.transient) {
@@ -233,6 +243,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     } finally {
       sending.current = false;
+      inflight.current = null;
     }
     storeOutbox(userRef.current, outbox.current, batch.companyId);
     const rest = opsSize(outbox.current);
@@ -255,6 +266,67 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supa, adapter]);
   flushRef.current = flush;
+
+  /** Merkt selbst geschriebene Zeilen, damit ihr Echo aus Realtime nichts überschreibt. */
+  const markWritten = (ops: Ops) => {
+    const now = Date.now();
+    const map = recentWrites.current;
+    for (const [k, t] of map) if (now - t > 10_000) map.delete(k);
+    if (ops.company) map.set(remoteKey('companies', ops.companyId), now);
+    for (const [table, rows] of Object.entries(ops.upserts)) for (const r of rows || []) map.set(remoteKey(table, r.id), now);
+    for (const [table, ids] of Object.entries(ops.deletes)) for (const id of ids || []) map.set(remoteKey(table, id), now);
+  };
+
+  /** Liegt für diese Zeile eine eigene, noch nicht bestätigte Änderung vor? */
+  const locallyPending = (key: string) => {
+    const has = (ops: Ops | null) => {
+      if (!ops) return false;
+      const [table, id] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
+      if (table === 'companies') return !!ops.company;
+      const t = table as keyof Ops['upserts'];
+      return (ops.upserts[t] || []).some((r) => String(r.id) === id) || (ops.deletes[t] || []).includes(id);
+    };
+    const t = recentWrites.current.get(key);
+    return has(outbox.current) || has(inflight.current) || (!!t && Date.now() - t < 5000);
+  };
+
+  /** Änderung eines anderen Geräts übernehmen (gebündelt, ohne als eigene Änderung zu gelten). */
+  const onRemote = (c: RemoteChange) => {
+    const base = serverRef.current;
+    const cid = supa?.activeCompanyId();
+    if (!base || !cid) return;
+    const owner = c.table === 'companies' ? (c.row.id ?? c.old.id) : (c.type === 'DELETE' ? c.old.company_id : c.row.company_id);
+    if (String(owner) !== cid) return;
+    if (c.table !== 'usage_counters') {
+      const key = remoteKey(c.table, c.table === 'companies' ? cid : changeId(c));
+      if (locallyPending(key)) {
+        // Eigene Änderung hat Vorrang – nur den vom Server geführten Lagerbestand übernehmen
+        if (c.table !== 'materials' || c.type === 'DELETE') return;
+        c = { ...c, stockOnly: true };
+      }
+    }
+    remoteQueue.current.push(c);
+    if (remoteTimer.current === null) remoteTimer.current = window.setTimeout(applyRemoteQueue, 60);
+  };
+
+  const applyRemoteQueue = () => {
+    remoteTimer.current = null;
+    const changes = remoteQueue.current.splice(0);
+    const base = serverRef.current;
+    if (!base || !changes.length) return;
+    const apply = (d: Data) => changes.reduce(applyRemote, d);
+    const nextBase = apply(base);
+    if (nextBase === base) return;
+    if (dataRef.current === base) {
+      serverRef.current = nextBase;
+      setData(nextBase);
+    } else {
+      serverRef.current = nextBase;
+      setData((d) => apply(d));
+    }
+  };
+  const onRemoteRef = useRef(onRemote);
+  onRemoteRef.current = onRemote;
 
   /** Abgelehnte Änderungen melden; danach den Stand vom Server holen. */
   const onRejected = (list: Rejection[]) => {
@@ -281,6 +353,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, [supa]);
   refreshRef.current = refresh;
+
+  // Realtime: Änderungen anderer Geräte der aktiven Firma
+  useEffect(() => {
+    if (!supa || !activeCompanyId || !userId) return;
+    const sb = getSupabase();
+    const channel = sb.channel(`vysn-company-${activeCompanyId}`);
+    const handler = (table: RemoteChange['table']) => (payload: { eventType: RemoteChange['type']; new: Record<string, unknown>; old: Record<string, unknown> }) =>
+      onRemoteRef.current({ table, type: payload.eventType, row: payload.new || {}, old: payload.old || {} });
+    for (const table of REMOTE_TABLES) {
+      const filter = table === 'companies' ? `id=eq.${activeCompanyId}` : `company_id=eq.${activeCompanyId}`;
+      channel.on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter }, handler(table));
+      channel.on('postgres_changes', { event: 'UPDATE', schema: 'public', table, filter }, handler(table));
+      // Löschungen lassen sich nicht filtern – die App prüft die Firma selbst
+      if (table !== 'companies' && table !== 'usage_counters') channel.on('postgres_changes', { event: 'DELETE', schema: 'public', table }, handler(table));
+    }
+    let connectedBefore = false;
+    channel.subscribe((status) => {
+      if (status !== 'SUBSCRIBED') return;
+      // Nach einer Unterbrechung verpasste Änderungen nachholen
+      if (connectedBefore) { needsRefresh.current = true; refreshRef.current(); }
+      connectedBefore = true;
+    });
+    if (process.env.NEXT_PUBLIC_E2E === '1') (window as unknown as { __vysnRemote?: (c: RemoteChange) => void }).__vysnRemote = (c) => onRemoteRef.current(c);
+    return () => { sb.removeChannel(channel); };
+  }, [supa, activeCompanyId, userId]);
 
   // Wieder online, App wieder im Vordergrund: sofort senden
   useEffect(() => {
