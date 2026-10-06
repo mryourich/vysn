@@ -7,12 +7,29 @@ import { demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
+import { allOutboxes, storeOutbox } from './db/outbox';
+import { SyncError, mergeOps, opsEmpty, opsSize } from './db/ops';
+import type { Ops, Rejection } from './db/ops';
 import { countUsage, usageQuota } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation, UsageKind } from './types';
 
-export type SyncState = 'idle' | 'saving' | 'error';
+/**
+ * idle    – alles gespeichert
+ * saving  – Änderungen werden übertragen
+ * offline – keine Verbindung; Änderungen liegen in der Warteschlange und werden nachgesendet
+ * error   – Laden/Speichern dauerhaft fehlgeschlagen
+ */
+export type SyncState = 'idle' | 'saving' | 'offline' | 'error';
+export type SyncInfo = {
+  state: SyncState;
+  error: string | null;
+  /** Anzahl noch nicht übertragener Änderungen */
+  pending: number;
+  /** Hinweis zu abgelehnten Änderungen (z. B. Limit erreicht) */
+  notice: string | null;
+};
 
 export type Auth = {
   /** 'local' = Browser-Speicher ohne Konto, 'supabase' = Datenbank mit Login */
@@ -30,7 +47,8 @@ type Store = {
   auth: Auth;
   /** Angemeldet bzw. im lokalen Modus ohne Anmeldung nutzbar */
   authenticated: boolean;
-  sync: { state: SyncState; error: string | null };
+  sync: SyncInfo;
+  dismissSyncNotice: () => void;
   /** Alle Firmen des Nutzers und die gerade geöffnete */
   companies: CompanySummary[];
   activeCompanyId: string | null;
@@ -74,6 +92,9 @@ type Store = {
 
 const StoreContext = createContext<Store | null>(null);
 
+const rejectionText = (list: Rejection[]) =>
+  `${list.length === 1 ? 'Eine Änderung wurde' : `${list.length} Änderungen wurden`} nicht gespeichert: ${list[0].message}`;
+
 /** Adjusts stock for all material positions of a document (sign -1 = Abgang, +1 = Zugang). */
 function applyStock(data: Data, doc: SalesDoc, sign: 1 | -1, note: string): Material[] {
   const date = today();
@@ -94,7 +115,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(!supabaseConfigured);
-  const [sync, setSync] = useState<{ state: SyncState; error: string | null }>({ state: 'idle', error: null });
+  const [sync, setSync] = useState<SyncInfo>({ state: 'idle', error: null, pending: 0, notice: null });
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [creatingCompany, setCreatingCompany] = useState(false);
@@ -104,10 +125,25 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   dataRef.current = data;
   // Währung für alle Beträge (EUR, in der Schweiz CHF) – vor dem Rendern der Seiten setzen
   setCurrency(taxProfile(data.company).currency);
-  /** Last snapshot that was handed to the adapter – the next save persists the difference to it. */
-  const persisted = useRef<Data | null>(null);
+  /**
+   * Stand, der bereits gespeichert ist oder in der Warteschlange liegt – die nächste Änderung
+   * wird als Differenz dazu geplant.
+   */
+  const serverRef = useRef<Data | null>(null);
+  /** Lokales Speichern bzw. Anlegen/Löschen einer Firma (der Reihe nach) */
   const queue = useRef<Promise<void>>(Promise.resolve());
+  /** Noch nicht übertragene Änderungen (Supabase) */
+  const outbox = useRef<Ops | null>(null);
+  const sending = useRef(false);
+  const retry = useRef<{ timer: number | null; attempt: number }>({ timer: null, attempt: 0 });
+  const needsRefresh = useRef(false);
+  const companyChanged = useRef(false);
+  const supa = adapter instanceof SupabaseAdapter ? adapter : null;
   const userId = session?.user.id ?? null;
+  const userRef = useRef(userId);
+  userRef.current = userId;
+  const flushRef = useRef<() => Promise<void>>(async () => {});
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
   const authenticated = !supabaseConfigured || !!session;
 
   // Anmeldestatus (nur Supabase)
@@ -125,28 +161,44 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /** Lädt eine Firma (oder die zuletzt genutzte) – vorher werden offene Änderungen gespeichert. */
   const loadCompany = useCallback(async (companyId?: string | null) => {
     await queue.current;
+    await flushRef.current();
     setReady(false);
-    persisted.current = null;
+    serverRef.current = null;
+    outbox.current = null;
     try {
+      // Auf dem Gerät gespeicherte Änderungen (z. B. vor dem Neuladen offline erfasst) zuerst senden
+      if (supa) {
+        for (const ops of allOutboxes(userRef.current)) {
+          try {
+            const rejected = await supa.apply(ops);
+            if (rejected.length) setSync((s) => ({ ...s, notice: rejectionText(rejected) }));
+          } catch (e) {
+            if (e instanceof SyncError && e.transient) throw e;
+          }
+          storeOutbox(userRef.current, null, ops.companyId);
+        }
+      }
       const loaded = await adapter.load(companyId);
-      persisted.current = loaded;
+      serverRef.current = loaded;
+      needsRefresh.current = false;
       setData(loaded);
       setActiveCompanyId(adapter.activeCompanyId());
       setCompanies(await adapter.listCompanies());
       setCreatingCompany(false);
-      setSync({ state: 'idle', error: null });
+      setSync((s) => ({ ...s, state: 'idle', error: null, pending: 0 }));
     } catch (e) {
-      setSync({ state: 'error', error: (e as Error).message });
+      setSync((s) => ({ ...s, state: 'error', error: (e as Error).message }));
     } finally {
       setReady(true);
     }
-  }, [adapter]);
+  }, [adapter, supa]);
 
   // Daten laden (lokal sofort, bei Supabase nach der Anmeldung bzw. bei Nutzerwechsel)
   useEffect(() => {
     if (!authChecked) return;
     if (supabaseConfigured && !userId) {
-      persisted.current = null;
+      serverRef.current = null;
+      outbox.current = null;
       setData(emptyData());
       setCompanies([]);
       setActiveCompanyId(null);
@@ -156,17 +208,119 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     loadCompany();
   }, [authChecked, userId, loadCompany]);
 
-  // Änderungen der Reihe nach speichern
+  /** Sendet die Warteschlange; bei Netzfehlern erneuter Versuch mit wachsendem Abstand. */
+  const flush = useCallback(async () => {
+    if (!supa || sending.current) return;
+    const batch = outbox.current;
+    if (!batch || opsEmpty(batch)) return;
+    if (retry.current.timer) { window.clearTimeout(retry.current.timer); retry.current.timer = null; }
+    sending.current = true;
+    outbox.current = null;
+    setSync((s) => ({ ...s, state: 'saving', pending: opsSize(batch) }));
+    let sent = false;
+    try {
+      await queue.current;
+      const rejected = await supa.apply(batch);
+      sent = true;
+      if (rejected.length) onRejected(rejected);
+    } catch (e) {
+      if (e instanceof SyncError && !e.transient) {
+        // Ganzes Paket dauerhaft abgelehnt – verwerfen und Stand vom Server holen
+        sent = true;
+        onRejected([{ table: '', id: '', message: e.message, hint: e.hint }]);
+      } else {
+        outbox.current = outbox.current ? mergeOps(batch, outbox.current) : batch;
+      }
+    } finally {
+      sending.current = false;
+    }
+    storeOutbox(userRef.current, outbox.current, batch.companyId);
+    const rest = opsSize(outbox.current);
+    if (!sent) {
+      const delays = [2000, 5000, 15000, 30000, 60000];
+      const delay = delays[Math.min(retry.current.attempt++, delays.length - 1)];
+      setSync((s) => ({ ...s, state: 'offline', pending: rest }));
+      retry.current.timer = window.setTimeout(() => { retry.current.timer = null; flushRef.current(); }, delay);
+      return;
+    }
+    retry.current.attempt = 0;
+    if (rest) { await flushRef.current(); return; }
+    setSync((s) => ({ ...s, state: 'idle', error: null, pending: 0 }));
+    if (companyChanged.current) {
+      companyChanged.current = false;
+      setCompanies(await adapter.listCompanies());
+    }
+    if (needsRefresh.current) await refreshRef.current();
+  // onRejected nutzt nur stabile Setter
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supa, adapter]);
+  flushRef.current = flush;
+
+  /** Abgelehnte Änderungen melden; danach den Stand vom Server holen. */
+  const onRejected = (list: Rejection[]) => {
+    const hint = list.find((r) => r.hint.startsWith('upgrade:'))?.hint;
+    if (hint) setUpgradeNotice(hint.slice('upgrade:'.length) as UsageKind);
+    setSync((s) => ({ ...s, notice: rejectionText(list) }));
+    needsRefresh.current = true;
+  };
+
+  /** Lädt die aktive Firma still neu (nur ohne ungespeicherte lokale Änderungen). */
+  const refresh = useCallback(async () => {
+    if (!supa || sending.current || !opsEmpty(outbox.current)) return;
+    const id = supa.activeCompanyId();
+    if (!id) return;
+    const before = dataRef.current;
+    try {
+      const loaded = await supa.load(id);
+      if (dataRef.current !== before || !opsEmpty(outbox.current)) return; // inzwischen geändert – später erneut
+      needsRefresh.current = false;
+      serverRef.current = loaded;
+      setData(loaded);
+    } catch {
+      /* beim nächsten Anlass erneut */
+    }
+  }, [supa]);
+  refreshRef.current = refresh;
+
+  // Wieder online, App wieder im Vordergrund: sofort senden
   useEffect(() => {
-    const prev = persisted.current;
+    const kick = () => {
+      retry.current.attempt = 0;
+      flushRef.current();
+    };
+    const visible = () => { if (document.visibilityState === 'visible') kick(); };
+    window.addEventListener('online', kick);
+    document.addEventListener('visibilitychange', visible);
+    return () => {
+      window.removeEventListener('online', kick);
+      document.removeEventListener('visibilitychange', visible);
+    };
+  }, []);
+
+  // Jede Änderung: Differenz planen, in die Warteschlange legen, senden
+  useEffect(() => {
+    const prev = serverRef.current;
     if (!ready || !prev || prev === data) return;
-    persisted.current = data;
+    serverRef.current = data;
+
+    if (supa && supa.activeCompanyId() && !(prev.company && !data.company)) {
+      const ops = supa.plan(prev, data);
+      if (!ops) return;
+      if (prev.company !== data.company) companyChanged.current = true;
+      outbox.current = outbox.current ? mergeOps(outbox.current, ops) : ops;
+      storeOutbox(userId, outbox.current);
+      setSync((s) => ({ ...s, pending: opsSize(outbox.current) }));
+      flush();
+      return;
+    }
+
+    // Lokaler Modus sowie Anlegen/Löschen einer Firma: direkt und der Reihe nach speichern
     setSync((s) => ({ ...s, state: 'saving' }));
     const companyBefore = adapter.activeCompanyId();
     queue.current = queue.current
       .then(() => adapter.persist(prev, data))
       .then(async () => {
-        setSync({ state: 'idle', error: null });
+        setSync((s) => ({ ...s, state: 'idle', error: null }));
         if (prev.company && !data.company) {
           // Firma gelöscht → nächste vorhandene Firma öffnen (oder Einrichtung)
           setTimeout(() => loadCompany(null), 0);
@@ -180,18 +334,20 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       })
       .catch((e: Error) => {
         console.error(e);
-        setSync({ state: 'error', error: e.message || 'Speichern fehlgeschlagen' });
+        setSync((s) => ({ ...s, state: 'error', error: e.message || 'Speichern fehlgeschlagen' }));
       });
-  }, [adapter, data, ready, loadCompany]);
+  }, [adapter, supa, data, ready, loadCompany, flush, userId]);
 
   const switchCompany = useCallback((id: string) => loadCompany(id), [loadCompany]);
 
   const startNewCompany = useCallback(async () => {
     await queue.current;
+    await flushRef.current();
     previousCompany.current = adapter.activeCompanyId();
     adapter.detach();
+    outbox.current = null;
     const blank = emptyData();
-    persisted.current = blank;
+    serverRef.current = blank;
     setData(blank);
     setActiveCompanyId(null);
     setCreatingCompany(true);
@@ -199,6 +355,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
   const dismissUpgrade = useCallback(() => setUpgradeNotice(null), []);
+  const dismissSyncNotice = useCallback(() => setSync((s) => ({ ...s, notice: null })), []);
   const role: Role = !supabaseConfigured ? 'owner' : ((companies.find((c) => c.id === activeCompanyId)?.role as Role) || 'member');
 
   const auth = useMemo<Auth>(() => ({
@@ -413,10 +570,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => setData(emptyData()), []);
 
   const value = useMemo<Store>(() => ({
-    data, ready, auth, authenticated, sync, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
-  }), [data, ready, auth, authenticated, sync, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+  }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet,
+  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet, CloudOff, X,
 } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
@@ -45,7 +45,7 @@ const NAV: NavGroup[] = [
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready, authenticated, auth, sync, role } = useStore();
+  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
   const [sheet, setSheet] = useState<'menu' | 'create' | null>(null);
@@ -110,6 +110,17 @@ function Shell({ children }: { children: React.ReactNode }) {
             <span><strong>Änderung konnte nicht gespeichert werden.</strong> {sync.error}</span>
             <button className="btn btn-small" onClick={() => window.location.reload()}>Neu laden</button>
           </div>
+        ) : sync.state === 'offline' ? (
+          <div className="sync-banner sync-offline" role="status">
+            <CloudOff size={16} />
+            <span><strong>Keine Verbindung.</strong> {sync.pending === 1 ? 'Eine Änderung ist' : `${sync.pending} Änderungen sind`} auf diesem Gerät gesichert und {sync.pending === 1 ? 'wird' : 'werden'} automatisch übertragen.</span>
+          </div>
+        ) : null}
+        {sync.notice ? (
+          <div className="sync-banner sync-notice" role="status">
+            <span>{sync.notice}</span>
+            <button className="icon-btn" onClick={dismissSyncNotice} aria-label="Hinweis schließen"><X size={16} /></button>
+          </div>
         ) : null}
         <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : children}</main>
       </div>
@@ -131,7 +142,7 @@ function NoAccess({ role }: { role: string }) {
 
 function SyncStatus() {
   const { sync, auth } = useStore();
-  const label = sync.state === 'saving' ? 'Speichert…' : sync.state === 'error' ? 'Fehler beim Speichern' : 'Gespeichert';
+  const label = sync.state === 'saving' ? 'Speichert…' : sync.state === 'error' ? 'Fehler beim Speichern' : sync.state === 'offline' ? `Offline (${sync.pending})` : 'Gespeichert';
   return <span className={`sync-status ${sync.state}`} title={sync.error || (auth.mode === 'supabase' ? 'In der Cloud gespeichert' : 'Lokal in diesem Browser gespeichert')}><i />{label}</span>;
 }
 

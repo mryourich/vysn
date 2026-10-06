@@ -707,3 +707,11 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .quota-row small { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
 .quota-row.full span, .quota-row.full small { color: var(--danger); font-weight: 600; }
 .quota-list > small { margin-top: 2px; }
+
+/* Synchronisation: offline / abgelehnte Änderungen */
+.sync-banner.sync-offline { justify-content: flex-start; background: var(--info-soft); color: #1e4a82; }
+.sync-banner.sync-offline svg { flex: none; }
+.sync-banner.sync-notice { background: var(--warning-soft); color: #6b4300; flex-wrap: nowrap; }
+.sync-banner.sync-notice .icon-btn { flex: none; color: inherit; }
+.sync-status.offline i { background: var(--info); }
+.sync-status.offline { color: var(--info); }
