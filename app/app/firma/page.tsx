@@ -2,21 +2,29 @@
 
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { Check, Download, Palette, Plus, RotateCcw, Sparkles, Upload } from 'lucide-react';
+import { Building2, Check, Download, Lock, Palette, Plus, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { today } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
 import { QuotaList } from '../../../components/app/quota';
 import { PLANS } from '../../../lib/plans';
 import type { Company } from '../../../lib/types';
 import { CompanyForm } from '../../../components/app/company-form';
+import { DesignEditor } from '../../../components/app/design-editor';
 import { PageHeader } from '../../../components/app/ui';
 
 export default function CompanyPage() {
-  const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies, role } = useStore();
+  const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies, role, can, requireFeature } = useStore();
+  const [tab, setTab] = useState<'daten' | 'design'>('daten');
   const [company, setCompany] = useState<Company>(data.company!);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const dirty = JSON.stringify(company) !== JSON.stringify(data.company);
+
+  // ?tab=design (alte Adresse /app/design und Links) öffnet direkt das Rechnungsdesign
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('tab') === 'design' && can('design')) setTab('design');
+  }, [can]);
+  const openDesign = () => { if (requireFeature('design')) setTab('design'); };
 
   useEffect(() => {
     if (!saved) return;
@@ -39,14 +47,21 @@ export default function CompanyPage() {
   };
 
   return (
-    <div className="page">
-      <PageHeader title="Firmendaten" description="Stammdaten, die auf Ihren Angeboten und Rechnungen erscheinen."
-        actions={<button className="btn btn-primary" onClick={save} disabled={!dirty || !company.name.trim()}>{saved ? <><Check size={16} /> Gespeichert</> : 'Änderungen speichern'}</button>} />
+    <div className={tab === 'design' ? 'page page-wide' : 'page'}>
+      <PageHeader title="Unternehmen" description="Stammdaten und Gestaltung Ihrer Angebote und Rechnungen."
+        actions={tab === 'daten' ? <button className="btn btn-primary" onClick={save} disabled={!dirty || !company.name.trim()}>{saved ? <><Check size={16} /> Gespeichert</> : 'Änderungen speichern'}</button> : null} />
+
+      <div className="segmented page-tabs" role="tablist">
+        <button role="tab" aria-selected={tab === 'daten'} className={tab === 'daten' ? 'active' : ''} onClick={() => setTab('daten')}><Building2 size={15} /> Unternehmensdaten</button>
+        <button role="tab" aria-selected={tab === 'design'} className={tab === 'design' ? 'active' : ''} onClick={openDesign}>{can('design') ? <Palette size={15} /> : <Lock size={14} />} Rechnungsdesign</button>
+      </div>
+
+      {tab === 'design' ? <DesignEditor onEditCompany={() => setTab('daten')} /> : <>
 
       <form className="card" onSubmit={(e) => { e.preventDefault(); save(); }}>
         <CompanyForm value={company} onChange={setCompany} sections={['logo', 'basics', 'contact', 'tax', 'bank', 'numbers']} />
         <div className="form-footer">
-          <Link href="/app/design" className="link"><Palette size={15} /> Rechnungsdesign anpassen</Link>
+          <button type="button" className="link" onClick={openDesign}><Palette size={15} /> Rechnungsdesign anpassen</button>
           <button type="submit" className="btn btn-primary" disabled={!dirty || !company.name.trim()}>Änderungen speichern</button>
         </div>
       </form>
@@ -95,6 +110,7 @@ export default function CompanyPage() {
         </div>
         {role !== 'owner' ? <p className="muted small mt">Sicherungen einspielen und die Firma löschen kann nur der Inhaber.</p> : null}
       </section>
+      </>}
     </div>
   );
 }

@@ -2,16 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
-  ArrowDownLeft, ArrowUpRight, Boxes, ChevronDown, ChevronRight, FileText, LayoutDashboard, Lock, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
+  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { PLANS } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import { ROLE_LABEL } from '../../lib/team';
 import { featureForPath } from '../../lib/plans';
-import { CompanyAvatar, CompanyList, LogoutButton } from './company-switcher';
+import { CompanyAvatar } from './company-switcher';
+import { ProfilePanel } from './profile';
 import { CREATE_EVENT } from './ui';
 
 export type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -19,7 +20,7 @@ export type NavGroup = { group: string; items: NavItem[] };
 
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
-type Sheet = 'menu' | 'create' | null;
+type Sheet = 'menu' | 'create' | 'profile' | null;
 
 /** Handy-Navigation: Tab-Leiste mit „+“ (Schnellaktionen) und gruppiertem Menü. */
 export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet; onOpen: (s: Sheet) => void }) {
@@ -63,9 +64,15 @@ export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet;
       </nav>
       {open ? (
         <div className="sheet-backdrop" onClick={close}>
-          <div className={`sheet ${open === 'menu' ? 'menu-sheet' : 'create-sheet'}`} role="dialog" aria-modal="true" aria-label={open === 'menu' ? 'Menü' : 'Neu erstellen'} onClick={(e) => e.stopPropagation()}>
+          <div className={`sheet ${open === 'create' ? 'create-sheet' : 'menu-sheet'}`} role="dialog" aria-modal="true" aria-label={open === 'menu' ? 'Menü' : open === 'profile' ? 'Profil & Einstellungen' : 'Neu erstellen'} onClick={(e) => e.stopPropagation()}>
             <span className="sheet-grabber" aria-hidden="true" />
-            {open === 'menu' ? <MenuSheet nav={nav} pathname={pathname} onClose={close} guard={guard} /> : <CreateSheet pathname={pathname} onClose={close} guard={guard} />}
+            {open === 'menu' ? <MenuSheet nav={nav} pathname={pathname} onClose={close} guard={guard} onProfile={() => onOpen('profile')} />
+              : open === 'profile' ? (
+                <>
+                  <div className="sheet-head"><strong>Profil & Einstellungen</strong><button className="icon-btn" onClick={close} aria-label="Schließen"><X size={18} /></button></div>
+                  <div className="sheet-body"><ProfilePanel onClose={close} /></div>
+                </>
+              ) : <CreateSheet pathname={pathname} onClose={close} guard={guard} />}
           </div>
         </div>
       ) : null}
@@ -73,12 +80,10 @@ export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet;
   );
 }
 
-function MenuSheet({ nav, pathname, onClose, guard }: { nav: NavGroup[]; pathname: string; onClose: () => void; guard: (href: string) => (e: React.MouseEvent) => void }) {
-  const { data, auth, role, companies, can } = useStore();
-  const [companiesOpen, setCompaniesOpen] = useState(false);
+function MenuSheet({ nav, pathname, onClose, guard, onProfile }: { nav: NavGroup[]; pathname: string; onClose: () => void; guard: (href: string) => (e: React.MouseEvent) => void; onProfile: () => void }) {
+  const { data, role, can } = useStore();
   const company = data.company!;
   const groups = nav.map((g) => ({ ...g, items: g.items.filter((i) => i.href !== '/app') })).filter((g) => g.items.length);
-  const multi = companies.length > 1;
 
   return (
     <>
@@ -88,15 +93,14 @@ function MenuSheet({ nav, pathname, onClose, guard }: { nav: NavGroup[]; pathnam
       </div>
       <div className="sheet-body">
         <div className="menu-card">
-          <button className="menu-company" onClick={() => setCompaniesOpen(!companiesOpen)} aria-expanded={companiesOpen}>
+          <button className="menu-company" onClick={onProfile}>
             <CompanyAvatar name={company.name} logo={company.logo} size={40} />
             <span>
               <strong>{company.name}</strong>
               <small>Tarif {PLANS[company.plan]?.label ?? company.plan}{role !== 'owner' ? ` · ${ROLE_LABEL[role]}` : ''}</small>
             </span>
-            <em>{multi ? 'Wechseln' : 'Firmen'}<ChevronDown size={15} className={companiesOpen ? 'flip' : ''} /></em>
+            <em>Profil & Einstellungen<ChevronRight size={15} /></em>
           </button>
-          {companiesOpen ? <div className="menu-companies"><CompanyList onDone={onClose} /></div> : null}
         </div>
 
         {groups.map((g) => (
@@ -114,10 +118,6 @@ function MenuSheet({ nav, pathname, onClose, guard }: { nav: NavGroup[]; pathnam
           </section>
         ))}
 
-        <div className="menu-foot">
-          <span>{auth.email || <Link href="/" onClick={onClose}>Zur Startseite</Link>}</span>
-          <LogoutButton className="btn btn-small" onDone={onClose} />
-        </div>
       </div>
     </>
   );

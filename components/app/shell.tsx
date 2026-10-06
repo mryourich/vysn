@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet, CloudOff, X, Sparkles,
+  BarChart3, Boxes, FileSpreadsheet, FileText, LayoutDashboard, Lock, ReceiptText, ScanLine, Users, Wallet, CloudOff, X, Sparkles,
 } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
@@ -12,7 +12,8 @@ import { FEATURES, featureForPath } from '../../lib/plans';
 import type { Feature } from '../../lib/plans';
 import { Brand } from './brand';
 import { Empty } from './ui';
-import { CompanyAvatar, CompanySwitcher, LogoutButton } from './company-switcher';
+import { CompanyAvatar, LogoutButton } from './company-switcher';
+import { ProfileButton } from './profile';
 import { MobileNav } from './mobile-nav';
 import type { NavGroup } from './mobile-nav';
 import { UpgradeDialog } from './upgrade-dialog';
@@ -35,13 +36,6 @@ const NAV: NavGroup[] = [
     { href: '/app/guv', label: 'GuV & Finanzen', icon: BarChart3 },
     { href: '/app/export', label: 'DATEV-Export', icon: FileSpreadsheet },
   ] },
-  { group: 'Einstellungen', items: [
-    { href: '/app/firma', label: 'Firmendaten', icon: Building2 },
-    { href: '/app/design', label: 'Rechnungsdesign', icon: Palette },
-    { href: '/app/einstellungen', label: 'E-Mail & Versand', icon: Settings2 },
-    { href: '/app/team', label: 'Team & Rechte', icon: UserPlus },
-    { href: '/app/tarif', label: 'Tarif & Abrechnung', icon: CreditCard },
-  ] },
 ];
 
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
@@ -50,7 +44,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can, requireFeature } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
-  const [sheet, setSheet] = useState<'menu' | 'create' | null>(null);
+  const [sheet, setSheet] = useState<'menu' | 'create' | 'profile' | null>(null);
   useEffect(() => setSheet(null), [pathname]);
   const invitePage = pathname.startsWith('/app/einladung');
   // Offene Einladung (z. B. nach Registrierung und E-Mail-Bestätigung) zuerst annehmen
@@ -97,7 +91,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <CompanySwitcher />
+          <ProfileButton />
           <div className="sidebar-meta">
             <SyncStatus />
             <LogoutButton className="logout-btn" />
@@ -108,7 +102,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <div className="app-main">
         <header className="topbar">
           <Brand href="/app" />
-          <button className="topbar-company" onClick={() => setSheet('menu')} aria-label={`Menü – Firma ${company.name}`}>
+          <button className="topbar-company" onClick={() => setSheet('profile')} aria-label={`Profil & Einstellungen – ${company.name}`}>
             <span>{company.name}</span>
             <CompanyAvatar name={company.name} logo={company.logo} size={30} />
           </button>
