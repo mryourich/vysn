@@ -17,6 +17,7 @@ export function CustomerModal({ initial, onClose, onSaved }: { initial?: Custome
     setBusy(true);
     try {
       const saved = await saveCustomer({ ...c, name: c.name.trim() });
+      if (!saved) { onClose(); return; }
       onSaved?.(saved);
       onClose();
     } catch (e) {

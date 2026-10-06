@@ -69,6 +69,7 @@ export const emptyData = (): Data => ({
   design: defaultDesign(),
   settings: defaultSettings(),
   counters: { invoice: {}, offer: {}, customer: 0, material: 0 },
+  usage: { month: '', counts: {} },
 });
 
 export const emptyCustomer = (): Customer => ({

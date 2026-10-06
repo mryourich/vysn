@@ -8,6 +8,7 @@ import { useStore } from '../../../lib/store';
 import type { Customer } from '../../../lib/types';
 import { CustomerModal } from '../../../components/app/customer-form';
 import { Empty, PageHeader, useCreateAction } from '../../../components/app/ui';
+import { QuotaBar } from '../../../components/app/quota';
 
 export default function CustomersPage() {
   const { data, deleteCustomer, createDoc } = useStore();
@@ -38,6 +39,7 @@ export default function CustomersPage() {
     <div className="page">
       <PageHeader title="Kunden" description="Kontakte, Anschriften und Umsätze Ihrer Kunden."
         actions={<button className="btn btn-primary" onClick={() => setEditing('new')}><Plus size={16} /> Neuer Kunde</button>} />
+      <QuotaBar kind="customer" />
       <section className="card">
         {data.customers.length ? (
           <>

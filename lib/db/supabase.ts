@@ -1,7 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { emptyData } from '../defaults';
-import type { CompanySummary, Data } from '../types';
+import type { CompanySummary, Data, Usage, UsageKind } from '../types';
+import { usageMonth } from '../plans';
 import { counterMap, countersFromMap, diffById } from './adapter';
 import type { StorageAdapter } from './adapter';
 import {
@@ -55,6 +56,12 @@ export class SupabaseAdapter implements StorageAdapter {
 
   constructor(private readonly db: SupabaseClient = getSupabase()) {}
 
+  /** Monatsnutzung der aktiven Firma (Tariflimits). */
+  async fetchUsage(month = usageMonth()): Promise<Usage> {
+    const rows = check(await this.db.from('usage_counters').select('kind, used').eq('company_id', this.companyId).eq('month', `${month}-01`)) as { kind: UsageKind; used: number }[] | null;
+    return { month, counts: Object.fromEntries((rows || []).map((r) => [r.kind, Number(r.used)])) };
+  }
+
   /** Reads all rows of a company, page by page (PostgREST returns max. 1000 rows per request). */
   private async fetchAll(table: string, order: string): Promise<Record<string, unknown>[]> {
     const rows: Record<string, unknown>[] = [];
@@ -93,7 +100,8 @@ export class SupabaseAdapter implements StorageAdapter {
 
     const companyRow = check(await this.db.from('companies').select('*').eq('id', this.companyId).single());
     const { company, design, settings } = companyFromRow(companyRow as Record<string, unknown>);
-    const [customers, materials, movements, documents, expenses, counters, locations] = await Promise.all([
+    const month = usageMonth();
+    const [customers, materials, movements, documents, expenses, counters, locations, usage] = await Promise.all([
       this.fetchAll('customers', 'created_at'),
       this.fetchAll('materials', 'name'),
       this.fetchAll('stock_movements', 'date'),
@@ -101,6 +109,7 @@ export class SupabaseAdapter implements StorageAdapter {
       this.fetchAll('expenses', 'date'),
       this.fetchAll('number_counters', 'key'),
       this.fetchAll('storage_locations', 'code'),
+      this.fetchUsage(month),
     ]);
     const byMaterial = new Map<string, MovementWithMaterial[]>();
     for (const m of movements.map(movementFromRow)) byMaterial.set(m.materialId, [...(byMaterial.get(m.materialId) || []), m]);
@@ -116,6 +125,7 @@ export class SupabaseAdapter implements StorageAdapter {
       documents: documents.map(documentFromRow),
       expenses: expenses.map(expenseFromRow),
       counters: countersFromMap(Object.fromEntries(counters.map((c) => [String(c.key), Number(c.last_number)]))),
+      usage,
     };
   }
 

@@ -121,6 +121,7 @@ export const customerFromRow = (r: Row): Customer => ({
   createdAt: str(r.created_at),
 });
 
+/** Ohne `stock`: Der Bestand wird in der Datenbank aus den Lagerbewegungen fortgeschrieben. */
 export const materialToRow = (m: Material, companyId: string): Row => ({
   company_id: companyId,
   id: m.id,
@@ -132,7 +133,6 @@ export const materialToRow = (m: Material, companyId: string): Row => ({
   purchase_price: m.purchasePrice,
   sale_price: m.salePrice,
   vat: m.vat,
-  stock: m.stock,
   min_stock: m.minStock,
   location_id: m.locationId || null,
 });

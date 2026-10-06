@@ -218,6 +218,11 @@ export type Settings = { datev: DatevSettings; email: EmailSettings };
 /** Kurzinfo einer Firma für den Firmenwechsler */
 export type CompanySummary = { id: string; name: string; logo: string; plan: PlanId; role?: string };
 
+/** Arten, die je Tarif pro Monat begrenzt sind. */
+export type UsageKind = 'invoice' | 'offer' | 'customer' | 'material' | 'booking';
+/** Im laufenden Monat angelegte Elemente (gelöschte zählen mit). `month` = „YYYY-MM“. */
+export type Usage = { month: string; counts: Partial<Record<UsageKind, number>> };
+
 export type Data = {
   version: 1;
   company: Company | null;
@@ -229,4 +234,6 @@ export type Data = {
   design: InvoiceDesign;
   settings: Settings;
   counters: { invoice: Record<string, number>; offer: Record<string, number>; customer: number; material: number };
+  /** Monatsnutzung für Tariflimits – wird vom Server geführt, nicht vom Client gespeichert. */
+  usage: Usage;
 };

@@ -7,10 +7,10 @@ import { demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
-import { invoiceQuota } from './plans';
+import { countUsage, usageQuota } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
-import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation } from './types';
+import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation, UsageKind } from './types';
 
 export type SyncState = 'idle' | 'saving' | 'error';
 
@@ -41,23 +41,25 @@ type Store = {
   switchCompany: (id: string) => Promise<void>;
   startNewCompany: () => Promise<void>;
   cancelNewCompany: () => Promise<void>;
-  /** Hinweis „Rechnungslimit erreicht“ */
-  upgradeNotice: boolean;
+  /** Hinweis „Monatslimit erreicht“ für diese Art (null = kein Hinweis) */
+  upgradeNotice: UsageKind | null;
   dismissUpgrade: () => void;
   saveCompany: (company: Company) => void;
-  saveCustomer: (customer: Customer) => Promise<Customer>;
+  /** Speichert einen Kunden; `null`, wenn ein neuer Kunde das Monatslimit überschreiten würde. */
+  saveCustomer: (customer: Customer) => Promise<Customer | null>;
   deleteCustomer: (id: string) => void;
-  saveMaterial: (material: Material) => Promise<Material>;
+  saveMaterial: (material: Material) => Promise<Material | null>;
   deleteMaterial: (id: string) => void;
   bookStock: (materialId: string, quantity: number, note: string, date?: string) => void;
-  /** Legt einen Beleg an; `null`, wenn das Rechnungslimit des Tarifs erreicht ist. */
+  /** Legt einen Beleg an; `null`, wenn das Monatslimit des Tarifs erreicht ist. */
   createDoc: (kind: DocKind, customerId?: string) => Promise<SalesDoc | null>;
   saveDoc: (doc: SalesDoc) => void;
   deleteDoc: (id: string) => void;
   setDocStatus: (id: string, status: SalesDoc['status'], paidDate?: string) => void;
   offerToInvoice: (offerId: string) => Promise<SalesDoc | null>;
   duplicateDoc: (id: string) => Promise<SalesDoc | null>;
-  saveExpense: (expense: Expense) => void;
+  /** Speichert eine Buchung; `false`, wenn eine neue Buchung das Monatslimit überschreiten würde. */
+  saveExpense: (expense: Expense) => boolean;
   deleteExpense: (id: string) => void;
   saveDesign: (design: InvoiceDesign) => void;
   saveSettings: (settings: Settings) => void;
@@ -96,7 +98,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [creatingCompany, setCreatingCompany] = useState(false);
-  const [upgradeNotice, setUpgradeNotice] = useState(false);
+  const [upgradeNotice, setUpgradeNotice] = useState<UsageKind | null>(null);
   const previousCompany = useRef<string | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -196,7 +198,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [adapter]);
 
   const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
-  const dismissUpgrade = useCallback(() => setUpgradeNotice(false), []);
+  const dismissUpgrade = useCallback(() => setUpgradeNotice(null), []);
   const role: Role = !supabaseConfigured ? 'owner' : ((companies.find((c) => c.id === activeCompanyId)?.role as Role) || 'member');
 
   const auth = useMemo<Auth>(() => ({
@@ -222,34 +224,43 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const update = useCallback((fn: (d: Data) => Data) => setData((d) => fn(d)), []);
 
+  /** Prüft das Monatslimit vor dem Anlegen; zeigt sonst den Upgrade-Hinweis. */
+  const allow = useCallback((kind: UsageKind) => {
+    if (!usageQuota(dataRef.current, kind).reached) return true;
+    setUpgradeNotice(kind);
+    return false;
+  }, []);
+
   const saveCompany = useCallback((company: Company) => update((d) => ({ ...d, company })), [update]);
 
   const saveCustomer = useCallback(async (customer: Customer) => {
     let saved = customer;
     if (!customer.id) {
+      if (!allow('customer')) return null;
       const n = customer.number ? 0 : await adapter.allocate('customer', dataRef.current.counters.customer + 1);
       saved = { ...customer, id: uid(), number: customer.number || `KD-${String(n).padStart(4, '0')}`, createdAt: today() };
-      update((d) => ({ ...d, customers: [saved, ...d.customers], counters: { ...d.counters, customer: Math.max(d.counters.customer, n) } }));
+      update((d) => countUsage({ ...d, customers: [saved, ...d.customers], counters: { ...d.counters, customer: Math.max(d.counters.customer, n) } }, 'customer'));
     } else {
       update((d) => ({ ...d, customers: d.customers.map((c) => (c.id === customer.id ? customer : c)) }));
     }
     return saved;
-  }, [adapter, update]);
+  }, [adapter, update, allow]);
 
   const deleteCustomer = useCallback((id: string) => update((d) => ({ ...d, customers: d.customers.filter((c) => c.id !== id) })), [update]);
 
   const saveMaterial = useCallback(async (material: Material) => {
     let saved = material;
     if (!material.id) {
+      if (!allow('material')) return null;
       const n = material.number ? 0 : await adapter.allocate('material', dataRef.current.counters.material + 1);
       const movements = material.stock ? [{ id: uid(), date: today(), quantity: material.stock, note: 'Anfangsbestand' }] : [];
       saved = { ...material, id: uid(), number: material.number || `ART-${String(n).padStart(4, '0')}`, movements };
-      update((d) => ({ ...d, materials: [saved, ...d.materials], counters: { ...d.counters, material: Math.max(d.counters.material, n) } }));
+      update((d) => countUsage({ ...d, materials: [saved, ...d.materials], counters: { ...d.counters, material: Math.max(d.counters.material, n) } }, 'material'));
     } else {
       update((d) => ({ ...d, materials: d.materials.map((m) => (m.id === material.id ? material : m)) }));
     }
     return saved;
-  }, [adapter, update]);
+  }, [adapter, update, allow]);
 
   const deleteMaterial = useCallback((id: string) => update((d) => ({ ...d, materials: d.materials.filter((m) => m.id !== id) })), [update]);
 
@@ -263,10 +274,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [update]);
 
   const createDoc = useCallback(async (kind: DocKind, customerId = ''): Promise<SalesDoc | null> => {
-    if (kind === 'invoice' && invoiceQuota(dataRef.current).reached) {
-      setUpgradeNotice(true);
-      return null;
-    }
+    if (!allow(kind)) return null;
     const date = today();
     const year = date.slice(0, 4);
     const n = await adapter.allocate(`${kind}:${year}`, (dataRef.current.counters[kind][year] || 0) + 1);
@@ -298,13 +306,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       sentAt: '',
       sentTo: '',
     };
-    update((s) => ({
+    update((s) => countUsage({
       ...s,
       documents: [doc, ...s.documents],
       counters: { ...s.counters, [kind]: { ...s.counters[kind], [year]: Math.max(s.counters[kind][year] || 0, n) } },
-    }));
+    }, kind));
     return doc;
-  }, [adapter, update]);
+  }, [adapter, update, allow]);
 
   const saveDoc = useCallback((doc: SalesDoc) => update((d) => ({ ...d, documents: d.documents.map((x) => (x.id === doc.id ? doc : x)) })), [update]);
 
@@ -363,12 +371,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return full;
   }, [createDoc, update]);
 
-  const saveExpense = useCallback((expense: Expense) => update((d) => ({
-    ...d,
-    expenses: expense.id && d.expenses.some((e) => e.id === expense.id)
-      ? d.expenses.map((e) => (e.id === expense.id ? expense : e))
-      : [{ ...expense, id: expense.id || uid() }, ...d.expenses],
-  })), [update]);
+  const saveExpense = useCallback((expense: Expense) => {
+    const exists = !!expense.id && dataRef.current.expenses.some((e) => e.id === expense.id);
+    if (exists) {
+      update((d) => ({ ...d, expenses: d.expenses.map((e) => (e.id === expense.id ? expense : e)) }));
+      return true;
+    }
+    if (!allow('booking')) return false;
+    update((d) => countUsage({ ...d, expenses: [{ ...expense, id: expense.id || uid() }, ...d.expenses] }, 'booking'));
+    return true;
+  }, [update, allow]);
 
   const deleteExpense = useCallback((id: string) => update((d) => ({ ...d, expenses: d.expenses.filter((e) => e.id !== id) })), [update]);
   const saveDesign = useCallback((design: InvoiceDesign) => update((d) => ({ ...d, design })), [update]);
