@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, FileText, LayoutDashboard, MoreHorizontal, Palette, ReceiptText, Users, Wallet, X,
+  BarChart3, Boxes, Building2, FileSpreadsheet, FileText, LayoutDashboard, MoreHorizontal, Palette, ReceiptText, ScanLine, Settings2, Users, Wallet, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
@@ -25,20 +25,25 @@ const NAV: { group: string; items: NavItem[] }[] = [
   ] },
   { group: 'Betrieb', items: [
     { href: '/app/material', label: 'Material & Lager', icon: Boxes },
-    { href: '/app/ausgaben', label: 'Ausgaben', icon: Wallet },
+    { href: '/app/scan', label: 'Lager-Scanner', icon: ScanLine },
+    { href: '/app/ausgaben', label: 'Einnahmen & Ausgaben', icon: Wallet },
   ] },
-  { group: 'Auswertung', items: [{ href: '/app/guv', label: 'GuV & Finanzen', icon: BarChart3 }] },
+  { group: 'Auswertung', items: [
+    { href: '/app/guv', label: 'GuV & Finanzen', icon: BarChart3 },
+    { href: '/app/export', label: 'DATEV-Export', icon: FileSpreadsheet },
+  ] },
   { group: 'Einstellungen', items: [
     { href: '/app/firma', label: 'Firmendaten', icon: Building2 },
     { href: '/app/design', label: 'Rechnungsdesign', icon: Palette },
+    { href: '/app/einstellungen', label: 'E-Mail & Versand', icon: Settings2 },
   ] },
 ];
 
 const MOBILE_TABS: NavItem[] = [
   { href: '/app', label: 'Übersicht', icon: LayoutDashboard },
   { href: '/app/rechnungen', label: 'Rechnungen', icon: ReceiptText },
-  { href: '/app/angebote', label: 'Angebote', icon: FileText },
-  { href: '/app/ausgaben', label: 'Ausgaben', icon: Wallet },
+  { href: '/app/scan', label: 'Scannen', icon: ScanLine },
+  { href: '/app/ausgaben', label: 'Buchungen', icon: Wallet },
 ];
 
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));

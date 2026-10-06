@@ -9,7 +9,7 @@ import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
 import { invoiceQuota } from './plans';
 import { taxProfile } from './tax';
-import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc } from './types';
+import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation } from './types';
 
 export type SyncState = 'idle' | 'saving' | 'error';
 
@@ -57,6 +57,11 @@ type Store = {
   saveExpense: (expense: Expense) => void;
   deleteExpense: (id: string) => void;
   saveDesign: (design: InvoiceDesign) => void;
+  saveSettings: (settings: Settings) => void;
+  saveLocation: (location: StorageLocation) => StorageLocation;
+  deleteLocation: (id: string) => void;
+  /** Protokolliert den E-Mail-Versand eines Belegs (Angebote gelten danach als versendet). */
+  markSent: (id: string, to: string) => void;
   replaceAll: (data: unknown) => void;
   loadDemo: () => void;
   reset: () => void;
@@ -286,6 +291,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       sourceId: '',
       stockBooked: false,
       createdAt: new Date().toISOString(),
+      sentAt: '',
+      sentTo: '',
     };
     update((s) => ({
       ...s,
@@ -361,6 +368,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const deleteExpense = useCallback((id: string) => update((d) => ({ ...d, expenses: d.expenses.filter((e) => e.id !== id) })), [update]);
   const saveDesign = useCallback((design: InvoiceDesign) => update((d) => ({ ...d, design })), [update]);
+  const saveSettings = useCallback((settings: Settings) => update((d) => ({ ...d, settings })), [update]);
+
+  const saveLocation = useCallback((location: StorageLocation) => {
+    const saved = location.id ? location : { ...location, id: uid() };
+    update((d) => ({
+      ...d,
+      locations: (d.locations.some((l) => l.id === saved.id) ? d.locations.map((l) => (l.id === saved.id ? saved : l)) : [...d.locations, saved])
+        .sort((a, b) => a.code.localeCompare(b.code, 'de', { numeric: true })),
+    }));
+    return saved;
+  }, [update]);
+
+  const deleteLocation = useCallback((id: string) => update((d) => ({
+    ...d,
+    locations: d.locations.filter((l) => l.id !== id),
+    materials: d.materials.map((m) => (m.locationId === id ? { ...m, locationId: '' } : m)),
+  })), [update]);
+
+  const markSent = useCallback((id: string, to: string) => update((d) => ({
+    ...d,
+    documents: d.documents.map((x) => (x.id === id
+      ? { ...x, sentAt: new Date().toISOString(), sentTo: to, status: x.kind === 'offer' && x.status === 'draft' ? 'sent' : x.status }
+      : x)),
+  })), [update]);
   const replaceAll = useCallback((raw: unknown) => setData(migrate(raw)), []);
   const loadDemo = useCallback(() => setData(demoData()), []);
   const reset = useCallback(() => setData(emptyData()), []);
@@ -368,10 +399,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Store>(() => ({
     data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
-    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, replaceAll, loadDemo, reset,
+    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
   }), [data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
-    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, replaceAll, loadDemo, reset]);
+    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

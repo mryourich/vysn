@@ -25,7 +25,7 @@ function sampleDoc(kind: 'invoice' | 'offer'): SalesDoc {
       { id: '2', description: 'Gipskartonplatte 12,5 mm', details: '', quantity: 24, unit: 'Platte', unitPrice: 13.5, vat: 19, discount: 0 },
       { id: '3', description: 'Anfahrt und Entsorgung', details: '', quantity: 1, unit: 'Pauschal', unitPrice: 85, vat: 19, discount: 0 },
     ],
-    paidDate: '', sourceId: '', stockBooked: false, createdAt: '',
+    paidDate: '', sourceId: '', stockBooked: false, createdAt: '', sentAt: '', sentTo: '',
   };
 }
 

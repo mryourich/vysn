@@ -1,7 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, Boxes, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowDownToLine, ArrowUpFromLine, Boxes, MapPin, Pencil, Plus, QrCode, ScanLine, Search, Trash2 } from 'lucide-react';
+import { LocationsPanel, usePrintLabels } from '../../../components/app/locations';
 import { formatDate, money, qty, round2, today, uid } from '../../../lib/calc';
 import { UNITS, emptyMaterial } from '../../../lib/defaults';
 import { useStore } from '../../../lib/store';
@@ -16,10 +18,15 @@ export default function MaterialPage() {
   const [booking, setBooking] = useState<Material | null>(null);
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<'all' | 'low'>('all');
+  const [view, setView] = useState<'items' | 'locations'>('items');
+  const [locationFilter, setLocationFilter] = useState('');
+  const { print, busy } = usePrintLabels();
+  const locationCode = (id: string) => data.locations.find((l) => l.id === id)?.code;
 
   const low = (m: Material) => m.minStock > 0 && m.stock <= m.minStock;
   const list = data.materials
     .filter((m) => filter === 'all' || low(m))
+    .filter((m) => !locationFilter || m.locationId === locationFilter)
     .filter((m) => !q || `${m.name} ${m.number} ${m.category}`.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const stockValue = data.materials.reduce((s, m) => s + Math.max(0, m.stock) * m.purchasePrice, 0);
@@ -28,7 +35,10 @@ export default function MaterialPage() {
   return (
     <div className="page">
       <PageHeader title="Material & Lager" description="Artikel, Leistungen, Preise und Lagerbestände. Rechnungen buchen verbrauchtes Material automatisch ab."
-        actions={<button className="btn btn-primary" onClick={() => setEditing(emptyMaterial(vat))}><Plus size={16} /> Neuer Artikel</button>} />
+        actions={<>
+          <Link className="btn" href="/app/scan"><ScanLine size={16} /> Scanner</Link>
+          <button className="btn btn-primary" onClick={() => setEditing(emptyMaterial(vat))}><Plus size={16} /> Neuer Artikel</button>
+        </>} />
 
       <div className="stats stats-3">
         <StatCard label="Artikel" value={String(data.materials.length)} sub={`${new Set(data.materials.map((m) => m.category).filter(Boolean)).size} Kategorien`} />
@@ -36,18 +46,28 @@ export default function MaterialPage() {
         <StatCard label="Nachbestellen" value={String(data.materials.filter(low).length)} tone={data.materials.some(low) ? 'warning' : undefined} sub="unter Mindestbestand" />
       </div>
 
+      <Segmented value={view} options={[['items', `Artikel (${data.materials.length})`], ['locations', `Lagerplätze & QR (${data.locations.length})`]]} onChange={setView} />
+
+      {view === 'locations' ? <section className="card"><LocationsPanel /></section> : (
       <section className="card">
         {data.materials.length ? (
           <>
             <div className="toolbar">
               <Segmented value={filter} options={[['all', 'Alle'], ['low', 'Nachbestellen']]} onChange={setFilter} />
+              {data.locations.length ? (
+                <select className="select-inline" value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} aria-label="Lagerplatz">
+                  <option value="">Alle Lagerplätze</option>
+                  {data.locations.map((l) => <option key={l.id} value={l.id}>{l.code} · {l.name}</option>)}
+                </select>
+              ) : null}
+              <button className="btn" disabled={busy || !list.length} onClick={() => print({ materials: list }, 'Etiketten Artikel.pdf')}><QrCode size={16} /> Etiketten</button>
               <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Artikel suchen…" /></label>
             </div>
             <div className="table">
               <div className="tr th tr-mat"><span>Artikel</span><span className="td-num">Bestand</span><span className="td-num hide-sm">EK</span><span className="td-num hide-sm">VK</span><span className="td-num hide-sm">Aufschlag</span><span /></div>
               {list.map((m) => (
                 <div key={m.id} className="tr tr-mat" onClick={() => setEditing(m)} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && setEditing(m)}>
-                  <span className="td-main"><span className="avatar avatar-sq"><Boxes size={15} /></span><span><strong>{m.name}</strong><small>{m.number}{m.category ? ` · ${m.category}` : ''}</small></span></span>
+                  <span className="td-main"><span className="avatar avatar-sq"><Boxes size={15} /></span><span><strong>{m.name}</strong><small>{m.number}{m.category ? ` · ${m.category}` : ''}{locationCode(m.locationId) ? <> · <MapPin size={11} className="inline-icon" /> {locationCode(m.locationId)}</> : null}</small></span></span>
                   <span className="td-num">
                     {qty(m.stock)} {m.unit}
                     {low(m) ? <><br /><Badge tone="warning">Min. {qty(m.minStock)}</Badge></> : null}
@@ -70,6 +90,7 @@ export default function MaterialPage() {
             action={<button className="btn btn-primary" onClick={() => setEditing(emptyMaterial(vat))}><Plus size={16} /> Artikel anlegen</button>} />
         )}
       </section>
+      )}
 
       {editing ? <MaterialModal material={editing} onClose={() => setEditing(null)} /> : null}
       {booking ? <BookingModal material={booking} onClose={() => setBooking(null)} /> : null}
@@ -101,6 +122,12 @@ function MaterialModal({ material, onClose }: { material: Material; onClose: () 
         <Field label="Kategorie">
           <input list="mat-categories" value={m.category} onChange={(e) => setM({ ...m, category: e.target.value })} />
           <datalist id="mat-categories">{categories.map((c) => <option key={c} value={c} />)}</datalist>
+        </Field>
+        <Field label="Lagerplatz">
+          <select value={m.locationId} onChange={(e) => setM({ ...m, locationId: e.target.value })}>
+            <option value="">– ohne –</option>
+            {data.locations.map((l) => <option key={l.id} value={l.id}>{l.code} · {l.name}</option>)}
+          </select>
         </Field>
         <Field label="Einheit">
           <select value={m.unit} onChange={(e) => setM({ ...m, unit: e.target.value })}>{[...new Set([m.unit, ...UNITS])].map((u) => <option key={u}>{u}</option>)}</select>
@@ -146,7 +173,7 @@ function BookingModal({ material, onClose }: { material: Material; onClose: () =
     const signed = dir === 'in' ? amount : -amount;
     bookStock(material.id, signed, note || (dir === 'in' ? 'Wareneingang' : 'Entnahme'), date);
     if (dir === 'in' && asExpense && price > 0) {
-      saveExpense({ id: uid(), date, supplier, description: `${qty(amount)} ${material.unit} ${material.name}`, category: 'Material & Waren', net: round2(amount * price), vat: data.company?.smallBusiness ? taxProfile(data.company).defaultRate : material.vat, receiptNo: '' });
+      saveExpense({ id: uid(), kind: 'expense', date, supplier, description: `${qty(amount)} ${material.unit} ${material.name}`, category: 'Material & Waren', net: round2(amount * price), vat: data.company?.smallBusiness ? taxProfile(data.company).defaultRate : material.vat, receiptNo: '' });
     }
     onClose();
   };

@@ -1,7 +1,9 @@
 'use client';
 
 import { useRef, useState } from 'react';
-import { ImagePlus, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { ImagePlus, Lock, Trash2, Wand2 } from 'lucide-react';
+import { LogoBackgroundDialog } from './logo-bg-dialog';
 import { readLogo } from '../../lib/image';
 import type { Company } from '../../lib/types';
 import { COUNTRY_OPTIONS, countryCode, taxProfile } from '../../lib/tax';
@@ -20,6 +22,9 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
   const knownCountry = countryCode(value.country) !== null && COUNTRY_OPTIONS.some(([name]) => name === value.country);
   const [otherCountry, setOtherCountry] = useState(!knownCountry);
   const [logoError, setLogoError] = useState('');
+  const [bgOpen, setBgOpen] = useState(false);
+  const [bgLocked, setBgLocked] = useState(false);
+  const paid = value.plan === 'business' || value.plan === 'team';
 
   return (
     <div className="form-stack">
@@ -45,11 +50,18 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
                 }
               }} />
               <button type="button" className="btn" onClick={() => fileRef.current?.click()}><ImagePlus size={16} /> {value.logo ? 'Logo ersetzen' : 'Logo hochladen'}</button>
+              {value.logo ? (
+                <button type="button" className="btn" onClick={() => (paid ? setBgOpen(true) : setBgLocked(true))}>
+                  {paid ? <Wand2 size={16} /> : <Lock size={16} />} Hintergrund entfernen{paid ? null : <span className="plan-chip">Business</span>}
+                </button>
+              ) : null}
               {value.logo ? <button type="button" className="btn btn-quiet" onClick={() => onChange({ ...value, logo: '', logoRatio: 1 })}><Trash2 size={16} /> Entfernen</button> : null}
+              {bgLocked && !paid ? <p className="field-hint upsell">Das Entfernen des Logo-Hintergrunds ist in den Tarifen Business und Team enthalten. <Link className="link" href="/app/firma#tarif">Tarif ansehen</Link></p> : null}
               <p className="field-hint">PNG, JPG oder SVG. Idealerweise mit transparentem Hintergrund.</p>
               {logoError ? <p className="field-error">{logoError}</p> : null}
             </div>
           </div>
+          {bgOpen && value.logo ? <LogoBackgroundDialog logo={value.logo} onClose={() => setBgOpen(false)} onApply={(logo) => onChange({ ...value, logo })} /> : null}
         </section>
       )}
 

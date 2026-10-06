@@ -7,8 +7,9 @@ die Oberfläche bleibt gleich.
 ## 1. Projekt anlegen
 
 1. Auf [supabase.com](https://supabase.com) ein Projekt erstellen (Region z. B. Frankfurt `eu-central-1`).
-2. **SQL Editor** öffnen und die Dateien aus `migrations/` **der Reihe nach** ausführen:
-   `20260930120000_init.sql`, dann `20261001090000_companies_and_plans.sql`.
+2. **SQL Editor** öffnen, den Inhalt von **`supabase/setup.sql`** einfügen und ausführen (enthält alle Migrationen).
+   Alternativ die Dateien aus `migrations/` **der Reihe nach** ausführen:
+   `20260930120000_init.sql`, `20261001090000_companies_and_plans.sql`, `20261002090000_storage_income_mail.sql`.
    Alternativ mit der Supabase CLI: `supabase link --project-ref <ref>` und `supabase db push`.
 
 ## 2. Authentifizierung
