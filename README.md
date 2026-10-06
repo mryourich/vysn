@@ -46,3 +46,16 @@ Unter *Firmendaten → Datensicherung* lassen sich in beiden Modi Sicherungen al
 - Impressum (`app/impressum`) und Datenschutz (`app/datenschutz`) mit echten Angaben füllen
 - Kontakt-E-Mail/-Telefon auf der Startseite (`app/page.tsx`, Abschnitt `#kontakt`) anpassen
 - Preise in `components/site/pricing.tsx` prüfen
+
+## Fahrplan (vereinbart)
+
+1. **Kein Datenverlust bei Funklöchern:** Fehlgeschlagene Speichervorgänge in eine Warteschlange
+   (auf dem Gerät, übersteht Neuladen) und automatisch nachsenden, sobald wieder Verbindung besteht.
+   Hinweis „Offline – wird gespeichert, sobald Verbindung besteht“ statt Fehlermeldung.
+   *Heute:* Schlägt ein Speichern fehl, wird die Änderung nicht erneut versucht.
+2. **Realtime:** Änderungen anderer Geräte/Teammitglieder live übernehmen (Supabase Realtime).
+3. **Offline-Modus:** App-Shell per Service Worker, Firmendaten lokal (IndexedDB), Abgleich beim
+   Wiederverbinden – zuerst für Lager-Scanner und Entwürfe. Rechnungen erhalten ihre endgültige
+   Nummer erst online (lückenlose Nummernkreise, GoBD); Festschreiben/Versand nur online.
+4. **Apps für iOS/Android** mit Capacitor (gleicher Code, Kamera nativ). In der iOS-App keine
+   Tarif-Buchung anzeigen (Apple-Regeln für In-App-Käufe) – gebucht wird über die Website.

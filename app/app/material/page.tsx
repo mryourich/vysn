@@ -10,7 +10,7 @@ import { useStore } from '../../../lib/store';
 import type { Material } from '../../../lib/types';
 import { currencySymbol } from '../../../lib/calc';
 import { taxProfile } from '../../../lib/tax';
-import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect } from '../../../components/app/ui';
+import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect, useCreateAction } from '../../../components/app/ui';
 
 export default function MaterialPage() {
   const { data, deleteMaterial } = useStore();
@@ -31,6 +31,7 @@ export default function MaterialPage() {
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
   const stockValue = data.materials.reduce((s, m) => s + Math.max(0, m.stock) * m.purchasePrice, 0);
   const vat = data.company?.smallBusiness ? 0 : data.company?.defaultVat ?? 19;
+  useCreateAction(() => { setView('items'); setEditing(emptyMaterial(vat)); });
 
   return (
     <div className="page">

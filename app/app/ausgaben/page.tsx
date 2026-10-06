@@ -7,7 +7,7 @@ import { formatRate, taxProfile } from '../../../lib/tax';
 import { useStore } from '../../../lib/store';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../lib/types';
 import type { Expense } from '../../../lib/types';
-import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect } from '../../../components/app/ui';
+import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect, useCreateAction } from '../../../components/app/ui';
 
 const blank = (vat: number, kind: Expense['kind'] = 'expense'): Expense => ({
   id: '', kind, date: today(), supplier: '', description: '', category: kind === 'income' ? 'Barverkauf' : 'Material & Waren', net: 0, vat, receiptNo: '',
@@ -30,6 +30,7 @@ export default function ExpensesPage() {
   const small = !!data.company?.smallBusiness;
   const tax = taxProfile(data.company);
   const defaultVat = small ? tax.defaultRate : data.company?.defaultVat ?? tax.defaultRate;
+  useCreateAction((v) => setEditing(blank(defaultVat, v === 'einnahme' ? 'income' : 'expense')));
   const amountOf = (e: Expense) => (small ? expenseGross(e) : e.net);
   const signed = (e: Expense) => (e.kind === 'income' ? amountOf(e) : -amountOf(e));
 

@@ -6,12 +6,12 @@ import { Check, Download, Palette, Plus, RotateCcw, Sparkles, Upload } from 'luc
 import { today } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
 import { PLANS, invoiceQuota } from '../../../lib/plans';
-import type { Company, PlanId } from '../../../lib/types';
+import type { Company } from '../../../lib/types';
 import { CompanyForm } from '../../../components/app/company-form';
-import { PageHeader, Segmented } from '../../../components/app/ui';
+import { PageHeader } from '../../../components/app/ui';
 
 export default function CompanyPage() {
-  const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies } = useStore();
+  const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies, role } = useStore();
   const quota = invoiceQuota(data);
   const [company, setCompany] = useState<Company>(data.company!);
   const [saved, setSaved] = useState(false);
@@ -66,15 +66,7 @@ export default function CompanyPage() {
               </>
             ) : <small>Unbegrenzte Rechnungen</small>}
           </div>
-          {auth.mode === 'local' ? (
-            <div className="plan-switch">
-              <span className="field-label">Tarif wählen (Testmodus ohne Abrechnung)</span>
-              <Segmented value={data.company!.plan} onChange={(plan: PlanId) => { saveCompany({ ...data.company!, plan }); setCompany({ ...company, plan }); }}
-                options={[['start', 'Start'], ['business', 'Business'], ['team', 'Team']]} />
-            </div>
-          ) : data.company!.plan === 'start' ? (
-            <Link className="btn btn-primary" href="/#preise"><Sparkles size={16} /> Auf Business upgraden</Link>
-          ) : null}
+          <Link className={`btn ${data.company!.plan === 'start' ? 'btn-primary' : ''}`} href="/app/tarif"><Sparkles size={16} /> {data.company!.plan === 'start' ? 'Tarif upgraden' : 'Tarif & Abrechnung'}</Link>
         </div>
         {companies.length > 1 ? <p className="muted small mt">Sie verwalten {companies.length} Firmen. Wechseln Sie unten links in der Seitenleiste bzw. mobil über das Firmensymbol oben rechts.</p> : null}
       </section>
@@ -97,11 +89,16 @@ export default function CompanyPage() {
               alert('Die Datei ist keine gültige VYSN-One-Sicherung.');
             }
           }} />
-          <button className="btn" onClick={() => fileRef.current?.click()}><Upload size={16} /> Sicherung einspielen</button>
-          <button className="btn btn-quiet danger" onClick={() => {
-            if (confirm(`Wirklich „${data.company!.name}“ mit allen Kunden, Belegen und Zahlen endgültig löschen? Dies kann nicht rückgängig gemacht werden.`)) reset();
-          }}><RotateCcw size={16} /> Diese Firma löschen</button>
+          {role === 'owner' ? (
+            <>
+              <button className="btn" onClick={() => fileRef.current?.click()}><Upload size={16} /> Sicherung einspielen</button>
+              <button className="btn btn-quiet danger" onClick={() => {
+                if (confirm(`Wirklich „${data.company!.name}“ mit allen Kunden, Belegen und Zahlen endgültig löschen? Dies kann nicht rückgängig gemacht werden.`)) reset();
+              }}><RotateCcw size={16} /> Diese Firma löschen</button>
+            </>
+          ) : null}
         </div>
+        {role !== 'owner' ? <p className="muted small mt">Sicherungen einspielen und die Firma löschen kann nur der Inhaber.</p> : null}
       </section>
     </div>
   );

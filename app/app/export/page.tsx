@@ -5,6 +5,7 @@ import { ChevronDown, Download, FileSpreadsheet, Info } from 'lucide-react';
 import { MONTHS_LONG, formatDate, money, periodFor } from '../../../lib/calc';
 import { ACCOUNT_LABELS, account, datevBookings, datevCsv, defaultAccount, toWindows1252 } from '../../../lib/datev';
 import { useStore } from '../../../lib/store';
+import { isAdminRole } from '../../../lib/team';
 import { countryCode } from '../../../lib/tax';
 import type { DatevSettings } from '../../../lib/types';
 import { Field, PageHeader, Segmented } from '../../../components/app/ui';
@@ -12,7 +13,7 @@ import { Field, PageHeader, Segmented } from '../../../components/app/ui';
 type Mode = 'year' | 'q1' | 'q2' | 'q3' | 'q4' | 'month';
 
 export default function ExportPage() {
-  const { data, saveSettings } = useStore();
+  const { data, saveSettings, role } = useStore();
   const s = data.settings.datev;
   const set = (patch: Partial<DatevSettings>) => saveSettings({ ...data.settings, datev: { ...s, ...patch } });
   const years = useMemo(() => {
@@ -80,26 +81,26 @@ export default function ExportPage() {
       </section>
 
       <section className="card">
-        <div className="card-head"><div><h2>DATEV-Einstellungen</h2><p>Die Angaben erhalten Sie von Ihrer Steuerberatung.</p></div></div>
+        <div className="card-head"><div><h2>DATEV-Einstellungen</h2><p>{isAdminRole(role) ? 'Die Angaben erhalten Sie von Ihrer Steuerberatung.' : 'Die Einstellungen ändern Inhaber und Admins.'}</p></div></div>
         {missing ? <p className="field-hint mb">Ohne Berater- und Mandantennummer lässt sich der Stapel zwar erzeugen, in DATEV müssen diese aber beim Import passen.</p> : null}
-        <div className="form-grid">
+        <fieldset className="form-grid plain-fieldset" disabled={!isAdminRole(role)}>
           <Field label="Beraternummer"><input inputMode="numeric" value={s.advisorNumber} onChange={(e) => set({ advisorNumber: e.target.value.replace(/\D/g, '').slice(0, 7) })} placeholder="z. B. 1234567" /></Field>
           <Field label="Mandantennummer"><input inputMode="numeric" value={s.clientNumber} onChange={(e) => set({ clientNumber: e.target.value.replace(/\D/g, '').slice(0, 5) })} placeholder="z. B. 10001" /></Field>
           <Field label="Kontenrahmen"><Segmented value={s.chart} onChange={(chart) => set({ chart })} options={[['SKR03', 'SKR03'], ['SKR04', 'SKR04']]} /></Field>
           <Field label="Wirtschaftsjahr beginnt" hint="MM-TT, meist 01-01"><input value={s.fiscalYearStart} onChange={(e) => set({ fiscalYearStart: e.target.value })} placeholder="01-01" /></Field>
           <Field label="Sachkontenlänge"><select value={s.accountLength} onChange={(e) => set({ accountLength: Number(e.target.value) })}>{[4, 5, 6, 7, 8].map((n) => <option key={n} value={n}>{n}</option>)}</select></Field>
           <label className="check"><input type="checkbox" checked={s.debtorPerCustomer} onChange={(e) => set({ debtorPerCustomer: e.target.checked })} /><span>Eigenes Debitorenkonto je Kunde<br /><small className="muted">{account(s, 'debtor')} + Kundennummer, sonst Sammeldebitor</small></span></label>
-        </div>
+        </fieldset>
         <button className="link mt" onClick={() => setShowAccounts(!showAccounts)}><ChevronDown size={15} style={{ transform: showAccounts ? 'rotate(180deg)' : undefined }} /> Kontenzuordnung {showAccounts ? 'ausblenden' : 'anpassen'}</button>
         {showAccounts ? (
-          <div className="account-grid">
+          <fieldset className="account-grid plain-fieldset" disabled={!isAdminRole(role)}>
             {ACCOUNT_LABELS.map(([key, label]) => (
               <Field key={key} label={label}>
                 <input inputMode="numeric" value={s.accounts[key] ?? ''} placeholder={defaultAccount(s.chart, key)}
                   onChange={(e) => set({ accounts: { ...s.accounts, [key]: e.target.value.replace(/\D/g, '') } })} />
               </Field>
             ))}
-          </div>
+          </fieldset>
         ) : null}
         <div className="datev-note"><FileSpreadsheet size={16} /><p>Erzeugt wird ein DATEV-Buchungsstapel (Format EXTF 700) mit Rechnungen (Debitor an Erlös), Zahlungseingängen (Bank an Debitor), Einnahmen und Ausgaben (Kosten an Bank) inklusive BU-Schlüssel. Ihre Steuerberatung importiert die Datei über „Stapelverarbeitung → Import“. Bitte stimmen Sie die Kontenzuordnung einmalig mit ihr ab.</p></div>
       </section>

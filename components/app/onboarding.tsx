@@ -38,7 +38,7 @@ export function Onboarding() {
           </ol>
         </div>
         <div className="onboarding-foot">
-          <button className="demo-link" onClick={loadDemo}><Sparkles size={15} /> Stattdessen mit Beispieldaten ausprobieren</button>
+          {auth.mode === 'local' ? <button className="demo-link" onClick={loadDemo}><Sparkles size={15} /> Stattdessen mit Beispieldaten ausprobieren</button> : null}
           {auth.mode === 'supabase' ? <button className="demo-link" onClick={() => auth.signOut()}>Abmelden ({auth.email})</button> : null}
         </div>
       </aside>
@@ -62,7 +62,7 @@ export function Onboarding() {
               </button>
             </div>
           </form>
-          <button className="demo-link mobile-only" onClick={loadDemo}><Sparkles size={15} /> Mit Beispieldaten ausprobieren</button>
+          {auth.mode === 'local' ? <button className="demo-link mobile-only" onClick={loadDemo}><Sparkles size={15} /> Mit Beispieldaten ausprobieren</button> : null}
         </div>
       </main>
     </div>

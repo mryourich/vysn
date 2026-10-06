@@ -44,13 +44,46 @@ Danach neu bauen (`npm run build`), da `NEXT_PUBLIC_*`-Variablen beim Build eing
 **Mehrere Firmen:** Ein Nutzer kann beliebig viele Firmen anlegen (`create_company()`), `my_companies()`
 liefert sie für den Firmenwechsler. **Tarife** gelten je Firma (`companies.plan`): Im Tarif `start` erlaubt
 der Trigger `documents_invoice_limit` höchstens 10 Rechnungen pro Kalendermonat (nach Rechnungsdatum),
-`business` und `team` sind unbegrenzt. Den Tarif setzt nur der Server (Service-Role, z. B. per Stripe-Webhook):
+im Tarif `solo` (9,90 €) höchstens 50, `business` und `team` sind unbegrenzt (`plan_invoice_limit()`). Den Tarif setzt nur der Server (Service-Role, z. B. per Stripe-Webhook):
 `update companies set plan = 'business' where id = '…';`
 
 **Sicherheit:** Row Level Security auf allen Tabellen – Nutzer sehen ausschließlich Daten
 der Firmen, in denen sie Mitglied sind. Firmen werden nur über `create_company()` angelegt,
 der Tarif (`plan`) ist für Nutzer nicht änderbar. Festgeschriebene Rechnungen (Status ≠ Entwurf)
 können inhaltlich weder geändert noch gelöscht werden (Trigger `protect_issued_invoices`).
+
+## Tarife & Abrechnung (Stripe)
+
+Migration `20261006090000_billing.sql` ergänzt `companies` um die Stripe-Felder
+(`stripe_customer_id`, `subscription_status`, `trial_ends_at`, `current_period_end`, …) –
+für Nutzer nur lesbar. Ablauf:
+
+1. **Tarif & Abrechnung** in der App → Stripe Checkout (30 Tage kostenlos testen, einmal je Firma).
+2. Stripe meldet jede Änderung an `/api/billing/webhook`; der Server setzt `plan` und Status
+   mit dem geheimen Schlüssel (`SUPABASE_SERVICE_ROLE_KEY`).
+3. Tarifwechsel, Zahlungsart, Rechnungen und Kündigung laufen über das Stripe-Kundenportal.
+   Endet das Abo, fällt die Firma automatisch auf `start` zurück – Daten bleiben erhalten.
+
+Webhook-Ereignisse: `customer.subscription.created`, `customer.subscription.updated`,
+`customer.subscription.deleted`, `checkout.session.completed`, `invoice.payment_failed`.
+Variablen siehe `.env.example`.
+
+## Team & Rechte
+
+Migration `20261007090000_team.sql`: Im Tarif **Team** laden Inhaber und Admins bis zu 5 Personen
+je Firma ein (inkl. offener Einladungen). Rollen:
+
+| Rolle | Darf |
+| --- | --- |
+| `owner` (Inhaber) | alles, inkl. Rollen ändern, Sicherung einspielen, Firma löschen |
+| `admin` | alles außer Rollen ändern und Firma löschen |
+| `member` (Mitarbeiter) | Tagesgeschäft – keine Firmendaten, Design, Einstellungen, Tarif oder Team |
+
+Einladungen (`company_invites`) sind 14 Tage gültig, nur einmal verwendbar und nur mit der
+eingeladenen E-Mail-Adresse annehmbar (`accept_invite()`). Mitglieder werden ausschließlich über
+die Funktionen `invite_member`, `revoke_invite`, `set_member_role`, `remove_member` verwaltet.
+Endet der Tarif Team, hat nur noch der Inhaber Zugriff (`member_role()`); die Mitglieder bleiben
+gespeichert. Mit SMTP verschickt `/api/team/invite-mail` den Link per E-Mail, sonst wird er kopiert.
 
 ## Wie die App speichert
 
@@ -60,7 +93,5 @@ implementieren sie. Die Oberfläche arbeitet auf einem Daten-Snapshot; nach jede
 
 ## Nächste Ausbaustufen
 
-- **Team-Einladungen:** Einträge in `company_members` (Rolle `member`) über eine Edge Function mit Einladungs-Mail.
 - **Logos in Supabase Storage** statt als Data-URL in `companies.logo`.
-- **Tarife/Abrechnung:** `companies.plan` per Webhook (z. B. Stripe) mit dem Service-Role-Key setzen.
 - **Belege (PDF/Fotos) zu Ausgaben** in Supabase Storage.

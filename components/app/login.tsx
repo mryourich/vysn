@@ -14,10 +14,11 @@ const MESSAGES: Record<string, string> = {
   'User already registered': 'Für diese E-Mail-Adresse gibt es bereits ein Konto.',
 };
 
-export function Login() {
+/** `invite`: Anmeldung von der Einladungsseite – E-Mail vorbelegt, Text zur Einladung. */
+export function Login({ invite }: { invite?: { companyName: string; email: string } } = {}) {
   const { auth } = useStore();
   const [mode, setMode] = useState<Mode>('signin');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(invite?.email || '');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -50,6 +51,10 @@ export function Login() {
     signup: ['Konto erstellen', 'Kostenlos starten – danach richten Sie Ihr Unternehmen ein.', 'Konto erstellen'],
     reset: ['Passwort vergessen', 'Wir senden Ihnen einen Link zum Zurücksetzen.', 'Link senden'],
   };
+  if (invite) {
+    titles.signin = [`Einladung zu ${invite.companyName}`, `Melden Sie sich mit ${invite.email} an, um die Einladung anzunehmen. Noch kein Konto? Registrieren Sie sich kostenlos.`, 'Anmelden'];
+    titles.signup = [`Einladung zu ${invite.companyName}`, `Erstellen Sie ein kostenloses Konto mit ${invite.email} – danach sind Sie direkt im Team.`, 'Konto erstellen'];
+  }
   const [title, text, cta] = titles[mode];
 
   return (
