@@ -52,6 +52,14 @@ export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesig
   company: {
     ...emptyCompany(),
     plan: (['start', 'business', 'team'].includes(str(r.plan)) ? str(r.plan) : 'start') as Company['plan'],
+    billing: {
+      status: str(r.subscription_status) || 'none',
+      trialEndsAt: str(r.trial_ends_at),
+      periodEnd: str(r.current_period_end),
+      cancelAtPeriodEnd: !!r.cancel_at_period_end,
+      hasCustomer: !!r.stripe_customer_id,
+      trialUsed: !!r.trial_used,
+    },
     name: str(r.name),
     owner: str(r.owner),
     street: str(r.street),

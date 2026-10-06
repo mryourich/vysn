@@ -58,7 +58,7 @@ export function DocList({ kind }: { kind: DocKind }) {
           <div className={`quota${q.reached ? ' quota-full' : ''}`}>
             <span>Tarif Start: <strong>{q.used} von {q.limit}</strong> Rechnungen im {q.monthLabel}</span>
             <div className="quota-bar"><i style={{ width: `${Math.min(100, (q.used / q.limit!) * 100)}%` }} className={q.reached ? 'full' : ''} /></div>
-            <Link href="/app/firma#tarif" className="link">Unbegrenzt mit Business</Link>
+            <Link href="/app/tarif" className="link">Unbegrenzt mit Business</Link>
           </div>
         );
       })() : null}

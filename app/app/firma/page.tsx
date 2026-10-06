@@ -6,9 +6,9 @@ import { Check, Download, Palette, Plus, RotateCcw, Sparkles, Upload } from 'luc
 import { today } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
 import { PLANS, invoiceQuota } from '../../../lib/plans';
-import type { Company, PlanId } from '../../../lib/types';
+import type { Company } from '../../../lib/types';
 import { CompanyForm } from '../../../components/app/company-form';
-import { PageHeader, Segmented } from '../../../components/app/ui';
+import { PageHeader } from '../../../components/app/ui';
 
 export default function CompanyPage() {
   const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies } = useStore();
@@ -66,15 +66,7 @@ export default function CompanyPage() {
               </>
             ) : <small>Unbegrenzte Rechnungen</small>}
           </div>
-          {auth.mode === 'local' ? (
-            <div className="plan-switch">
-              <span className="field-label">Tarif wählen (Testmodus ohne Abrechnung)</span>
-              <Segmented value={data.company!.plan} onChange={(plan: PlanId) => { saveCompany({ ...data.company!, plan }); setCompany({ ...company, plan }); }}
-                options={[['start', 'Start'], ['business', 'Business'], ['team', 'Team']]} />
-            </div>
-          ) : data.company!.plan === 'start' ? (
-            <Link className="btn btn-primary" href="/#preise"><Sparkles size={16} /> Auf Business upgraden</Link>
-          ) : null}
+          <Link className={`btn ${data.company!.plan === 'start' ? 'btn-primary' : ''}`} href="/app/tarif"><Sparkles size={16} /> {data.company!.plan === 'start' ? 'Tarif upgraden' : 'Tarif & Abrechnung'}</Link>
         </div>
         {companies.length > 1 ? <p className="muted small mt">Sie verwalten {companies.length} Firmen. Wechseln Sie unten links in der Seitenleiste bzw. mobil über das Firmensymbol oben rechts.</p> : null}
       </section>

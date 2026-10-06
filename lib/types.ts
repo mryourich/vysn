@@ -27,6 +27,17 @@ export type Company = {
   offerValidityDays: number;
   invoicePrefix: string;
   offerPrefix: string;
+  /** Abo-Status (nur lesend, wird vom Server/Stripe gepflegt) */
+  billing?: Billing;
+};
+
+export type Billing = {
+  status: 'none' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'unpaid' | 'incomplete' | string;
+  trialEndsAt: string;
+  periodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  hasCustomer: boolean;
+  trialUsed: boolean;
 };
 
 export type Customer = {

@@ -7,16 +7,14 @@ import { useStore } from '../../lib/store';
 import { Modal } from './ui';
 
 export function UpgradeDialog() {
-  const { data, upgradeNotice, dismissUpgrade, auth } = useStore();
+  const { data, upgradeNotice, dismissUpgrade } = useStore();
   if (!upgradeNotice) return null;
   const q = invoiceQuota(data);
   return (
     <Modal title="Rechnungslimit erreicht" onClose={dismissUpgrade}
       footer={<>
         <button className="btn btn-quiet" onClick={dismissUpgrade}>Später</button>
-        {auth.mode === 'local'
-          ? <Link className="btn btn-primary" href="/app/firma#tarif" onClick={dismissUpgrade}><Sparkles size={16} /> Tarif wechseln</Link>
-          : <Link className="btn btn-primary" href="/#preise" onClick={dismissUpgrade}><Sparkles size={16} /> Auf Business upgraden</Link>}
+        <Link className="btn btn-primary" href="/app/tarif" onClick={dismissUpgrade}><Sparkles size={16} /> Tarif upgraden</Link>
       </>}>
       <div className="upgrade-hero"><Sparkles size={22} /></div>
       <p>Im Tarif <strong>Start</strong> sind <strong>{q.limit} Rechnungen pro Monat</strong> enthalten. Für {q.monthLabel} haben Sie bereits {q.used} Rechnungen erstellt.</p>

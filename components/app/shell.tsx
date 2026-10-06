@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, FileSpreadsheet, FileText, LayoutDashboard, MoreHorizontal, Palette, ReceiptText, ScanLine, Settings2, Users, Wallet, X,
+  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, MoreHorizontal, Palette, ReceiptText, ScanLine, Settings2, Users, Wallet, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
@@ -36,6 +36,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { href: '/app/firma', label: 'Firmendaten', icon: Building2 },
     { href: '/app/design', label: 'Rechnungsdesign', icon: Palette },
     { href: '/app/einstellungen', label: 'E-Mail & Versand', icon: Settings2 },
+    { href: '/app/tarif', label: 'Tarif & Abrechnung', icon: CreditCard },
   ] },
 ];
 

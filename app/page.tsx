@@ -195,7 +195,7 @@ export default function Home() {
           <div className="cta-content">
             <Sparkles size={22} className="cta-spark" />
             <h2>Bereit für weniger Büro und mehr Überblick?</h2>
-            <p>Richten Sie Ihr Unternehmen in wenigen Minuten ein – oder sehen Sie sich VYSN One zuerst mit Beispieldaten an.</p>
+            <p>Konto anlegen, Unternehmen einrichten und direkt die erste Rechnung schreiben – im Tarif Start dauerhaft kostenlos.</p>
             <div className="hero-actions">
               <Link href="/app" className="btn btn-glow btn-lg">Jetzt kostenlos starten <ArrowRight size={17} /></Link>
             </div>

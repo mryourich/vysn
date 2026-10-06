@@ -52,6 +52,22 @@ der Firmen, in denen sie Mitglied sind. Firmen werden nur über `create_company(
 der Tarif (`plan`) ist für Nutzer nicht änderbar. Festgeschriebene Rechnungen (Status ≠ Entwurf)
 können inhaltlich weder geändert noch gelöscht werden (Trigger `protect_issued_invoices`).
 
+## Tarife & Abrechnung (Stripe)
+
+Migration `20261006090000_billing.sql` ergänzt `companies` um die Stripe-Felder
+(`stripe_customer_id`, `subscription_status`, `trial_ends_at`, `current_period_end`, …) –
+für Nutzer nur lesbar. Ablauf:
+
+1. **Tarif & Abrechnung** in der App → Stripe Checkout (30 Tage kostenlos testen, einmal je Firma).
+2. Stripe meldet jede Änderung an `/api/billing/webhook`; der Server setzt `plan` und Status
+   mit dem geheimen Schlüssel (`SUPABASE_SERVICE_ROLE_KEY`).
+3. Tarifwechsel, Zahlungsart, Rechnungen und Kündigung laufen über das Stripe-Kundenportal.
+   Endet das Abo, fällt die Firma automatisch auf `start` zurück – Daten bleiben erhalten.
+
+Webhook-Ereignisse: `customer.subscription.created`, `customer.subscription.updated`,
+`customer.subscription.deleted`, `checkout.session.completed`, `invoice.payment_failed`.
+Variablen siehe `.env.example`.
+
 ## Wie die App speichert
 
 `lib/db/adapter.ts` definiert die Schnittstelle, `lib/db/local.ts` und `lib/db/supabase.ts`
@@ -62,5 +78,4 @@ implementieren sie. Die Oberfläche arbeitet auf einem Daten-Snapshot; nach jede
 
 - **Team-Einladungen:** Einträge in `company_members` (Rolle `member`) über eine Edge Function mit Einladungs-Mail.
 - **Logos in Supabase Storage** statt als Data-URL in `companies.logo`.
-- **Tarife/Abrechnung:** `companies.plan` per Webhook (z. B. Stripe) mit dem Service-Role-Key setzen.
 - **Belege (PDF/Fotos) zu Ausgaben** in Supabase Storage.

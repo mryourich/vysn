@@ -56,7 +56,7 @@ export function CompanyForm({ value, onChange, sections }: { value: Company; onC
                 </button>
               ) : null}
               {value.logo ? <button type="button" className="btn btn-quiet" onClick={() => onChange({ ...value, logo: '', logoRatio: 1 })}><Trash2 size={16} /> Entfernen</button> : null}
-              {bgLocked && !paid ? <p className="field-hint upsell">Das Entfernen des Logo-Hintergrunds ist in den Tarifen Business und Team enthalten. <Link className="link" href="/app/firma#tarif">Tarif ansehen</Link></p> : null}
+              {bgLocked && !paid ? <p className="field-hint upsell">Das Entfernen des Logo-Hintergrunds ist in den Tarifen Business und Team enthalten. <Link className="link" href="/app/tarif">Tarif ansehen</Link></p> : null}
               <p className="field-hint">PNG, JPG oder SVG. Idealerweise mit transparentem Hintergrund.</p>
               {logoError ? <p className="field-error">{logoError}</p> : null}
             </div>

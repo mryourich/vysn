@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Building2, Check, ChevronsUpDown, LogOut, Plus } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown, CreditCard, LogOut, Plus } from 'lucide-react';
 import { PLANS } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import type { CompanySummary } from '../../lib/types';
@@ -88,7 +88,8 @@ export function CompanySwitcher() {
           <span className="switcher-label">Firmen</span>
           <CompanyList onDone={() => setOpen(false)} />
           <div className="switcher-foot">
-            <Link href="/app/firma" className="switcher-item" onClick={() => setOpen(false)}><Building2 size={16} /> Firmendaten & Tarif</Link>
+            <Link href="/app/firma" className="switcher-item" onClick={() => setOpen(false)}><Building2 size={16} /> Firmendaten</Link>
+            <Link href="/app/tarif" className="switcher-item" onClick={() => setOpen(false)}><CreditCard size={16} /> Tarif & Abrechnung</Link>
             {auth.email ? <span className="switcher-email">{auth.email}</span> : null}
           </div>
         </div>
