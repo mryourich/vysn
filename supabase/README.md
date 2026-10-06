@@ -85,6 +85,13 @@ die Funktionen `invite_member`, `revoke_invite`, `set_member_role`, `remove_memb
 Endet der Tarif Team, hat nur noch der Inhaber Zugriff (`member_role()`); die Mitglieder bleiben
 gespeichert. Mit SMTP verschickt `/api/team/invite-mail` den Link per E-Mail, sonst wird er kopiert.
 
+## Rechte (wichtig bei neuen Tabellen)
+
+Supabase vergibt per Standard alle Tabellenrechte an `anon` und `authenticated`. Migration
+`20261009090000_harden_grants.sql` setzt sie auf das Nötige zurück (z. B. nur erlaubte Spalten von
+`companies` änderbar, Mitglieder/Einladungen/Zähler nur über Funktionen). **Neue Tabellen** brauchen
+daher immer RLS **und** passende `revoke`/`grant`-Zeilen in ihrer Migration.
+
 ## Wie die App speichert
 
 `lib/db/adapter.ts` definiert die Schnittstelle, `lib/db/local.ts` und `lib/db/supabase.ts`

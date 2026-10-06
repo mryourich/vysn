@@ -50,8 +50,8 @@ export default function TeamPage() {
     setNotice('');
     try {
       await fn();
-      if (done) setNotice(done);
       await load();
+      if (done) setNotice(done);
       return true;
     } catch (e) {
       setError((e as Error).message);
