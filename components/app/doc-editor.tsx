@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowLeft, ArrowUp, Ban, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
+  ArrowDown, ArrowLeft, ArrowUp, Ban, CloudOff, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
 } from 'lucide-react';
 import { displayStatus, docTotals, formatDate, lineNet, money, qty, today } from '../../lib/calc';
 import { UNITS, emptyItem } from '../../lib/defaults';
@@ -12,6 +12,7 @@ import { useStore } from '../../lib/store';
 import type { LineItem, Material, SalesDoc } from '../../lib/types';
 import { DocumentTemplate } from '../pdf/document-template';
 import { downloadPdf } from '../pdf/export';
+import { isProvisional } from '../../lib/db/ops';
 import { A4Preview } from './a4-preview';
 import { CustomerModal } from './customer-form';
 import { currencySymbol } from '../../lib/calc';
@@ -97,7 +98,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
     }
   };
 
-  const canSend = doc.items.length > 0 && doc.recipient.name.trim();
+  const provisional = isProvisional(doc.number);
+  const canSend = doc.items.length > 0 && doc.recipient.name.trim() && !provisional;
   const sendDocument = useSendDocument();
 
   /** Mit „automatisch versenden“ geht die Rechnung ohne Dialog direkt an die Kunden-E-Mail. */
@@ -149,6 +151,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
           {doc.sentAt ? <span className="sent-line"><MailCheck size={14} /> gesendet {formatDate(doc.sentAt.slice(0, 10))}{doc.sentTo ? ` an ${doc.sentTo}` : ''}</span> : null}
         </div>
         {flash ? <div className="notice notice-ok" role="status"><MailCheck size={16} /><span>{flash}</span></div> : null}
+        {provisional ? <div className="notice" role="status"><CloudOff size={16} /><span><strong>Offline erstellt – vorläufige Nummer.</strong> Die endgültige {isInvoice ? 'Rechnungsnummer' : 'Angebotsnummer'} wird beim nächsten Abgleich automatisch vergeben. Festschreiben und Versand sind danach möglich.</span></div> : null}
         <div className="page-actions">{actions}</div>
       </div>
 

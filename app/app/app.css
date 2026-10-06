@@ -700,3 +700,18 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-backdrop, .tab-create span { animation: none; transition: none; }
 }
+
+/* Monatskontingente (Tarif-Seite) */
+.quota-list { display: grid; gap: 8px; max-width: 560px; }
+.quota-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 64px; align-items: center; gap: 12px; font-size: 13.5px; }
+.quota-row small { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+.quota-row.full span, .quota-row.full small { color: var(--danger); font-weight: 600; }
+.quota-list > small { margin-top: 2px; }
+
+/* Synchronisation: offline / abgelehnte Änderungen */
+.sync-banner.sync-offline { justify-content: flex-start; background: var(--info-soft); color: #1e4a82; }
+.sync-banner.sync-offline svg { flex: none; }
+.sync-banner.sync-notice { background: var(--warning-soft); color: #6b4300; flex-wrap: nowrap; }
+.sync-banner.sync-notice .icon-btn { flex: none; color: inherit; }
+.sync-status.offline i { background: var(--info); }
+.sync-status.offline { color: var(--info); }

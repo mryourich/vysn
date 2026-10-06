@@ -6,9 +6,10 @@ import { Check, CreditCard, ExternalLink, Info, Sparkles } from 'lucide-react';
 import { formatDate } from '../../../lib/calc';
 import { billingInfo, openPortal, startCheckout, syncBilling } from '../../../lib/billing';
 import type { BillingInfo } from '../../../lib/billing';
-import { PLAN_OFFERS, PLANS, TRIAL_DAYS, formatPlanPrice, invoiceQuota } from '../../../lib/plans';
+import { PLAN_OFFERS, PLANS, TRIAL_DAYS, formatPlanPrice } from '../../../lib/plans';
 import type { PaidPlan } from '../../../lib/types';
 import { useStore } from '../../../lib/store';
+import { QuotaList } from '../../../components/app/quota';
 import { isAdminRole } from '../../../lib/team';
 import { Badge, PageHeader } from '../../../components/app/ui';
 
@@ -37,7 +38,6 @@ function Plan() {
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
-  const quota = invoiceQuota(data);
 
   useEffect(() => { billingInfo().then(setInfo); }, []);
 
@@ -96,12 +96,7 @@ function Plan() {
             {billing?.status === 'trialing' && billing.trialEndsAt ? <small>Kostenlose Testphase bis {formatDate(billing.trialEndsAt.slice(0, 10))} – danach beginnt die Abrechnung, jederzeit kündbar.</small> : null}
             {billing?.status === 'active' && billing.periodEnd ? <small>{billing.cancelAtPeriodEnd ? `Gekündigt – läuft bis ${formatDate(billing.periodEnd.slice(0, 10))}, danach Start.` : `Nächste Verlängerung am ${formatDate(billing.periodEnd.slice(0, 10))}.`}</small> : null}
             {billing?.status === 'past_due' ? <small className="text-danger">Die letzte Zahlung ist fehlgeschlagen. Bitte Zahlungsmethode aktualisieren.</small> : null}
-            {quota.limit !== null ? (
-              <>
-                <div className="quota-bar"><i style={{ width: `${Math.min(100, (quota.used / quota.limit) * 100)}%` }} className={quota.reached ? 'full' : ''} /></div>
-                <small>{quota.used} von {quota.limit} Rechnungen im {quota.monthLabel} genutzt</small>
-              </>
-            ) : <small>Unbegrenzte Rechnungen</small>}
+            <QuotaList />
           </div>
         </div>
         {!canManage ? <p className="muted small mt">Den Tarif können nur Inhaber oder Admins dieser Firma ändern.</p> : null}

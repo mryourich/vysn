@@ -8,6 +8,7 @@ import { useStore } from '../../../lib/store';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../lib/types';
 import type { Expense } from '../../../lib/types';
 import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect, useCreateAction } from '../../../components/app/ui';
+import { QuotaBar } from '../../../components/app/quota';
 
 const blank = (vat: number, kind: Expense['kind'] = 'expense'): Expense => ({
   id: '', kind, date: today(), supplier: '', description: '', category: kind === 'income' ? 'Barverkauf' : 'Material & Waren', net: 0, vat, receiptNo: '',
@@ -57,6 +58,7 @@ export default function ExpensesPage() {
           <button className="btn" onClick={() => setEditing(blank(defaultVat, 'income'))}><ArrowDownLeft size={16} /> Einnahme</button>
           <button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Ausgabe erfassen</button>
         </>} />
+      <QuotaBar kind="booking" />
 
       <div className="stats stats-3">
         <StatCard label={`Ausgaben ${year}`} value={money(sumOf('expense'))} sub={small ? 'brutto' : 'netto'} />

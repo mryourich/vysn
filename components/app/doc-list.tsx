@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { FileText, Plus, ReceiptText, Search } from 'lucide-react';
 import { displayStatus, docTotals, formatDate, isOverdue, money } from '../../lib/calc';
-import { PLANS, PLAN_OFFERS, formatPlanPrice, invoiceQuota, planOf } from '../../lib/plans';
 import { useStore } from '../../lib/store';
+import { QuotaBar } from './quota';
 import type { DocKind } from '../../lib/types';
 import { Badge, Empty, PageHeader, Segmented, StatCard } from './ui';
 
@@ -52,16 +52,7 @@ export function DocList({ kind }: { kind: DocKind }) {
         actions={<button className="btn btn-primary" onClick={create}><Plus size={16} /> {isInvoice ? 'Neue Rechnung' : 'Neues Angebot'}</button>}
       />
 
-      {isInvoice && invoiceQuota(data).limit !== null ? (() => {
-        const q = invoiceQuota(data);
-        return (
-          <div className={`quota${q.reached ? ' quota-full' : ''}`}>
-            <span>Tarif {PLANS[planOf(data)].label}: <strong>{q.used} von {q.limit}</strong> Rechnungen im {q.monthLabel}</span>
-            <div className="quota-bar"><i style={{ width: `${Math.min(100, (q.used / q.limit!) * 100)}%` }} className={q.reached ? 'full' : ''} /></div>
-            <Link href="/app/tarif" className="link">{planOf(data) === 'start' ? `Mehr ab ${formatPlanPrice(PLAN_OFFERS.find((p) => p.id === 'solo')!.yearly)} €` : 'Unbegrenzt mit Business'}</Link>
-          </div>
-        );
-      })() : null}
+      <QuotaBar kind={isInvoice ? 'invoice' : 'offer'} />
 
       <div className="stats">
         {isInvoice ? (

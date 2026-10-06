@@ -5,14 +5,14 @@ import { useEffect, useRef, useState } from 'react';
 import { Check, Download, Palette, Plus, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { today } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
-import { PLANS, invoiceQuota } from '../../../lib/plans';
+import { QuotaList } from '../../../components/app/quota';
+import { PLANS } from '../../../lib/plans';
 import type { Company } from '../../../lib/types';
 import { CompanyForm } from '../../../components/app/company-form';
 import { PageHeader } from '../../../components/app/ui';
 
 export default function CompanyPage() {
   const { data, saveCompany, replaceAll, reset, auth, startNewCompany, companies, role } = useStore();
-  const quota = invoiceQuota(data);
   const [company, setCompany] = useState<Company>(data.company!);
   const [saved, setSaved] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,12 +59,7 @@ export default function CompanyPage() {
         <div className="plan-box">
           <div>
             <span className="plan-name">{PLANS[data.company!.plan].label}</span>
-            {quota.limit !== null ? (
-              <>
-                <div className="quota-bar"><i style={{ width: `${Math.min(100, (quota.used / quota.limit) * 100)}%` }} className={quota.reached ? 'full' : ''} /></div>
-                <small>{quota.used} von {quota.limit} Rechnungen im {quota.monthLabel} genutzt</small>
-              </>
-            ) : <small>Unbegrenzte Rechnungen</small>}
+            <QuotaList />
           </div>
           <Link className={`btn ${data.company!.plan === 'start' ? 'btn-primary' : ''}`} href="/app/tarif"><Sparkles size={16} /> {data.company!.plan === 'start' ? 'Tarif upgraden' : 'Tarif & Abrechnung'}</Link>
         </div>

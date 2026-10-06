@@ -29,6 +29,7 @@ export function migrate(raw: unknown): Data {
       email: { ...defaultSettings().email, ...(d.settings?.email || {}) },
     },
     counters: { ...base.counters, ...(d.counters || {}) },
+    usage: d.usage && typeof d.usage === 'object' ? { month: String(d.usage.month || ''), counts: { ...(d.usage.counts || {}) } } : base.usage,
   } as Data;
 }
 

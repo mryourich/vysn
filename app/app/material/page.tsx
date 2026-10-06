@@ -11,6 +11,7 @@ import type { Material } from '../../../lib/types';
 import { currencySymbol } from '../../../lib/calc';
 import { taxProfile } from '../../../lib/tax';
 import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect, useCreateAction } from '../../../components/app/ui';
+import { QuotaBar } from '../../../components/app/quota';
 
 export default function MaterialPage() {
   const { data, deleteMaterial } = useStore();
@@ -40,6 +41,7 @@ export default function MaterialPage() {
           <Link className="btn" href="/app/scan"><ScanLine size={16} /> Scanner</Link>
           <button className="btn btn-primary" onClick={() => setEditing(emptyMaterial(vat))}><Plus size={16} /> Neuer Artikel</button>
         </>} />
+      <QuotaBar kind="material" />
 
       <div className="stats stats-3">
         <StatCard label="Artikel" value={String(data.materials.length)} sub={`${new Set(data.materials.map((m) => m.category).filter(Boolean)).size} Kategorien`} />
