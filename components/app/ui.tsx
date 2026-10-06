@@ -1,11 +1,35 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { List, X } from 'lucide-react';
 import { parseNumber, qty } from '../../lib/calc';
 import { formatRate, vatChoices } from '../../lib/tax';
 import type { Company } from '../../lib/types';
+
+/** Ereignis der Schnellaktionen („+“ in der Handy-Navigation), wenn die Zielseite schon offen ist. */
+export const CREATE_EVENT = 'vysn:create';
+
+/**
+ * Öffnet auf einer Seite den „Neu“-Dialog, wenn sie über eine Schnellaktion aufgerufen wird
+ * (`?neu=<wert>` bzw. Ereignis CREATE_EVENT). Der Parameter wird danach aus der Adresse entfernt.
+ */
+export function useCreateAction(onCreate: (value: string) => void) {
+  const handler = useRef(onCreate);
+  handler.current = onCreate;
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const value = url.searchParams.get('neu');
+    if (value) {
+      url.searchParams.delete('neu');
+      window.history.replaceState(window.history.state, '', url.pathname + url.search);
+      handler.current(value);
+    }
+    const listener = (e: Event) => handler.current(String((e as CustomEvent).detail || ''));
+    window.addEventListener(CREATE_EVENT, listener);
+    return () => window.removeEventListener(CREATE_EVENT, listener);
+  }, []);
+}
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
   return (

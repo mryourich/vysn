@@ -7,13 +7,14 @@ import { docTotals, money } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
 import type { Customer } from '../../../lib/types';
 import { CustomerModal } from '../../../components/app/customer-form';
-import { Empty, PageHeader } from '../../../components/app/ui';
+import { Empty, PageHeader, useCreateAction } from '../../../components/app/ui';
 
 export default function CustomersPage() {
   const { data, deleteCustomer, createDoc } = useStore();
   const router = useRouter();
   const [editing, setEditing] = useState<Customer | null | 'new'>(null);
   const [q, setQ] = useState('');
+  useCreateAction(() => setEditing('new'));
   const small = !!data.company?.smallBusiness;
 
   const stats = (id: string) => {
