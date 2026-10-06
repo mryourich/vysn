@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Check } from 'lucide-react';
-import { PLAN_OFFERS } from '../../lib/plans';
+import { PLAN_OFFERS, formatPlanPrice } from '../../lib/plans';
 
 export const PLANS = PLAN_OFFERS;
 
@@ -24,7 +24,7 @@ export function Pricing() {
               <h3>{p.name}</h3>
               <p className="plan-text">{p.text}</p>
               <div className="plan-price">
-                <strong>{price} €</strong>
+                <strong>{formatPlanPrice(price)} €</strong>
                 <span>{price ? <>pro Monat zzgl. USt.<br />{yearly ? 'bei jährlicher Zahlung' : 'monatlich kündbar'}</> : <>dauerhaft kostenlos<br />keine Zahlungsdaten nötig</>}</span>
               </div>
               <Link href="/app" className={`btn btn-lg ${p.featured ? 'btn-primary' : ''}`}>{p.cta}</Link>

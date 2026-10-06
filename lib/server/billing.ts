@@ -1,7 +1,8 @@
 import 'server-only';
 import Stripe from 'stripe';
-import type { PlanId } from '../types';
+import type { PaidPlan, PlanId } from '../types';
 import { adminDb } from './supabase-admin';
+import { PAID_PLANS } from '../plans';
 
 /**
  * Abrechnung über Stripe.
@@ -9,6 +10,7 @@ import { adminDb } from './supabase-admin';
  * Umgebungsvariablen (beim Hosting, niemals im Code):
  *   STRIPE_SECRET_KEY            sk_live_… bzw. sk_test_…
  *   STRIPE_WEBHOOK_SECRET        whsec_… (Webhook-Endpunkt /api/billing/webhook)
+ *   STRIPE_PRICE_SOLO_MONTHLY,     STRIPE_PRICE_SOLO_YEARLY,
  *   STRIPE_PRICE_BUSINESS_MONTHLY, STRIPE_PRICE_BUSINESS_YEARLY,
  *   STRIPE_PRICE_TEAM_MONTHLY,     STRIPE_PRICE_TEAM_YEARLY      price_…
  *   STRIPE_AUTOMATIC_TAX=true    (optional, wenn Stripe Tax eingerichtet ist)
@@ -17,22 +19,23 @@ import { adminDb } from './supabase-admin';
 
 export type Interval = 'monthly' | 'yearly';
 
-const PRICE_ENV: Record<Exclude<PlanId, 'start'>, Record<Interval, string>> = {
+const PRICE_ENV: Record<PaidPlan, Record<Interval, string>> = {
+  solo: { monthly: 'STRIPE_PRICE_SOLO_MONTHLY', yearly: 'STRIPE_PRICE_SOLO_YEARLY' },
   business: { monthly: 'STRIPE_PRICE_BUSINESS_MONTHLY', yearly: 'STRIPE_PRICE_BUSINESS_YEARLY' },
   team: { monthly: 'STRIPE_PRICE_TEAM_MONTHLY', yearly: 'STRIPE_PRICE_TEAM_YEARLY' },
 };
 
-export const priceId = (plan: Exclude<PlanId, 'start'>, interval: Interval) => process.env[PRICE_ENV[plan][interval]] || '';
+export const priceId = (plan: PaidPlan, interval: Interval) => process.env[PRICE_ENV[plan][interval]] || '';
 
 export function planForPrice(price: string): PlanId | null {
-  for (const plan of ['business', 'team'] as const) {
+  for (const plan of PAID_PLANS) {
     if (price && (price === priceId(plan, 'monthly') || price === priceId(plan, 'yearly'))) return plan;
   }
   return null;
 }
 
 export const billingConfigured = () =>
-  Boolean(process.env.STRIPE_SECRET_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && (priceId('business', 'monthly') || priceId('business', 'yearly')));
+  Boolean(process.env.STRIPE_SECRET_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && PAID_PLANS.some((p) => priceId(p, 'monthly') || priceId(p, 'yearly')));
 
 let client: Stripe | null = null;
 export function stripe(): Stripe {

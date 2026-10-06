@@ -1,15 +1,16 @@
 import { MONTHS_LONG, today } from './calc';
-import type { Data, PlanId } from './types';
+import type { Data, PaidPlan, PlanId } from './types';
 
 /** Tarife: Limits der App. Preise/Texte siehe PLAN_OFFERS unten (Startseite und App). */
 export const PLANS: Record<PlanId, { label: string; invoicesPerMonth: number | null }> = {
   start: { label: 'Start', invoicesPerMonth: 10 },
+  solo: { label: 'Solo', invoicesPerMonth: 50 },
   business: { label: 'Business', invoicesPerMonth: null },
   team: { label: 'Team', invoicesPerMonth: null },
 };
 
 /** Benutzer je Firma (inkl. offener Einladungen) – dieselbe Regel prüft plan_user_limit() in der Datenbank. */
-export const PLAN_USERS: Record<PlanId, number> = { start: 1, business: 1, team: 5 };
+export const PLAN_USERS: Record<PlanId, number> = { start: 1, solo: 1, business: 1, team: 5 };
 
 export const planOf = (data: Data): PlanId => data.company?.plan || 'start';
 
@@ -54,6 +55,15 @@ export const PLAN_OFFERS: PlanOffer[] = [
     cta: 'Kostenlos starten',
   },
   {
+    id: 'solo',
+    name: 'Solo',
+    monthly: 9.9,
+    yearly: 7.9,
+    text: 'Für Selbstständige mit regelmäßigen Aufträgen.',
+    features: ['Bis zu 50 Rechnungen pro Monat', 'Unbegrenzt Angebote', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Mehrere Firmen unter einem Login'],
+    cta: '30 Tage kostenlos testen',
+  },
+  {
     id: 'business',
     name: 'Business',
     monthly: 24,
@@ -75,3 +85,12 @@ export const PLAN_OFFERS: PlanOffer[] = [
 ];
 
 export const TRIAL_DAYS = 30;
+
+export const PAID_PLANS: PaidPlan[] = ['solo', 'business', 'team'];
+
+/** Preis im deutschen Format: 0 → „0“, 9.9 → „9,90“, 24 → „24“. */
+export const formatPlanPrice = (price: number) =>
+  price.toLocaleString('de-DE', { minimumFractionDigits: Number.isInteger(price) ? 0 : 2, maximumFractionDigits: 2 });
+
+/** Nächstgrößerer Tarif mit mehr Rechnungen (für Upgrade-Hinweise). */
+export const nextPlanForInvoices = (plan: PlanId): PaidPlan | null => (plan === 'start' ? 'solo' : plan === 'solo' ? 'business' : null);

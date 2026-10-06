@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { billingConfigured, priceId } from '../../../lib/server/billing';
+import { PAID_PLANS } from '../../../lib/plans';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,9 +9,6 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return NextResponse.json({
     enabled: billingConfigured(),
-    prices: {
-      business: { monthly: !!priceId('business', 'monthly'), yearly: !!priceId('business', 'yearly') },
-      team: { monthly: !!priceId('team', 'monthly'), yearly: !!priceId('team', 'yearly') },
-    },
+    prices: Object.fromEntries(PAID_PLANS.map((p) => [p, { monthly: !!priceId(p, 'monthly'), yearly: !!priceId(p, 'yearly') }])),
   });
 }

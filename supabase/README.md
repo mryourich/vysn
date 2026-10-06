@@ -44,7 +44,7 @@ Danach neu bauen (`npm run build`), da `NEXT_PUBLIC_*`-Variablen beim Build eing
 **Mehrere Firmen:** Ein Nutzer kann beliebig viele Firmen anlegen (`create_company()`), `my_companies()`
 liefert sie für den Firmenwechsler. **Tarife** gelten je Firma (`companies.plan`): Im Tarif `start` erlaubt
 der Trigger `documents_invoice_limit` höchstens 10 Rechnungen pro Kalendermonat (nach Rechnungsdatum),
-`business` und `team` sind unbegrenzt. Den Tarif setzt nur der Server (Service-Role, z. B. per Stripe-Webhook):
+im Tarif `solo` (9,90 €) höchstens 50, `business` und `team` sind unbegrenzt (`plan_invoice_limit()`). Den Tarif setzt nur der Server (Service-Role, z. B. per Stripe-Webhook):
 `update companies set plan = 'business' where id = '…';`
 
 **Sicherheit:** Row Level Security auf allen Tabellen – Nutzer sehen ausschließlich Daten

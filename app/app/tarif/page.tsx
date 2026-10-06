@@ -6,7 +6,8 @@ import { Check, CreditCard, ExternalLink, Info, Sparkles } from 'lucide-react';
 import { formatDate } from '../../../lib/calc';
 import { billingInfo, openPortal, startCheckout, syncBilling } from '../../../lib/billing';
 import type { BillingInfo } from '../../../lib/billing';
-import { PLAN_OFFERS, PLANS, TRIAL_DAYS, invoiceQuota } from '../../../lib/plans';
+import { PLAN_OFFERS, PLANS, TRIAL_DAYS, formatPlanPrice, invoiceQuota } from '../../../lib/plans';
+import type { PaidPlan } from '../../../lib/types';
 import { useStore } from '../../../lib/store';
 import { isAdminRole } from '../../../lib/team';
 import { Badge, PageHeader } from '../../../components/app/ui';
@@ -47,7 +48,7 @@ function Plan() {
     if (checkout === 'success') {
       setNotice('Vielen Dank! Ihr Tarif wird freigeschaltet …');
       syncBilling(activeCompanyId)
-        .then((r) => setNotice(r.plan && r.plan !== 'start' ? `Tarif ${PLANS[r.plan as 'business' | 'team'].label} ist aktiv. Viel Erfolg!` : 'Die Zahlung wird noch bestätigt – das kann einen Moment dauern.'))
+        .then((r) => setNotice(r.plan && r.plan !== 'start' ? `Tarif ${PLANS[r.plan as PaidPlan].label} ist aktiv. Viel Erfolg!` : 'Die Zahlung wird noch bestätigt – das kann einen Moment dauern.'))
         .catch(() => setNotice('Die Zahlung wird noch bestätigt – das kann einen Moment dauern.'))
         .finally(() => { router.replace('/app/tarif'); switchCompany(activeCompanyId); });
     } else if (checkout === 'cancel') {
@@ -119,13 +120,13 @@ function Plan() {
         {PLAN_OFFERS.map((p) => {
           const current = company.plan === p.id;
           const price = yearly ? p.yearly : p.monthly;
-          const bookable = p.id !== 'start' && info?.enabled && info.prices[p.id][yearly ? 'yearly' : 'monthly'];
+          const bookable = p.id !== 'start' && info?.enabled && info.prices[p.id]?.[yearly ? 'yearly' : 'monthly'];
           return (
             <article key={p.id} className={`plan-card${p.featured ? ' featured' : ''}${current ? ' current' : ''}`}>
               {current ? <span className="plan-flag-app">Aktueller Tarif</span> : p.featured ? <span className="plan-flag-app">Empfohlen</span> : null}
               <h3>{p.name}</h3>
               <p className="muted small">{p.text}</p>
-              <div className="plan-price-app"><strong>{price} €</strong><span>{price ? <>/ Monat zzgl. USt.<br />{yearly ? 'jährliche Zahlung' : 'monatlich kündbar'}</> : 'dauerhaft kostenlos'}</span></div>
+              <div className="plan-price-app"><strong>{formatPlanPrice(price)} €</strong><span>{price ? <>/ Monat zzgl. USt.<br />{yearly ? 'jährliche Zahlung' : 'monatlich kündbar'}</> : 'dauerhaft kostenlos'}</span></div>
               <ul>{p.features.map((f) => <li key={f}><Check size={15} />{f}</li>)}</ul>
               {p.id === 'start' ? (
                 current ? <button className="btn" disabled>Aktiv</button>
@@ -134,7 +135,7 @@ function Plan() {
                 <button className="btn" disabled={!canManage || !!busy || !billing?.hasCustomer} onClick={() => go('portal', () => openPortal(activeCompanyId!))}>Abo verwalten</button>
               ) : (
                 <button className={`btn ${p.featured ? 'btn-primary' : ''}`} disabled={!canManage || !bookable || !!busy}
-                  onClick={() => go(p.id, () => startCheckout(activeCompanyId!, p.id as 'business' | 'team', yearly ? 'yearly' : 'monthly'))}>
+                  onClick={() => go(p.id, () => startCheckout(activeCompanyId!, p.id as PaidPlan, yearly ? 'yearly' : 'monthly'))}>
                   <Sparkles size={16} /> {busy === p.id ? 'Weiterleitung …' : company.plan !== 'start' ? `Zu ${p.name} wechseln` : trialAvailable ? `${TRIAL_DAYS} Tage testen` : `${p.name} buchen`}
                 </button>
               )}

@@ -51,7 +51,7 @@ export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesig
   },
   company: {
     ...emptyCompany(),
-    plan: (['start', 'business', 'team'].includes(str(r.plan)) ? str(r.plan) : 'start') as Company['plan'],
+    plan: (['start', 'solo', 'business', 'team'].includes(str(r.plan)) ? str(r.plan) : 'start') as Company['plan'],
     billing: {
       status: str(r.subscription_status) || 'none',
       trialEndsAt: str(r.trial_ends_at),

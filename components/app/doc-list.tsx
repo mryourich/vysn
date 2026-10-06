@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { FileText, Plus, ReceiptText, Search } from 'lucide-react';
 import { displayStatus, docTotals, formatDate, isOverdue, money } from '../../lib/calc';
-import { invoiceQuota } from '../../lib/plans';
+import { PLANS, PLAN_OFFERS, formatPlanPrice, invoiceQuota, planOf } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import type { DocKind } from '../../lib/types';
 import { Badge, Empty, PageHeader, Segmented, StatCard } from './ui';
@@ -56,9 +56,9 @@ export function DocList({ kind }: { kind: DocKind }) {
         const q = invoiceQuota(data);
         return (
           <div className={`quota${q.reached ? ' quota-full' : ''}`}>
-            <span>Tarif Start: <strong>{q.used} von {q.limit}</strong> Rechnungen im {q.monthLabel}</span>
+            <span>Tarif {PLANS[planOf(data)].label}: <strong>{q.used} von {q.limit}</strong> Rechnungen im {q.monthLabel}</span>
             <div className="quota-bar"><i style={{ width: `${Math.min(100, (q.used / q.limit!) * 100)}%` }} className={q.reached ? 'full' : ''} /></div>
-            <Link href="/app/tarif" className="link">Unbegrenzt mit Business</Link>
+            <Link href="/app/tarif" className="link">{planOf(data) === 'start' ? `Mehr ab ${formatPlanPrice(PLAN_OFFERS.find((p) => p.id === 'solo')!.yearly)} €` : 'Unbegrenzt mit Business'}</Link>
           </div>
         );
       })() : null}

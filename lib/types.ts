@@ -1,4 +1,6 @@
-export type PlanId = 'start' | 'business' | 'team';
+export type PlanId = 'start' | 'solo' | 'business' | 'team';
+/** Kostenpflichtige Tarife (über Stripe buchbar). */
+export type PaidPlan = Exclude<PlanId, 'start'>;
 
 export type Company = {
   /** Tarif – in Supabase serverseitig verwaltet, lokal frei wählbar (Testmodus) */

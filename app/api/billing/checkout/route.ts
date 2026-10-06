@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { TRIAL_DAYS } from '../../../../lib/plans';
 import { billingConfigured, priceId, siteOrigin, stripe } from '../../../../lib/server/billing';
+import { PAID_PLANS } from '../../../../lib/plans';
 import type { Interval } from '../../../../lib/server/billing';
 import { adminDb, memberRole, userFromRequest } from '../../../../lib/server/supabase-admin';
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const companyId = String(body.companyId || '');
-  const plan = body.plan === 'team' ? 'team' : body.plan === 'business' ? 'business' : null;
+  const plan = PAID_PLANS.find((p) => p === body.plan) || null;
   const interval: Interval = body.interval === 'monthly' ? 'monthly' : 'yearly';
   if (!companyId || !plan) return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
 

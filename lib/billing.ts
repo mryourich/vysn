@@ -1,14 +1,15 @@
 'use client';
 
 import { getSupabase, supabaseConfigured } from './db/supabase';
+import type { PaidPlan } from './types';
 
-export type BillingInfo = { enabled: boolean; prices: Record<'business' | 'team', { monthly: boolean; yearly: boolean }> };
+export type BillingInfo = { enabled: boolean; prices: Partial<Record<PaidPlan, { monthly: boolean; yearly: boolean }>> };
 
 export async function billingInfo(): Promise<BillingInfo> {
   try {
     return await (await fetch('/api/billing', { cache: 'no-store' })).json();
   } catch {
-    return { enabled: false, prices: { business: { monthly: false, yearly: false }, team: { monthly: false, yearly: false } } };
+    return { enabled: false, prices: {} };
   }
 }
 
@@ -24,6 +25,6 @@ async function call(path: string, body: unknown): Promise<Record<string, string>
   return json;
 }
 
-export const startCheckout = (companyId: string, plan: 'business' | 'team', interval: 'monthly' | 'yearly') => call('/api/billing/checkout', { companyId, plan, interval });
+export const startCheckout = (companyId: string, plan: PaidPlan, interval: 'monthly' | 'yearly') => call('/api/billing/checkout', { companyId, plan, interval });
 export const openPortal = (companyId: string) => call('/api/billing/portal', { companyId });
 export const syncBilling = (companyId: string) => call('/api/billing/sync', { companyId });
