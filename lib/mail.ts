@@ -36,7 +36,7 @@ const toBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
   r.readAsDataURL(blob);
 });
 
-export async function sendMail(input: { to: string; cc?: string; bcc?: string; subject: string; text: string; fromName: string; replyTo?: string; pdf: Blob; fileName: string }) {
+export async function sendMail(input: { to: string; cc?: string; bcc?: string; subject: string; text: string; fromName: string; replyTo?: string; pdf: Blob; fileName: string; companyId?: string | null }) {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
@@ -46,7 +46,7 @@ export async function sendMail(input: { to: string; cc?: string; bcc?: string; s
     method: 'POST',
     headers,
     body: JSON.stringify({
-      to: input.to, cc: input.cc, bcc: input.bcc, subject: input.subject, text: input.text, fromName: input.fromName, replyTo: input.replyTo,
+      companyId: input.companyId, to: input.to, cc: input.cc, bcc: input.bcc, subject: input.subject, text: input.text, fromName: input.fromName, replyTo: input.replyTo,
       attachment: { filename: input.fileName, contentBase64: await toBase64(input.pdf) },
     }),
   });

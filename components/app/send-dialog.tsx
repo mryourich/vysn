@@ -14,19 +14,19 @@ export const docFileName = (doc: SalesDoc) => safeFileName(`${doc.number}${doc.r
 
 /** Rechnung festschreiben (falls Entwurf), PDF erzeugen und senden. Gemeinsam für Dialog und automatischen Versand. */
 export function useSendDocument() {
-  const { data, setDocStatus, markSent } = useStore();
+  const { data, setDocStatus, markSent, design, activeCompanyId } = useStore();
   return async (doc: SalesDoc, mail: { to: string; cc?: string; subject: string; text: string }) => {
     const company = data.company!;
     if (doc.kind === 'invoice' && doc.status === 'draft') setDocStatus(doc.id, 'sent');
     const customer = data.customers.find((c) => c.id === doc.customerId);
-    const pdf = await renderPdf(<DocumentTemplate company={company} doc={doc} design={data.design} customerNumber={customer?.number} />);
-    await sendMail({ ...mail, bcc: data.settings.email.bcc, fromName: company.name, replyTo: company.email, pdf, fileName: docFileName(doc) });
+    const pdf = await renderPdf(<DocumentTemplate company={company} doc={doc} design={design} customerNumber={customer?.number} />);
+    await sendMail({ ...mail, bcc: data.settings.email.bcc, fromName: company.name, replyTo: company.email, pdf, fileName: docFileName(doc), companyId: activeCompanyId });
     markSent(doc.id, mail.to);
   };
 }
 
 export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: () => void; onSent?: (to: string) => void }) {
-  const { data, setDocStatus, markSent } = useStore();
+  const { data, setDocStatus, markSent, design } = useStore();
   const company = data.company!;
   const tpl = data.settings.email;
   const isInvoice = doc.kind === 'invoice';
@@ -61,7 +61,7 @@ export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: (
     setBusy(true);
     try {
       if (isInvoice && doc.status === 'draft') setDocStatus(doc.id, 'sent');
-      const pdf = await renderPdf(<DocumentTemplate company={company} doc={doc} design={data.design} customerNumber={customer?.number} />);
+      const pdf = await renderPdf(<DocumentTemplate company={company} doc={doc} design={design} customerNumber={customer?.number} />);
       const file = new File([pdf], docFileName(doc), { type: 'application/pdf' });
       const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
       if (nav.canShare?.({ files: [file] })) {

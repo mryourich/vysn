@@ -9,7 +9,7 @@ import { RevenueChart } from '../../components/app/bar-chart';
 import { Badge, PageHeader, StatCard } from '../../components/app/ui';
 
 export default function DashboardPage() {
-  const { data, createDoc } = useStore();
+  const { data, createDoc, can, requireFeature } = useStore();
   const router = useRouter();
   const company = data.company!;
   const small = company.smallBusiness;
@@ -61,7 +61,7 @@ export default function DashboardPage() {
         <section className="card">
           <div className="card-head">
             <div><h2>Umsatz & Ausgaben {year}</h2><p>Nach Zahlungseingang, netto</p></div>
-            <Link href="/app/guv" className="link">Zur GuV <ArrowRight size={14} /></Link>
+            <Link href="/app/guv" className="link" onClick={(e) => { if (!can('reports')) { e.preventDefault(); requireFeature('reports'); } }}>Zur GuV <ArrowRight size={14} /></Link>
           </div>
           <RevenueChart data={series} />
         </section>

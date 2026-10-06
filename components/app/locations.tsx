@@ -36,7 +36,7 @@ export function usePrintLabels() {
 }
 
 export function LocationsPanel() {
-  const { data, deleteLocation } = useStore();
+  const { data, deleteLocation, requireFeature } = useStore();
   const [editing, setEditing] = useState<StorageLocation | null>(null);
   const { print, busy } = usePrintLabels();
   const nextCode = () => {
@@ -48,7 +48,7 @@ export function LocationsPanel() {
       {data.locations.length ? (
         <>
           <div className="toolbar">
-            <button className="btn" disabled={busy} onClick={() => print({ locations: data.locations }, 'Etiketten Lagerplätze.pdf')}><Printer size={16} /> Alle Etiketten drucken</button>
+            <button className="btn" disabled={busy} onClick={() => requireFeature('scanner') && print({ locations: data.locations }, 'Etiketten Lagerplätze.pdf')}><Printer size={16} /> Alle Etiketten drucken</button>
             <button className="btn" onClick={() => setEditing({ id: '', code: nextCode(), name: '', note: '' })}><Plus size={16} /> Lagerplatz</button>
             <span className="muted small">Etikettenbogen A4 · 3 × 8 (70 × 37 mm)</span>
           </div>
@@ -62,7 +62,7 @@ export function LocationsPanel() {
                   <span className="td-muted hide-sm">{l.note || '—'}</span>
                   <span className="td-num">{items.length}<small className="td-sub">{items.slice(0, 2).map((m) => `${m.name} (${qty(m.stock)})`).join(', ')}{items.length > 2 ? ' …' : ''}</small></span>
                   <span className="row-actions" onClick={(e) => e.stopPropagation()}>
-                    <button className="btn btn-small" disabled={busy} onClick={() => print({ locations: [l] }, `Etikett ${l.code}.pdf`)}><QrCode size={14} /> Etikett</button>
+                    <button className="btn btn-small" disabled={busy} onClick={() => requireFeature('scanner') && print({ locations: [l] }, `Etikett ${l.code}.pdf`)}><QrCode size={14} /> Etikett</button>
                     <button className="icon-btn hide-sm" title="Bearbeiten" onClick={() => setEditing(l)}><Pencil size={16} /></button>
                     <button className="icon-btn danger hide-sm" title="Löschen" onClick={() => confirm(`Lagerplatz ${l.code} löschen? Die Artikel bleiben erhalten.`) && deleteLocation(l.id)}><Trash2 size={16} /></button>
                   </span>

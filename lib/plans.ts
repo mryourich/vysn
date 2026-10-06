@@ -123,3 +123,41 @@ export const formatPlanPrice = (price: number) =>
 
 /** Nächstgrößerer Tarif mit höherem Monatslimit (für Upgrade-Hinweise). */
 export const nextPlanForLimits = (plan: PlanId): PaidPlan | null => (plan === 'start' ? 'solo' : plan === 'solo' ? 'business' : null);
+
+/* ---------------------------------------------------------------------------
+ * Funktionen je Tarif
+ * Nicht enthaltene Funktionen bleiben sichtbar (mit Schloss); ein Klick öffnet „Jetzt upgraden“.
+ * ------------------------------------------------------------------------- */
+export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team';
+
+export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team'; text: string }> = {
+  design: { label: 'Rechnungsdesign', plan: 'business', text: 'Farben, Schrift, Logo-Position und Aufbau Ihrer Rechnungen und Angebote frei gestalten.' },
+  logoBackground: { label: 'Logo-Hintergrund entfernen', plan: 'business', text: 'Den Hintergrund Ihres Logos automatisch freistellen – für saubere Rechnungen.' },
+  reports: { label: 'GuV & Finanzen', plan: 'business', text: 'Gewinn und Verlust, Umsatzsteuer und Auswertungen nach Monat, Quartal und Jahr.' },
+  datev: { label: 'DATEV-Export', plan: 'business', text: 'Buchungsstapel für Ihre Steuerberatung mit einem Klick erzeugen.' },
+  email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote und Rechnungen direkt aus VYSN One per E-Mail versenden – mit PDF im Anhang.' },
+  scanner: { label: 'Lager-Scanner & QR-Etiketten', plan: 'business', text: 'Regale und Artikel mit QR-Codes versehen und per Handy ein- und auslagern.' },
+  companies: { label: 'Mehrere Firmen', plan: 'business', text: 'Mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummern und eigenem Design.' },
+  team: { label: 'Team & Rechte', plan: 'team', text: 'Bis zu 5 Personen je Firma einladen – mit Rollen für Inhaber, Admin und Mitarbeiter.' },
+};
+
+const PLAN_RANK: Record<PlanId, number> = { start: 0, solo: 1, business: 2, team: 3 };
+
+export const hasFeature = (plan: PlanId, feature: Feature) => PLAN_RANK[plan] >= PLAN_RANK[FEATURES[feature].plan];
+
+/** Seiten, die eine Funktion voraussetzen. */
+export const FEATURE_PATHS: [string, Feature][] = [
+  ['/app/design', 'design'],
+  ['/app/guv', 'reports'],
+  ['/app/export', 'datev'],
+  ['/app/einstellungen', 'email'],
+  ['/app/scan', 'scanner'],
+  ['/app/team', 'team'],
+];
+
+export const featureForPath = (pathname: string): Feature | null =>
+  FEATURE_PATHS.find(([p]) => pathname === p || pathname.startsWith(`${p}/`))?.[1] ?? null;
+
+/** Upgrade-Hinweis: Monatslimit einer Art oder fehlende Funktion. */
+export type UpgradeTopic = UsageKind | Feature;
+export const isFeature = (topic: UpgradeTopic): topic is Feature => topic in FEATURES;

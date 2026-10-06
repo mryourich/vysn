@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowDownToLine, ArrowUpFromLine, Boxes, MapPin, Pencil, Plus, QrCode, ScanLine, Search, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Boxes, Lock, MapPin, Pencil, Plus, QrCode, ScanLine, Search, Trash2 } from 'lucide-react';
 import { LocationsPanel, usePrintLabels } from '../../../components/app/locations';
 import { formatDate, money, qty, round2, today, uid } from '../../../lib/calc';
 import { UNITS, emptyMaterial } from '../../../lib/defaults';
@@ -14,7 +14,7 @@ import { Badge, Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCar
 import { QuotaBar } from '../../../components/app/quota';
 
 export default function MaterialPage() {
-  const { data, deleteMaterial } = useStore();
+  const { data, deleteMaterial, can, requireFeature } = useStore();
   const [editing, setEditing] = useState<Material | null>(null);
   const [booking, setBooking] = useState<Material | null>(null);
   const [q, setQ] = useState('');
@@ -38,7 +38,7 @@ export default function MaterialPage() {
     <div className="page">
       <PageHeader title="Material & Lager" description="Artikel, Leistungen, Preise und Lagerbestände. Rechnungen buchen verbrauchtes Material automatisch ab."
         actions={<>
-          <Link className="btn" href="/app/scan"><ScanLine size={16} /> Scanner</Link>
+          <Link className="btn" href="/app/scan" onClick={(e) => { if (!can('scanner')) { e.preventDefault(); requireFeature('scanner'); } }}>{can('scanner') ? <ScanLine size={16} /> : <Lock size={14} className="btn-lock" />} Scanner</Link>
           <button className="btn btn-primary" onClick={() => setEditing(emptyMaterial(vat))}><Plus size={16} /> Neuer Artikel</button>
         </>} />
       <QuotaBar kind="material" />
@@ -63,7 +63,7 @@ export default function MaterialPage() {
                   {data.locations.map((l) => <option key={l.id} value={l.id}>{l.code} · {l.name}</option>)}
                 </select>
               ) : null}
-              <button className="btn" disabled={busy || !list.length} onClick={() => print({ materials: list }, 'Etiketten Artikel.pdf')}><QrCode size={16} /> Etiketten</button>
+              <button className="btn" disabled={busy || !list.length} onClick={() => requireFeature('scanner') && print({ materials: list }, 'Etiketten Artikel.pdf')}><QrCode size={16} /> Etiketten</button>
               <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Artikel suchen…" /></label>
             </div>
             <div className="table">

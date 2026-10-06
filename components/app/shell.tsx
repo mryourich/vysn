@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet, CloudOff, X,
+  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet, CloudOff, X, Sparkles,
 } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
+import { FEATURES, featureForPath } from '../../lib/plans';
+import type { Feature } from '../../lib/plans';
 import { Brand } from './brand';
 import { Empty } from './ui';
 import { CompanyAvatar, CompanySwitcher, LogoutButton } from './company-switcher';
@@ -45,7 +47,7 @@ const NAV: NavGroup[] = [
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice } = useStore();
+  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can, requireFeature } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
   const [sheet, setSheet] = useState<'menu' | 'create' | null>(null);
@@ -71,6 +73,10 @@ function Shell({ children }: { children: React.ReactNode }) {
   const admin = isAdminRole(role);
   const nav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => admin || !ADMIN_PATHS.includes(i.href)) })).filter((g) => g.items.length);
   const blocked = !admin && ADMIN_PATHS.some((p) => isActive(pathname, p));
+  const pageFeature = featureForPath(pathname);
+  const featureLocked = pageFeature && !can(pageFeature) ? pageFeature : null;
+  /** Gesperrte Funktion: Link bleibt sichtbar, Klick öffnet „Jetzt upgraden“. */
+  const lockedFor = (href: string) => { const f = featureForPath(href); return f && !can(f) ? f : null; };
 
   return (
     <div className="app">
@@ -81,8 +87,10 @@ function Shell({ children }: { children: React.ReactNode }) {
             <div key={g.group || 'main'} className="nav-group">
               {g.group ? <span className="nav-group-label">{g.group}</span> : null}
               {g.items.map((item) => (
-                <Link key={item.href} href={item.href} className={`nav-link${isActive(pathname, item.href) ? ' active' : ''}`}>
+                <Link key={item.href} href={item.href} className={`nav-link${isActive(pathname, item.href) ? ' active' : ''}`}
+                  onClick={(e) => { const f = lockedFor(item.href); if (f) { e.preventDefault(); requireFeature(f); } }}>
                   <item.icon size={17} strokeWidth={1.8} />{item.label}
+                  {lockedFor(item.href) ? <Lock size={13} className="nav-lock" aria-label="Nicht im Tarif" /> : null}
                 </Link>
               ))}
             </div>
@@ -128,10 +136,22 @@ function Shell({ children }: { children: React.ReactNode }) {
             <button className="icon-btn" onClick={dismissSyncNotice} aria-label="Hinweis schließen"><X size={16} /></button>
           </div>
         ) : null}
-        <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : children}</main>
+        <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : featureLocked ? <FeatureLocked feature={featureLocked} /> : children}</main>
       </div>
       <UpgradeDialog />
       <MobileNav nav={nav} open={sheet} onOpen={setSheet} />
+    </div>
+  );
+}
+
+function FeatureLocked({ feature }: { feature: Feature }) {
+  const { requireFeature } = useStore();
+  const f = FEATURES[feature];
+  return (
+    <div className="card">
+      <Empty icon={<Lock size={24} />} title={f.label}
+        text={`${f.text} Diese Funktion ist ab dem Tarif ${f.plan === 'team' ? 'Team' : 'Business'} enthalten.`}
+        action={<button className="btn btn-primary" onClick={() => requireFeature(feature)}><Sparkles size={16} /> Jetzt upgraden</button>} />
     </div>
   );
 }

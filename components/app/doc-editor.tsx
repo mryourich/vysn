@@ -89,7 +89,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const pdf = async () => {
     setBusy(true);
     try {
-      await downloadPdf(<DocumentTemplate company={company} doc={doc} design={data.design} customerNumber={customer?.number} />, `${doc.number}${doc.recipient.name ? ' ' + doc.recipient.name : ''}.pdf`);
+      await downloadPdf(<DocumentTemplate company={company} doc={doc} design={store.design} customerNumber={customer?.number} />, `${doc.number}${doc.recipient.name ? ' ' + doc.recipient.name : ''}.pdf`);
     } catch (e) {
       console.error(e);
       alert('Das PDF konnte nicht erstellt werden. Bitte versuchen Sie es erneut.');
@@ -103,7 +103,10 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const sendDocument = useSendDocument();
 
   /** Mit „automatisch versenden“ geht die Rechnung ohne Dialog direkt an die Kunden-E-Mail. */
+  const mailLock = !store.can('email');
+  const openSend = () => { if (store.requireFeature('email')) setSendOpen(true); };
   const finalizeAndSend = async () => {
+    if (!store.requireFeature('email')) return;
     const email = customer?.email || '';
     const auto = data.settings.email.autoSendInvoices && email && (await mailStatus()).enabled;
     if (!auto) return setSendOpen(true);
@@ -123,12 +126,12 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const actions = (
     <>
       {isInvoice && doc.status === 'draft' ? (
-        <button className="btn btn-primary" disabled={!canSend || sending} title={canSend ? '' : 'Empfänger und mindestens eine Position erforderlich'} onClick={finalizeAndSend}>
-          <Send size={16} /> {sending ? 'Sende …' : 'Festschreiben & versenden'}
+        <button className="btn btn-primary" disabled={!mailLock && (!canSend || sending)} title={canSend || mailLock ? '' : 'Empfänger und mindestens eine Position erforderlich'} onClick={finalizeAndSend}>
+          {mailLock ? <Lock size={14} className="btn-lock" /> : <Send size={16} />} {sending ? 'Sende …' : 'Festschreiben & versenden'}
         </button>
       ) : null}
-      {isInvoice && doc.status !== 'draft' && doc.status !== 'cancelled' ? <button className="btn" onClick={() => setSendOpen(true)}><Mail size={16} /> {doc.sentAt ? 'Erneut senden' : 'Per E-Mail senden'}</button> : null}
-      {!isInvoice ? <button className="btn" disabled={!canSend} onClick={() => setSendOpen(true)}><Mail size={16} /> Per E-Mail senden</button> : null}
+      {isInvoice && doc.status !== 'draft' && doc.status !== 'cancelled' ? <button className="btn" onClick={openSend}>{mailLock ? <Lock size={14} className="btn-lock" /> : <Mail size={16} />} {doc.sentAt ? 'Erneut senden' : 'Per E-Mail senden'}</button> : null}
+      {!isInvoice ? <button className="btn" disabled={!canSend && !mailLock} onClick={openSend}>{mailLock ? <Lock size={14} className="btn-lock" /> : <Mail size={16} />} Per E-Mail senden</button> : null}
       {isInvoice && doc.status === 'sent' ? <button className="btn btn-primary" onClick={() => setPayDate(today())}><CheckCircle2 size={16} /> Zahlung erfassen</button> : null}
       {!isInvoice && doc.status === 'draft' ? <button className="btn" disabled={!canSend} onClick={() => setDocStatus(doc.id, 'sent')}><Send size={16} /> Als versendet markieren</button> : null}
       {!isInvoice && doc.status !== 'declined' ? (
@@ -267,8 +270,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
           <fieldset disabled={locked} className="card">
             <div className="card-head"><div><h2>Texte</h2><p>Leer lassen für die Standardtexte aus dem Rechnungsdesign. Platzhalter: {'{nummer} {faellig} {gueltig} {kunde} {betrag}'}</p></div></div>
             <div className="form-grid">
-              <Field label="Einleitung" span={3}><textarea rows={2} value={doc.intro} onChange={(e) => update({ intro: e.target.value })} placeholder={isInvoice ? data.design.invoiceIntro : data.design.offerIntro} /></Field>
-              <Field label="Schlusstext" span={3}><textarea rows={3} value={doc.outro} onChange={(e) => update({ outro: e.target.value })} placeholder={isInvoice ? data.design.invoiceOutro : data.design.offerOutro} /></Field>
+              <Field label="Einleitung" span={3}><textarea rows={2} value={doc.intro} onChange={(e) => update({ intro: e.target.value })} placeholder={isInvoice ? store.design.invoiceIntro : store.design.offerIntro} /></Field>
+              <Field label="Schlusstext" span={3}><textarea rows={3} value={doc.outro} onChange={(e) => update({ outro: e.target.value })} placeholder={isInvoice ? store.design.invoiceOutro : store.design.offerOutro} /></Field>
             </div>
           </fieldset>
 
@@ -306,7 +309,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
             <span>Vorschau</span>
             <Link href="/app/design" className="link">Design anpassen</Link>
           </div>
-          <A4Preview><DocumentTemplate company={company} doc={doc} design={data.design} customerNumber={customer?.number} /></A4Preview>
+          <A4Preview><DocumentTemplate company={company} doc={doc} design={store.design} customerNumber={customer?.number} /></A4Preview>
         </div>
       </div>
 

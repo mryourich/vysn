@@ -716,3 +716,14 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .sync-status.offline i { background: var(--info); }
 .sync-status.offline { color: var(--info); }
 .company-row svg.company-lock { color: var(--muted); }
+
+/* Upgrade-Popup & gesperrte Funktionen */
+.upgrade-feature { display: flex; gap: 14px; align-items: center; margin-bottom: 4px; }
+.upgrade-feature h3 { margin: 0 0 2px; font-size: 17px; }
+.upgrade-feature p { margin: 0; color: var(--muted); font-size: 14px; }
+.upgrade-feature .upgrade-hero { flex: none; }
+.upgrade-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.upgrade-list li { display: flex; gap: 8px; align-items: flex-start; }
+.upgrade-list svg { color: var(--success); flex: none; margin-top: 2px; }
+.nav-lock { margin-left: auto; opacity: 0.55; flex: none; }
+.btn .btn-lock { opacity: 0.7; }
