@@ -66,8 +66,8 @@ export const PLAN_OFFERS: PlanOffer[] = [
   {
     id: 'business',
     name: 'Business',
-    monthly: 24,
-    yearly: 19,
+    monthly: 24.9,
+    yearly: 19.9,
     text: 'Für Betriebe, die ihre Zahlen im Griff haben wollen.',
     features: ['Unbegrenzt Rechnungen & Angebote', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
     cta: '30 Tage kostenlos testen',
@@ -76,8 +76,8 @@ export const PLAN_OFFERS: PlanOffer[] = [
   {
     id: 'team',
     name: 'Team',
-    monthly: 49,
-    yearly: 39,
+    monthly: 49.9,
+    yearly: 39.9,
     text: 'Für Teams mit Büro und mehreren Mitarbeitenden.',
     features: ['Alles aus Business', 'Bis zu 5 Benutzer je Firma', 'Rollen: Inhaber, Admin, Mitarbeiter', 'Persönliches Onboarding', 'Telefon-Support'],
     cta: '30 Tage kostenlos testen',
