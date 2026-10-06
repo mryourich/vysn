@@ -1,5 +1,5 @@
 import { MONTHS_LONG, today } from './calc';
-import type { Data, PaidPlan, PlanId, UsageKind } from './types';
+import type { CompanySummary, Data, PaidPlan, PlanId, UsageKind } from './types';
 
 /** Tarife: Limits der App. Preise/Texte siehe PLAN_OFFERS unten (Startseite und App). */
 export const PLANS: Record<PlanId, { label: string; monthlyLimit: number | null }> = {
@@ -13,6 +13,15 @@ export const PLANS: Record<PlanId, { label: string; monthlyLimit: number | null 
 export const PLAN_USERS: Record<PlanId, number> = { start: 1, solo: 1, business: 1, team: 5 };
 
 export const planOf = (data: Data): PlanId => data.company?.plan || 'start';
+
+/**
+ * Start und Solo enthalten eine Firma; weitere Firmen nur mit mindestens einer eigenen Firma
+ * im Tarif Business oder Team (dieselbe Regel prüft can_add_company() in der Datenbank).
+ */
+export const canAddCompany = (companies: CompanySummary[]) => {
+  const owned = companies.filter((c) => c.role === 'owner');
+  return owned.length === 0 || owned.some((c) => c.plan === 'business' || c.plan === 'team');
+};
 
 /** Begrenzte Arten in Anzeigereihenfolge, mit Bezeichnung (Einzahl/Mehrzahl). */
 export const USAGE_KINDS: { kind: UsageKind; one: string; many: string }[] = [
@@ -71,7 +80,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 0,
     yearly: 0,
     text: 'Für Gründer und Nebengewerbe, die sauber starten wollen.',
-    features: ['Je 10 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Mehrere Firmen unter einem Login'],
+    features: ['Je 10 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: 'Kostenlos starten',
   },
   {
@@ -80,7 +89,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 9.9,
     yearly: 7.9,
     text: 'Für Selbstständige mit regelmäßigen Aufträgen.',
-    features: ['Je 50 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Mehrere Firmen unter einem Login'],
+    features: ['Je 50 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: '30 Tage kostenlos testen',
   },
   {
@@ -89,7 +98,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 24.9,
     yearly: 19.9,
     text: 'Für Betriebe, die ihre Zahlen im Griff haben wollen.',
-    features: ['Unbegrenzt Rechnungen, Angebote, Kunden & Artikel', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
+    features: ['Unbegrenzt Rechnungen, Angebote, Kunden & Artikel', 'Mehrere Firmen unter einem Login', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
     cta: '30 Tage kostenlos testen',
     featured: true,
   },

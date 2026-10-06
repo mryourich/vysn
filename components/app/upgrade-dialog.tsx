@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Sparkles } from 'lucide-react';
+import { Building2, Sparkles } from 'lucide-react';
 import { PLANS, PLAN_OFFERS, formatPlanPrice, nextPlanForLimits, planOf, usageLabel, usageQuota } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import { Modal } from './ui';
@@ -9,6 +9,19 @@ import { Modal } from './ui';
 export function UpgradeDialog() {
   const { data, upgradeNotice, dismissUpgrade } = useStore();
   if (!upgradeNotice) return null;
+  if (upgradeNotice === 'company') {
+    return (
+      <Modal title="Weitere Firma" onClose={dismissUpgrade}
+        footer={<>
+          <button className="btn btn-quiet" onClick={dismissUpgrade}>Später</button>
+          <Link className="btn btn-primary" href="/app/tarif" onClick={dismissUpgrade}><Sparkles size={16} /> Business ansehen</Link>
+        </>}>
+        <div className="upgrade-hero"><Building2 size={22} /></div>
+        <p>Die Tarife <strong>Start</strong> und <strong>Solo</strong> enthalten <strong>eine Firma</strong>.</p>
+        <p className="muted">Mit <strong>Business</strong> oder <strong>Team</strong> verwalten Sie mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummernkreisen und eigenem Rechnungsdesign. Buchen Sie dazu Business für Ihre bestehende Firma.</p>
+      </Modal>
+    );
+  }
   const q = usageQuota(data, upgradeNotice);
   const label = usageLabel(upgradeNotice);
   const plan = planOf(data);

@@ -715,3 +715,4 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .sync-banner.sync-notice .icon-btn { flex: none; color: inherit; }
 .sync-status.offline i { background: var(--info); }
 .sync-status.offline { color: var(--info); }
+.company-row svg.company-lock { color: var(--muted); }

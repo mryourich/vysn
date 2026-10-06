@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Building2, Check, ChevronsUpDown, CreditCard, LogOut, Plus, UserPlus } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown, CreditCard, Lock, LogOut, Plus, UserPlus } from 'lucide-react';
 import { PLANS } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import { ROLE_LABEL, isAdminRole } from '../../lib/team';
@@ -21,7 +21,7 @@ export function CompanyAvatar({ name, logo, size = 32 }: { name: string; logo: s
 
 /** Liste aller Firmen mit „Neue Firma“ – genutzt im Desktop-Menü und im mobilen Menü. */
 export function CompanyList({ onDone }: { onDone?: () => void }) {
-  const { companies, activeCompanyId, switchCompany, startNewCompany } = useStore();
+  const { companies, activeCompanyId, switchCompany, startNewCompany, canAddCompany } = useStore();
   const router = useRouter();
   const open = async (c: CompanySummary) => {
     onDone?.();
@@ -41,7 +41,8 @@ export function CompanyList({ onDone }: { onDone?: () => void }) {
       ))}
       <button className="company-row company-new" onClick={async () => { onDone?.(); await startNewCompany(); }}>
         <span className="company-avatar company-plus"><Plus size={16} /></span>
-        <span><strong>Neue Firma anlegen</strong><small>Eigene Kunden, Nummern & Design</small></span>
+        <span><strong>Neue Firma anlegen</strong><small>{canAddCompany ? 'Eigene Kunden, Nummern & Design' : 'Ab Tarif Business'}</small></span>
+        {canAddCompany ? null : <Lock size={14} className="company-lock" />}
       </button>
     </div>
   );

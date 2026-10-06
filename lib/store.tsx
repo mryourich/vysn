@@ -14,7 +14,7 @@ import { SyncError, isProvisional, mergeOps, opsEmpty, opsSize, provisionalNumbe
 import type { Ops, Rejection } from './db/ops';
 import { REMOTE_TABLES, applyRemote, changeId, remoteKey } from './db/remote';
 import type { RemoteChange } from './db/remote';
-import { countUsage, usageQuota } from './plans';
+import { canAddCompany, countUsage, usageQuota } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation, UsageKind } from './types';
@@ -65,8 +65,10 @@ type Store = {
   switchCompany: (id: string) => Promise<void>;
   startNewCompany: () => Promise<void>;
   cancelNewCompany: () => Promise<void>;
-  /** Hinweis „Monatslimit erreicht“ für diese Art (null = kein Hinweis) */
-  upgradeNotice: UsageKind | null;
+  /** Upgrade-Hinweis: Monatslimit dieser Art erreicht bzw. weitere Firma nicht im Tarif (null = kein Hinweis) */
+  upgradeNotice: UsageKind | 'company' | null;
+  /** Darf der Nutzer eine weitere Firma anlegen (Start/Solo: nur eine) */
+  canAddCompany: boolean;
   dismissUpgrade: () => void;
   saveCompany: (company: Company) => void;
   /** Speichert einen Kunden; `null`, wenn ein neuer Kunde das Monatslimit überschreiten würde. */
@@ -125,7 +127,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [creatingCompany, setCreatingCompany] = useState(false);
-  const [upgradeNotice, setUpgradeNotice] = useState<UsageKind | null>(null);
+  const [upgradeNotice, setUpgradeNotice] = useState<UsageKind | 'company' | null>(null);
   const previousCompany = useRef<string | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -457,7 +459,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /** Abgelehnte Änderungen melden; danach den Stand vom Server holen. */
   const onRejected = (list: Rejection[]) => {
     const hint = list.find((r) => r.hint.startsWith('upgrade:'))?.hint;
-    if (hint) setUpgradeNotice(hint.slice('upgrade:'.length) as UsageKind);
+    if (hint) setUpgradeNotice(hint.slice('upgrade:'.length) as UsageKind | 'company');
     setSync((s) => ({ ...s, notice: rejectionText(list) }));
     needsRefresh.current = true;
   };
@@ -607,7 +609,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const switchCompany = useCallback((id: string) => loadCompany(id), [loadCompany]);
 
+  const mayAddCompany = !supabaseConfigured || canAddCompany(companies);
   const startNewCompany = useCallback(async () => {
+    if (!mayAddCompany) {
+      setUpgradeNotice('company');
+      return;
+    }
     await queue.current;
     await flushRef.current();
     previousCompany.current = adapter.activeCompanyId();
@@ -618,7 +625,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setData(blank);
     setActiveCompanyId(null);
     setCreatingCompany(true);
-  }, [adapter]);
+  }, [adapter, mayAddCompany]);
 
   const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
   const dismissUpgrade = useCallback(() => setUpgradeNotice(null), []);
@@ -857,10 +864,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => setData(emptyData()), []);
 
   const value = useMemo<Store>(() => ({
-    data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    data, ready, auth, authenticated, sync, dismissSyncNotice, companies, canAddCompany: mayAddCompany, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
-  }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+  }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, mayAddCompany, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 

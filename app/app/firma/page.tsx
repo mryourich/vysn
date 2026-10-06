@@ -53,7 +53,7 @@ export default function CompanyPage() {
 
       <section className="card" id="tarif">
         <div className="card-head">
-          <div><h2>Tarif</h2><p>Der Tarif gilt je Firma. Sie können beliebig viele Firmen anlegen.</p></div>
+          <div><h2>Tarif</h2><p>Der Tarif gilt je Firma. Mehrere Firmen sind in den Tarifen Business und Team enthalten.</p></div>
           <button className="btn" onClick={() => startNewCompany()}><Plus size={16} /> Weitere Firma</button>
         </div>
         <div className="plan-box">
