@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, MoreHorizontal, Palette, ReceiptText, ScanLine, Settings2, Users, Wallet, X,
+  BarChart3, Boxes, Building2, CreditCard, FileSpreadsheet, FileText, LayoutDashboard, Lock, MoreHorizontal, Palette, ReceiptText, ScanLine, Settings2, UserPlus, Users, Wallet, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
+import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
 import { Brand } from './brand';
+import { Empty } from './ui';
 import { CompanyAvatar, CompanyList, CompanySwitcher, LogoutButton } from './company-switcher';
 import { UpgradeDialog } from './upgrade-dialog';
 import { Login } from './login';
@@ -36,6 +38,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
     { href: '/app/firma', label: 'Firmendaten', icon: Building2 },
     { href: '/app/design', label: 'Rechnungsdesign', icon: Palette },
     { href: '/app/einstellungen', label: 'E-Mail & Versand', icon: Settings2 },
+    { href: '/app/team', label: 'Team & Rechte', icon: UserPlus },
     { href: '/app/tarif', label: 'Tarif & Abrechnung', icon: CreditCard },
   ] },
 ];
@@ -50,10 +53,20 @@ const MOBILE_TABS: NavItem[] = [
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready, authenticated, auth, sync } = useStore();
+  const { data, ready, authenticated, auth, sync, role } = useStore();
   const pathname = usePathname() || '/app';
+  const router = useRouter();
   const [moreOpen, setMoreOpen] = useState(false);
   useEffect(() => setMoreOpen(false), [pathname]);
+  const invitePage = pathname.startsWith('/app/einladung');
+  // Offene Einladung (z. B. nach Registrierung und E-Mail-Bestätigung) zuerst annehmen
+  useEffect(() => {
+    if (!authenticated || auth.mode !== 'supabase' || invitePage) return;
+    const token = pendingInvite();
+    if (token) router.replace(`/app/einladung?token=${token}`);
+  }, [authenticated, auth.mode, invitePage, router]);
+
+  if (invitePage) return <>{children}</>;
 
   if (!ready) return <div className="app-loading"><span className="spinner" /></div>;
   if (!authenticated) return <Login />;
@@ -63,6 +76,9 @@ function Shell({ children }: { children: React.ReactNode }) {
   }
 
   const company = data.company;
+  const admin = isAdminRole(role);
+  const nav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => admin || !ADMIN_PATHS.includes(i.href)) })).filter((g) => g.items.length);
+  const blocked = !admin && ADMIN_PATHS.some((p) => isActive(pathname, p));
   const current = NAV.flatMap((g) => g.items).filter((i) => isActive(pathname, i.href)).pop();
 
   return (
@@ -70,7 +86,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       <aside className="sidebar">
         <Brand href="/app" />
         <nav>
-          {NAV.map((g) => (
+          {nav.map((g) => (
             <div key={g.group || 'main'} className="nav-group">
               {g.group ? <span className="nav-group-label">{g.group}</span> : null}
               {g.items.map((item) => (
@@ -104,7 +120,7 @@ function Shell({ children }: { children: React.ReactNode }) {
             <button className="btn btn-small" onClick={() => window.location.reload()}>Neu laden</button>
           </div>
         ) : null}
-        <main className="app-content">{children}</main>
+        <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : children}</main>
       </div>
       <UpgradeDialog />
 
@@ -124,7 +140,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <div className="sheet" onClick={(e) => e.stopPropagation()}>
             <div className="sheet-head"><strong>Menü</strong><button className="icon-btn" onClick={() => setMoreOpen(false)} aria-label="Schließen"><X size={18} /></button></div>
             <div className="sheet-grid">
-              {NAV.flatMap((g) => g.items).map((item) => (
+              {nav.flatMap((g) => g.items).map((item) => (
                 <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? 'active' : ''}>
                   <item.icon size={20} strokeWidth={1.8} />{item.label}
                 </Link>
@@ -141,6 +157,16 @@ function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function NoAccess({ role }: { role: string }) {
+  return (
+    <div className="card">
+      <Empty icon={<Lock size={24} />} title="Kein Zugriff"
+        text={`Mit der Rolle „${role}“ können Sie diesen Bereich nicht öffnen. Firmendaten, Design, Einstellungen und Tarif verwalten Inhaber und Admins.`}
+        action={<Link href="/app" className="btn">Zum Dashboard</Link>} />
     </div>
   );
 }

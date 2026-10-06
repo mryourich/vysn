@@ -68,6 +68,23 @@ Webhook-Ereignisse: `customer.subscription.created`, `customer.subscription.upda
 `customer.subscription.deleted`, `checkout.session.completed`, `invoice.payment_failed`.
 Variablen siehe `.env.example`.
 
+## Team & Rechte
+
+Migration `20261007090000_team.sql`: Im Tarif **Team** laden Inhaber und Admins bis zu 5 Personen
+je Firma ein (inkl. offener Einladungen). Rollen:
+
+| Rolle | Darf |
+| --- | --- |
+| `owner` (Inhaber) | alles, inkl. Rollen ändern, Sicherung einspielen, Firma löschen |
+| `admin` | alles außer Rollen ändern und Firma löschen |
+| `member` (Mitarbeiter) | Tagesgeschäft – keine Firmendaten, Design, Einstellungen, Tarif oder Team |
+
+Einladungen (`company_invites`) sind 14 Tage gültig, nur einmal verwendbar und nur mit der
+eingeladenen E-Mail-Adresse annehmbar (`accept_invite()`). Mitglieder werden ausschließlich über
+die Funktionen `invite_member`, `revoke_invite`, `set_member_role`, `remove_member` verwaltet.
+Endet der Tarif Team, hat nur noch der Inhaber Zugriff (`member_role()`); die Mitglieder bleiben
+gespeichert. Mit SMTP verschickt `/api/team/invite-mail` den Link per E-Mail, sonst wird er kopiert.
+
 ## Wie die App speichert
 
 `lib/db/adapter.ts` definiert die Schnittstelle, `lib/db/local.ts` und `lib/db/supabase.ts`
@@ -76,6 +93,5 @@ implementieren sie. Die Oberfläche arbeitet auf einem Daten-Snapshot; nach jede
 
 ## Nächste Ausbaustufen
 
-- **Team-Einladungen:** Einträge in `company_members` (Rolle `member`) über eine Edge Function mit Einladungs-Mail.
 - **Logos in Supabase Storage** statt als Data-URL in `companies.logo`.
 - **Belege (PDF/Fotos) zu Ausgaben** in Supabase Storage.

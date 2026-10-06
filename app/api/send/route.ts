@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { createClient } from '@supabase/supabase-js';
+import { mailFrom, smtpConfigured, smtpTransport } from '../../../lib/server/smtp';
 
 /**
  * Versendet Angebote/Rechnungen per E-Mail über einen SMTP-Server.
@@ -19,7 +19,6 @@ const MAX_ATTACHMENT = 5 * 1024 * 1024;
 const EMAIL = /^[^\s@<>()"',;]+@[^\s@<>()"',;]+\.[^\s@<>()"',;]+$/;
 const sent = new Map<string, number[]>();
 
-const smtpConfigured = () => Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
@@ -86,17 +85,10 @@ export async function POST(req: Request) {
     attachments = [{ filename: String(att.filename || 'Dokument.pdf').replace(/[^\w\-. äöüÄÖÜß]/g, '_').slice(0, 120), content, contentType: 'application/pdf' }];
   }
 
-  const from = process.env.MAIL_FROM!;
-  const fromAddress = from.match(/<([^>]+)>/)?.[1] || from;
-  const transport = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: process.env.SMTP_USER ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || '' } : undefined,
-  });
+  const transport = smtpTransport();
   try {
     const info = await transport.sendMail({
-      from: fromName ? { name: fromName, address: fromAddress } : from,
+      from: mailFrom(fromName),
       to, cc, bcc, replyTo, subject, text, attachments,
     });
     return NextResponse.json({ ok: true, id: info.messageId });

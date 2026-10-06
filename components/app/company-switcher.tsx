@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { Building2, Check, ChevronsUpDown, CreditCard, LogOut, Plus } from 'lucide-react';
+import { Building2, Check, ChevronsUpDown, CreditCard, LogOut, Plus, UserPlus } from 'lucide-react';
 import { PLANS } from '../../lib/plans';
 import { useStore } from '../../lib/store';
+import { ROLE_LABEL, isAdminRole } from '../../lib/team';
+import type { Role } from '../../lib/team';
 import type { CompanySummary } from '../../lib/types';
 
 export function CompanyAvatar({ name, logo, size = 32 }: { name: string; logo: string; size?: number }) {
@@ -33,7 +35,7 @@ export function CompanyList({ onDone }: { onDone?: () => void }) {
       {companies.map((c) => (
         <button key={c.id} className={`company-row${c.id === activeCompanyId ? ' active' : ''}`} onClick={() => open(c)}>
           <CompanyAvatar name={c.name} logo={c.logo} size={28} />
-          <span><strong>{c.name}</strong><small>Tarif {PLANS[c.plan]?.label ?? c.plan}</small></span>
+          <span><strong>{c.name}</strong><small>Tarif {PLANS[c.plan]?.label ?? c.plan}{c.role && c.role !== 'owner' ? ` · ${ROLE_LABEL[c.role as Role] ?? c.role}` : ''}</small></span>
           {c.id === activeCompanyId ? <Check size={16} /> : null}
         </button>
       ))}
@@ -66,7 +68,7 @@ export function LogoutButton({ className = 'btn btn-quiet', onDone }: { classNam
 
 /** Firmenkarte unten in der Seitenleiste mit Menü zum Wechseln. */
 export function CompanySwitcher() {
-  const { data, auth } = useStore();
+  const { data, auth, role } = useStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -88,8 +90,9 @@ export function CompanySwitcher() {
           <span className="switcher-label">Firmen</span>
           <CompanyList onDone={() => setOpen(false)} />
           <div className="switcher-foot">
-            <Link href="/app/firma" className="switcher-item" onClick={() => setOpen(false)}><Building2 size={16} /> Firmendaten</Link>
-            <Link href="/app/tarif" className="switcher-item" onClick={() => setOpen(false)}><CreditCard size={16} /> Tarif & Abrechnung</Link>
+            {isAdminRole(role) ? <Link href="/app/firma" className="switcher-item" onClick={() => setOpen(false)}><Building2 size={16} /> Firmendaten</Link> : null}
+            <Link href="/app/team" className="switcher-item" onClick={() => setOpen(false)}><UserPlus size={16} /> Team & Rechte</Link>
+            {isAdminRole(role) ? <Link href="/app/tarif" className="switcher-item" onClick={() => setOpen(false)}><CreditCard size={16} /> Tarif & Abrechnung</Link> : null}
             {auth.email ? <span className="switcher-email">{auth.email}</span> : null}
           </div>
         </div>

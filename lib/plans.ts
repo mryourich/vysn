@@ -8,6 +8,9 @@ export const PLANS: Record<PlanId, { label: string; invoicesPerMonth: number | n
   team: { label: 'Team', invoicesPerMonth: null },
 };
 
+/** Benutzer je Firma (inkl. offener Einladungen) – dieselbe Regel prüft plan_user_limit() in der Datenbank. */
+export const PLAN_USERS: Record<PlanId, number> = { start: 1, business: 1, team: 5 };
+
 export const planOf = (data: Data): PlanId => data.company?.plan || 'start';
 
 /**

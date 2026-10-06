@@ -9,6 +9,7 @@ import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
 import { invoiceQuota } from './plans';
 import { taxProfile } from './tax';
+import type { Role } from './team';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation } from './types';
 
 export type SyncState = 'idle' | 'saving' | 'error';
@@ -33,6 +34,8 @@ type Store = {
   /** Alle Firmen des Nutzers und die gerade geöffnete */
   companies: CompanySummary[];
   activeCompanyId: string | null;
+  /** Rolle des Nutzers in der aktiven Firma (lokal immer Inhaber). */
+  role: Role;
   /** true, während eine weitere Firma angelegt wird (Onboarding mit „Abbrechen“) */
   creatingCompany: boolean;
   switchCompany: (id: string) => Promise<void>;
@@ -194,6 +197,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
   const dismissUpgrade = useCallback(() => setUpgradeNotice(false), []);
+  const role: Role = !supabaseConfigured ? 'owner' : ((companies.find((c) => c.id === activeCompanyId)?.role as Role) || 'member');
 
   const auth = useMemo<Auth>(() => ({
     mode: supabaseConfigured ? 'supabase' : 'local',
@@ -397,10 +401,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => setData(emptyData()), []);
 
   const value = useMemo<Store>(() => ({
-    data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    data, ready, auth, authenticated, sync, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
-  }), [data, ready, auth, authenticated, sync, companies, activeCompanyId, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+  }), [data, ready, auth, authenticated, sync, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 

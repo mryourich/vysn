@@ -8,6 +8,7 @@ import { billingInfo, openPortal, startCheckout, syncBilling } from '../../../li
 import type { BillingInfo } from '../../../lib/billing';
 import { PLAN_OFFERS, PLANS, TRIAL_DAYS, invoiceQuota } from '../../../lib/plans';
 import { useStore } from '../../../lib/store';
+import { isAdminRole } from '../../../lib/team';
 import { Badge, PageHeader } from '../../../components/app/ui';
 
 export default function PlanPage() {
@@ -24,13 +25,12 @@ const STATUS: Record<string, [string, 'success' | 'info' | 'warning' | 'danger' 
 };
 
 function Plan() {
-  const { data, auth, companies, activeCompanyId, switchCompany } = useStore();
+  const { data, auth, role, activeCompanyId, switchCompany } = useStore();
   const params = useSearchParams();
   const router = useRouter();
   const company = data.company!;
   const billing = company.billing;
-  const role = companies.find((c) => c.id === activeCompanyId)?.role;
-  const canManage = role === 'owner' || role === 'admin';
+  const canManage = isAdminRole(role);
   const [info, setInfo] = useState<BillingInfo | null>(null);
   const [yearly, setYearly] = useState(true);
   const [busy, setBusy] = useState('');
