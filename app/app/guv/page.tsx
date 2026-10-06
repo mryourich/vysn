@@ -14,7 +14,7 @@ import { PageHeader, Segmented, StatCard } from '../../../components/app/ui';
 type Mode = 'year' | 'q1' | 'q2' | 'q3' | 'q4' | 'month';
 
 export default function ProfitLossPage() {
-  const { data } = useStore();
+  const { data, design } = useStore();
   const company = data.company!;
   const tax = taxProfile(company);
   const years = useMemo(() => {
@@ -38,7 +38,7 @@ export default function ProfitLossPage() {
   const exportPdf = async () => {
     setBusy(true);
     try {
-      await downloadPdf(<ReportTemplate company={company} pl={pl} periodLabel={period.label} basisLabel={basisLabel} accent={data.design.accent} />, `GuV ${period.label}.pdf`);
+      await downloadPdf(<ReportTemplate company={company} pl={pl} periodLabel={period.label} basisLabel={basisLabel} accent={design.accent} />, `GuV ${period.label}.pdf`);
     } finally {
       setBusy(false);
     }

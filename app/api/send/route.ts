@@ -64,6 +64,17 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
   }
+  // E-Mail-Versand ist ab dem Tarif Business enthalten – Tarif der Firma prüfen (mit dem Token des Nutzers, RLS)
+  if (supabaseUrl && supabaseKey) {
+    const companyId = typeof body.companyId === 'string' ? body.companyId : '';
+    const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
+    const { data: company } = companyId ? await sb.from('companies').select('plan').eq('id', companyId).maybeSingle() : { data: null };
+    if (!company) return NextResponse.json({ error: 'Firma nicht gefunden.' }, { status: 403 });
+    if (company.plan !== 'business' && company.plan !== 'team') {
+      return NextResponse.json({ error: 'Der E-Mail-Versand ist ab dem Tarif Business enthalten.' }, { status: 402 });
+    }
+  }
   const to = list(body.to);
   const cc = list(body.cc);
   const bcc = list(body.bcc);

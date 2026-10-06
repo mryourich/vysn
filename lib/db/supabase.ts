@@ -60,8 +60,16 @@ export class SupabaseAdapter implements StorageAdapter {
 
   /** Monatsnutzung der aktiven Firma (Tariflimits). */
   async fetchUsage(month = usageMonth()): Promise<Usage> {
-    const rows = check(await this.db.from('usage_counters').select('kind, used').eq('company_id', this.companyId).eq('month', `${month}-01`)) as { kind: UsageKind; used: number }[] | null;
-    return { month, counts: Object.fromEntries((rows || []).map((r) => [r.kind, Number(r.used)])) };
+    const res = await this.db.from('usage_counters').select('kind, used').eq('company_id', this.companyId).eq('month', `${month}-01`);
+    if (res.error) {
+      const err = syncErrorFrom({ ...res.error, status: res.status });
+      if (err.transient) throw err;
+      // Zähler sind optional (z. B. Datenbank-Update noch nicht eingespielt) – Laden nie daran scheitern lassen
+      console.warn('usage_counters nicht verfügbar:', res.error.message);
+      return { month, counts: {} };
+    }
+    const rows = (res.data || []) as { kind: UsageKind; used: number }[];
+    return { month, counts: Object.fromEntries(rows.map((r) => [r.kind, Number(r.used)])) };
   }
 
   /** Reads all rows of a company, page by page (PostgREST returns max. 1000 rows per request). */

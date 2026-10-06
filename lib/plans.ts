@@ -1,5 +1,5 @@
 import { MONTHS_LONG, today } from './calc';
-import type { Data, PaidPlan, PlanId, UsageKind } from './types';
+import type { CompanySummary, Data, PaidPlan, PlanId, UsageKind } from './types';
 
 /** Tarife: Limits der App. Preise/Texte siehe PLAN_OFFERS unten (Startseite und App). */
 export const PLANS: Record<PlanId, { label: string; monthlyLimit: number | null }> = {
@@ -13,6 +13,15 @@ export const PLANS: Record<PlanId, { label: string; monthlyLimit: number | null 
 export const PLAN_USERS: Record<PlanId, number> = { start: 1, solo: 1, business: 1, team: 5 };
 
 export const planOf = (data: Data): PlanId => data.company?.plan || 'start';
+
+/**
+ * Start und Solo enthalten eine Firma; weitere Firmen nur mit mindestens einer eigenen Firma
+ * im Tarif Business oder Team (dieselbe Regel prüft can_add_company() in der Datenbank).
+ */
+export const canAddCompany = (companies: CompanySummary[]) => {
+  const owned = companies.filter((c) => c.role === 'owner');
+  return owned.length === 0 || owned.some((c) => c.plan === 'business' || c.plan === 'team');
+};
 
 /** Begrenzte Arten in Anzeigereihenfolge, mit Bezeichnung (Einzahl/Mehrzahl). */
 export const USAGE_KINDS: { kind: UsageKind; one: string; many: string }[] = [
@@ -71,7 +80,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 0,
     yearly: 0,
     text: 'Für Gründer und Nebengewerbe, die sauber starten wollen.',
-    features: ['Je 10 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Mehrere Firmen unter einem Login'],
+    features: ['Je 10 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: 'Kostenlos starten',
   },
   {
@@ -80,7 +89,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 9.9,
     yearly: 7.9,
     text: 'Für Selbstständige mit regelmäßigen Aufträgen.',
-    features: ['Je 50 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Mehrere Firmen unter einem Login'],
+    features: ['Je 50 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: '30 Tage kostenlos testen',
   },
   {
@@ -89,7 +98,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 24.9,
     yearly: 19.9,
     text: 'Für Betriebe, die ihre Zahlen im Griff haben wollen.',
-    features: ['Unbegrenzt Rechnungen, Angebote, Kunden & Artikel', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
+    features: ['Unbegrenzt Rechnungen, Angebote, Kunden & Artikel', 'Mehrere Firmen unter einem Login', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
     cta: '30 Tage kostenlos testen',
     featured: true,
   },
@@ -114,3 +123,41 @@ export const formatPlanPrice = (price: number) =>
 
 /** Nächstgrößerer Tarif mit höherem Monatslimit (für Upgrade-Hinweise). */
 export const nextPlanForLimits = (plan: PlanId): PaidPlan | null => (plan === 'start' ? 'solo' : plan === 'solo' ? 'business' : null);
+
+/* ---------------------------------------------------------------------------
+ * Funktionen je Tarif
+ * Nicht enthaltene Funktionen bleiben sichtbar (mit Schloss); ein Klick öffnet „Jetzt upgraden“.
+ * ------------------------------------------------------------------------- */
+export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team';
+
+export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team'; text: string }> = {
+  design: { label: 'Rechnungsdesign', plan: 'business', text: 'Farben, Schrift, Logo-Position und Aufbau Ihrer Rechnungen und Angebote frei gestalten.' },
+  logoBackground: { label: 'Logo-Hintergrund entfernen', plan: 'business', text: 'Den Hintergrund Ihres Logos automatisch freistellen – für saubere Rechnungen.' },
+  reports: { label: 'GuV & Finanzen', plan: 'business', text: 'Gewinn und Verlust, Umsatzsteuer und Auswertungen nach Monat, Quartal und Jahr.' },
+  datev: { label: 'DATEV-Export', plan: 'business', text: 'Buchungsstapel für Ihre Steuerberatung mit einem Klick erzeugen.' },
+  email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote und Rechnungen direkt aus VYSN One per E-Mail versenden – mit PDF im Anhang.' },
+  scanner: { label: 'Lager-Scanner & QR-Etiketten', plan: 'business', text: 'Regale und Artikel mit QR-Codes versehen und per Handy ein- und auslagern.' },
+  companies: { label: 'Mehrere Firmen', plan: 'business', text: 'Mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummern und eigenem Design.' },
+  team: { label: 'Team & Rechte', plan: 'team', text: 'Bis zu 5 Personen je Firma einladen – mit Rollen für Inhaber, Admin und Mitarbeiter.' },
+};
+
+const PLAN_RANK: Record<PlanId, number> = { start: 0, solo: 1, business: 2, team: 3 };
+
+export const hasFeature = (plan: PlanId, feature: Feature) => PLAN_RANK[plan] >= PLAN_RANK[FEATURES[feature].plan];
+
+/** Seiten, die eine Funktion voraussetzen. */
+export const FEATURE_PATHS: [string, Feature][] = [
+  ['/app/design', 'design'],
+  ['/app/guv', 'reports'],
+  ['/app/export', 'datev'],
+  ['/app/einstellungen', 'email'],
+  ['/app/scan', 'scanner'],
+  ['/app/team', 'team'],
+];
+
+export const featureForPath = (pathname: string): Feature | null =>
+  FEATURE_PATHS.find(([p]) => pathname === p || pathname.startsWith(`${p}/`))?.[1] ?? null;
+
+/** Upgrade-Hinweis: Monatslimit einer Art oder fehlende Funktion. */
+export type UpgradeTopic = UsageKind | Feature;
+export const isFeature = (topic: UpgradeTopic): topic is Feature => topic in FEATURES;

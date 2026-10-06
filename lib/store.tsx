@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
 import { addDays, setCurrency, today, uid } from './calc';
-import { demoData, emptyData } from './defaults';
+import { defaultDesign, demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
@@ -14,7 +14,8 @@ import { SyncError, isProvisional, mergeOps, opsEmpty, opsSize, provisionalNumbe
 import type { Ops, Rejection } from './db/ops';
 import { REMOTE_TABLES, applyRemote, changeId, remoteKey } from './db/remote';
 import type { RemoteChange } from './db/remote';
-import { countUsage, usageQuota } from './plans';
+import { canAddCompany, countUsage, hasFeature, usageQuota } from './plans';
+import type { Feature, UpgradeTopic } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation, UsageKind } from './types';
@@ -65,8 +66,16 @@ type Store = {
   switchCompany: (id: string) => Promise<void>;
   startNewCompany: () => Promise<void>;
   cancelNewCompany: () => Promise<void>;
-  /** Hinweis „Monatslimit erreicht“ für diese Art (null = kein Hinweis) */
-  upgradeNotice: UsageKind | null;
+  /** Upgrade-Hinweis: Monatslimit dieser Art erreicht bzw. Funktion nicht im Tarif (null = kein Hinweis) */
+  upgradeNotice: UpgradeTopic | null;
+  /** Ist die Funktion im Tarif der aktiven Firma enthalten? */
+  can: (feature: Feature) => boolean;
+  /** Prüft die Funktion; sonst Popup „Jetzt upgraden“ und `false`. */
+  requireFeature: (feature: Feature) => boolean;
+  /** Rechnungsgestaltung, die für Belege gilt (ohne Funktion „Rechnungsdesign“ das Standarddesign) */
+  design: InvoiceDesign;
+  /** Darf der Nutzer eine weitere Firma anlegen (Start/Solo: nur eine) */
+  canAddCompany: boolean;
   dismissUpgrade: () => void;
   saveCompany: (company: Company) => void;
   /** Speichert einen Kunden; `null`, wenn ein neuer Kunde das Monatslimit überschreiten würde. */
@@ -125,7 +134,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
   const [creatingCompany, setCreatingCompany] = useState(false);
-  const [upgradeNotice, setUpgradeNotice] = useState<UsageKind | null>(null);
+  const [upgradeNotice, setUpgradeNotice] = useState<UpgradeTopic | null>(null);
   const previousCompany = useRef<string | null>(null);
   const dataRef = useRef(data);
   dataRef.current = data;
@@ -457,7 +466,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   /** Abgelehnte Änderungen melden; danach den Stand vom Server holen. */
   const onRejected = (list: Rejection[]) => {
     const hint = list.find((r) => r.hint.startsWith('upgrade:'))?.hint;
-    if (hint) setUpgradeNotice(hint.slice('upgrade:'.length) as UsageKind);
+    if (hint) {
+      const topic = hint.slice('upgrade:'.length);
+      setUpgradeNotice((topic === 'company' ? 'companies' : topic) as UpgradeTopic);
+    }
     setSync((s) => ({ ...s, notice: rejectionText(list) }));
     needsRefresh.current = true;
   };
@@ -607,7 +619,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const switchCompany = useCallback((id: string) => loadCompany(id), [loadCompany]);
 
+  const mayAddCompany = !supabaseConfigured || canAddCompany(companies);
+  // Lokaler Entwicklungsmodus: alle Funktionen frei
+  const plan = data.company?.plan || 'start';
+  const can = useCallback((feature: Feature) => !supabaseConfigured || hasFeature(plan, feature), [plan]);
+  const requireFeature = useCallback((feature: Feature) => {
+    if (can(feature)) return true;
+    setUpgradeNotice(feature);
+    return false;
+  }, [can]);
+  const design = useMemo(() => (can('design') ? data.design : defaultDesign()), [can, data.design]);
   const startNewCompany = useCallback(async () => {
+    if (!mayAddCompany) {
+      setUpgradeNotice('companies');
+      return;
+    }
     await queue.current;
     await flushRef.current();
     previousCompany.current = adapter.activeCompanyId();
@@ -618,7 +644,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setData(blank);
     setActiveCompanyId(null);
     setCreatingCompany(true);
-  }, [adapter]);
+  }, [adapter, mayAddCompany]);
 
   const cancelNewCompany = useCallback(() => loadCompany(previousCompany.current), [loadCompany]);
   const dismissUpgrade = useCallback(() => setUpgradeNotice(null), []);
@@ -857,10 +883,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const reset = useCallback(() => setData(emptyData()), []);
 
   const value = useMemo<Store>(() => ({
-    data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+    data, ready, auth, authenticated, sync, dismissSyncNotice, companies, canAddCompany: mayAddCompany, can, requireFeature, design, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
-  }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
+  }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, mayAddCompany, can, requireFeature, design, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
     setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 
