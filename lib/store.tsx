@@ -1,14 +1,16 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { isAuthRetryableFetchError } from '@supabase/supabase-js';
 import type { Session } from '@supabase/supabase-js';
 import { addDays, setCurrency, today, uid } from './calc';
 import { demoData, emptyData } from './defaults';
 import type { StorageAdapter } from './db/adapter';
 import { LocalAdapter, migrate } from './db/local';
 import { SupabaseAdapter, getSupabase, supabaseConfigured } from './db/supabase';
-import { allOutboxes, storeOutbox } from './db/outbox';
-import { SyncError, mergeOps, opsEmpty, opsSize } from './db/ops';
+import { allOutboxes, readOutbox, storeOutbox } from './db/outbox';
+import { clearUserCache, loadMeta, loadSnapshot, saveMeta, saveSnapshot } from './db/cache';
+import { SyncError, isProvisional, mergeOps, opsEmpty, opsSize, provisionalNumber } from './db/ops';
 import type { Ops, Rejection } from './db/ops';
 import { REMOTE_TABLES, applyRemote, changeId, remoteKey } from './db/remote';
 import type { RemoteChange } from './db/remote';
@@ -31,6 +33,8 @@ export type SyncInfo = {
   pending: number;
   /** Hinweis zu abgelehnten Änderungen (z. B. Limit erreicht) */
   notice: string | null;
+  /** Offline gestartet: Zeitpunkt des Datenstands auf dem Gerät */
+  offlineSince?: string | null;
 };
 
 export type Auth = {
@@ -151,6 +155,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const userRef = useRef(userId);
   userRef.current = userId;
   const flushRef = useRef<() => Promise<void>>(async () => {});
+  /** Endgültige Nummern für offline angelegte Datensätze (id → Nummer) */
+  const assigned = useRef(new Map<string, string>());
+  /** Angemeldet über die auf dem Gerät gespeicherte Sitzung (offline) */
+  const offlineAuth = useRef(false);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
   const authenticated = !supabaseConfigured || !!session;
 
@@ -158,12 +166,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!supabaseConfigured) return;
     const sb = getSupabase();
-    sb.auth.getSession().then(({ data: d }) => {
-      setSession(d.session);
+    // Ohne Netz kann ein abgelaufenes Token nicht erneuert werden – dann gilt die auf dem
+    // Gerät gespeicherte Sitzung, bis wieder Verbindung besteht.
+    const stored = (): Session | null => {
+      try {
+        const key = (sb.auth as unknown as { storageKey: string }).storageKey;
+        const parsed = JSON.parse(window.localStorage.getItem(key) || 'null');
+        return parsed?.user?.id ? (parsed as Session) : null;
+      } catch {
+        return null;
+      }
+    };
+    const adopt = (s: Session | null, event?: string, retryable = false) => {
+      if (s) { offlineAuth.current = false; setSession(s); return; }
+      if (event !== 'SIGNED_OUT' && (retryable || !navigator.onLine || offlineAuth.current)) {
+        const fallback = stored();
+        if (fallback) { offlineAuth.current = true; setSession(fallback); return; }
+      }
+      offlineAuth.current = false;
+      setSession(null);
+    };
+    // Offline versucht die Bibliothek die Erneuerung bis zu 30 s – so lange nicht warten
+    let settled = false;
+    const fallbackTimer = window.setTimeout(() => {
+      if (settled) return;
+      const fallback = stored();
+      if (fallback) { offlineAuth.current = true; setSession(fallback); }
+      setAuthChecked(true);
+    }, 2500);
+    sb.auth.getSession().then(({ data: d, error }) => {
+      settled = true;
+      window.clearTimeout(fallbackTimer);
+      adopt(d.session, undefined, !!error && isAuthRetryableFetchError(error));
       setAuthChecked(true);
     });
-    const { data: sub } = sb.auth.onAuthStateChange((_event, s) => setSession(s));
-    return () => sub.subscription.unsubscribe();
+    const { data: sub } = sb.auth.onAuthStateChange((event, s) => adopt(s, event));
+    return () => { window.clearTimeout(fallbackTimer); sub.subscription.unsubscribe(); };
   }, []);
 
   /** Lädt eine Firma (oder die zuletzt genutzte) – vorher werden offene Änderungen gespeichert. */
@@ -174,6 +212,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     serverRef.current = null;
     outbox.current = null;
     try {
+      // Sicher offline (oder nur mit gespeicherter Sitzung angemeldet): direkt vom Gerät starten
+      if (supa && (!navigator.onLine || offlineAuth.current)) throw new SyncError('offline', true);
       // Auf dem Gerät gespeicherte Änderungen (z. B. vor dem Neuladen offline erfasst) zuerst senden
       if (supa) {
         for (const ops of allOutboxes(userRef.current)) {
@@ -193,13 +233,40 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setActiveCompanyId(adapter.activeCompanyId());
       setCompanies(await adapter.listCompanies());
       setCreatingCompany(false);
-      setSync((s) => ({ ...s, state: 'idle', error: null, pending: 0 }));
+      setSync((s) => ({ ...s, state: 'idle', error: null, pending: 0, offlineSince: null }));
     } catch (e) {
-      setSync((s) => ({ ...s, state: 'error', error: (e as Error).message }));
+      // Kein Netz: mit dem Datenstand auf dem Gerät weiterarbeiten
+      if (!(supa && e instanceof SyncError && e.transient && (await startOffline(companyId)))) {
+        setSync((s) => ({ ...s, state: 'error', error: (e as Error).message }));
+      }
     } finally {
       setReady(true);
     }
+  // startOffline nutzt nur Refs und stabile Setter
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adapter, supa]);
+
+  /** Startet mit dem auf dem Gerät gespeicherten Stand (offline). */
+  const startOffline = async (companyId?: string | null) => {
+    const uid = userRef.current;
+    if (!supa || !uid) return false;
+    const meta = await loadMeta(uid);
+    const target = companyId || meta?.activeCompanyId;
+    if (!target) return false;
+    const snap = await loadSnapshot(uid, target);
+    if (!snap?.data?.company) return false;
+    const snapData = migrate(snap.data);
+    supa.attach(target);
+    serverRef.current = snapData;
+    outbox.current = readOutbox(uid, target);
+    needsRefresh.current = true;
+    setData(snapData);
+    setActiveCompanyId(target);
+    setCompanies(meta?.companies || []);
+    setCreatingCompany(false);
+    setSync((s) => ({ ...s, state: 'offline', error: null, pending: opsSize(outbox.current), offlineSince: snap.savedAt }));
+    return true;
+  };
 
   // Daten laden (lokal sofort, bei Supabase nach der Anmeldung bzw. bei Nutzerwechsel)
   useEffect(() => {
@@ -221,6 +288,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!supa || sending.current) return;
     const batch = outbox.current;
     if (!batch || opsEmpty(batch)) return;
+    if (!navigator.onLine) {
+      // Sicher offline: nicht senden, Hinweis stehen lassen – „online“ bzw. die Prüfung alle 20 s sendet später
+      setSync((s) => ({ ...s, state: 'offline', pending: opsSize(batch) }));
+      return;
+    }
     if (retry.current.timer) { window.clearTimeout(retry.current.timer); retry.current.timer = null; }
     sending.current = true;
     outbox.current = null;
@@ -229,6 +301,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let sent = false;
     try {
       await queue.current;
+      // Ohne gültige Sitzung nicht senden (sonst würde als „anonym“ geschrieben und abgelehnt)
+      const { data: auth } = await getSupabase().auth.getSession();
+      if (!auth.session) throw new SyncError('Keine gültige Anmeldung – wird nach der Anmeldung übertragen.', true);
+      await assignNumbers(batch);
       const rejected = await supa.apply(batch);
       sent = true;
       markWritten(batch);
@@ -266,6 +342,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supa, adapter]);
   flushRef.current = flush;
+
+  /**
+   * Vergibt für offline angelegte Datensätze die endgültigen Nummern (Nummernkreis auf dem
+   * Server), bevor sie gesendet werden, und übernimmt sie in den lokalen Stand.
+   */
+  const assignNumbers = async (batch: Ops) => {
+    if (!supa) return;
+    const company = dataRef.current.company;
+    const found = new Map<string, string>();
+    for (const table of ['customers', 'materials', 'documents'] as const) {
+      for (const row of batch.upserts[table] || []) {
+        if (!isProvisional(String(row.number))) continue;
+        const id = String(row.id);
+        let number = assigned.current.get(id);
+        if (!number) {
+          if (table === 'documents') {
+            const kind = row.kind === 'invoice' ? 'invoice' : 'offer';
+            const year = String(row.date).slice(0, 4);
+            const n = await supa.allocate(`${kind}:${year}`, 0);
+            const prefix = (kind === 'invoice' ? company?.invoicePrefix : company?.offerPrefix) || (kind === 'invoice' ? 'RE' : 'AN');
+            number = `${prefix}-${year}-${String(n).padStart(4, '0')}`;
+          } else {
+            const n = await supa.allocate(table === 'customers' ? 'customer' : 'material', 0);
+            number = `${table === 'customers' ? 'KD' : 'ART'}-${String(n).padStart(4, '0')}`;
+          }
+          assigned.current.set(id, number);
+        }
+        row.number = number;
+        found.set(id, number);
+      }
+    }
+    // Inzwischen erneut geänderte Zeilen in der Warteschlange ebenfalls korrigieren
+    for (const table of ['customers', 'materials', 'documents'] as const) {
+      for (const row of outbox.current?.upserts[table] || []) {
+        const number = assigned.current.get(String(row.id));
+        if (number && isProvisional(String(row.number))) row.number = number;
+      }
+    }
+    if (!found.size) return;
+    const fix = (d: Data): Data => {
+      const patch = <T extends { id: string; number: string }>(list: T[]) =>
+        list.map((x) => (found.has(x.id) && x.number !== found.get(x.id) ? { ...x, number: found.get(x.id)! } : x));
+      return { ...d, customers: patch(d.customers), materials: patch(d.materials), documents: patch(d.documents) };
+    };
+    const base = serverRef.current;
+    if (!base) return;
+    const nextBase = fix(base);
+    serverRef.current = nextBase;
+    setData((d) => (d === base ? nextBase : fix(d)));
+  };
 
   /** Merkt selbst geschriebene Zeilen, damit ihr Echo aus Realtime nichts überschreibt. */
   const markWritten = (ops: Ops) => {
@@ -344,15 +470,57 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const before = dataRef.current;
     try {
       const loaded = await supa.load(id);
-      if (dataRef.current !== before || !opsEmpty(outbox.current)) return; // inzwischen geändert – später erneut
+      if (dataRef.current !== before || !opsEmpty(outbox.current)) {
+        window.setTimeout(() => refreshRef.current(), 3000); // inzwischen geändert – gleich erneut
+        return;
+      }
       needsRefresh.current = false;
       serverRef.current = loaded;
       setData(loaded);
+      setCompanies(await supa.listCompanies());
+      setSync((s) => (s.state === 'offline' ? { ...s, state: 'idle', pending: 0, offlineSince: null } : { ...s, offlineSince: null }));
     } catch {
       /* beim nächsten Anlass erneut */
     }
   }, [supa]);
   refreshRef.current = refresh;
+
+  // Datenstand auf dem Gerät sichern (für den Offline-Start) – kurz nach jeder Änderung
+  useEffect(() => {
+    if (!supa || !userId || !ready || !data.company) return;
+    const cid = supa.activeCompanyId();
+    if (!cid) return;
+    const t = window.setTimeout(() => saveSnapshot(userId, cid, data), 250);
+    return () => window.clearTimeout(t);
+  }, [supa, userId, ready, data]);
+
+  useEffect(() => {
+    if (!supa || !userId) return;
+    const save = () => {
+      const cid = supa.activeCompanyId();
+      if (cid && dataRef.current.company) saveSnapshot(userId, cid, dataRef.current);
+    };
+    const hidden = () => { if (document.visibilityState === 'hidden') save(); };
+    window.addEventListener('pagehide', save);
+    document.addEventListener('visibilitychange', hidden);
+    return () => { window.removeEventListener('pagehide', save); document.removeEventListener('visibilitychange', hidden); };
+  }, [supa, userId]);
+
+  useEffect(() => {
+    if (!supa || !userId || !ready || !companies.length) return;
+    saveMeta(userId, { companies, activeCompanyId, email: session?.user.email ?? null });
+  }, [supa, userId, ready, companies, activeCompanyId, session]);
+
+  // Offline: regelmäßig prüfen, ob wieder Verbindung besteht („online“ kommt nicht immer)
+  useEffect(() => {
+    if (sync.state !== 'offline') return;
+    const t = window.setInterval(() => {
+      if (supabaseConfigured) getSupabase().auth.getSession().catch(() => {});
+      if (!opsEmpty(outbox.current)) flushRef.current();
+      else if (needsRefresh.current) refreshRef.current();
+    }, 20_000);
+    return () => window.clearInterval(t);
+  }, [sync.state]);
 
   // Realtime: Änderungen anderer Geräte der aktiven Firma
   useEffect(() => {
@@ -383,7 +551,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const kick = () => {
       retry.current.attempt = 0;
+      if (supabaseConfigured) getSupabase().auth.getSession().catch(() => {}); // Token erneuern
       flushRef.current();
+      if (opsEmpty(outbox.current) && needsRefresh.current) refreshRef.current();
     };
     const visible = () => { if (document.visibilityState === 'visible') kick(); };
     window.addEventListener('online', kick);
@@ -472,7 +642,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
     },
     signOut: async () => {
-      if (supabaseConfigured) await getSupabase().auth.signOut();
+      if (!supabaseConfigured) return;
+      const uid = session?.user.id;
+      const { error } = await getSupabase().auth.signOut();
+      if (error) await getSupabase().auth.signOut({ scope: 'local' }); // offline: nur auf dem Gerät abmelden
+      // Datenkopie vom Gerät entfernen; nicht übertragene Änderungen bleiben für die nächste Anmeldung erhalten
+      if (uid) await clearUserCache(uid);
     },
   }), [session]);
 
@@ -487,18 +662,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const saveCompany = useCallback((company: Company) => update((d) => ({ ...d, company })), [update]);
 
+  /** Nummer aus dem Nummernkreis; ohne Verbindung `null` (vorläufige Nummer, endgültig beim Abgleich). */
+  const allocateNumber = useCallback(async (key: string, localNext: number): Promise<number | null> => {
+    try {
+      return await adapter.allocate(key, localNext);
+    } catch (e) {
+      if (e instanceof SyncError && e.transient) return null;
+      throw e;
+    }
+  }, [adapter]);
+
   const saveCustomer = useCallback(async (customer: Customer) => {
     let saved = customer;
     if (!customer.id) {
       if (!allow('customer')) return null;
-      const n = customer.number ? 0 : await adapter.allocate('customer', dataRef.current.counters.customer + 1);
-      saved = { ...customer, id: uid(), number: customer.number || `KD-${String(n).padStart(4, '0')}`, createdAt: today() };
-      update((d) => countUsage({ ...d, customers: [saved, ...d.customers], counters: { ...d.counters, customer: Math.max(d.counters.customer, n) } }, 'customer'));
+      const n = customer.number ? 0 : await allocateNumber('customer', dataRef.current.counters.customer + 1);
+      const id = uid();
+      saved = { ...customer, id, number: customer.number || (n === null ? provisionalNumber(id) : `KD-${String(n).padStart(4, '0')}`), createdAt: today() };
+      update((d) => countUsage({ ...d, customers: [saved, ...d.customers], counters: { ...d.counters, customer: Math.max(d.counters.customer, n || 0) } }, 'customer'));
     } else {
       update((d) => ({ ...d, customers: d.customers.map((c) => (c.id === customer.id ? customer : c)) }));
     }
     return saved;
-  }, [adapter, update, allow]);
+  }, [allocateNumber, update, allow]);
 
   const deleteCustomer = useCallback((id: string) => update((d) => ({ ...d, customers: d.customers.filter((c) => c.id !== id) })), [update]);
 
@@ -506,15 +692,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     let saved = material;
     if (!material.id) {
       if (!allow('material')) return null;
-      const n = material.number ? 0 : await adapter.allocate('material', dataRef.current.counters.material + 1);
+      const n = material.number ? 0 : await allocateNumber('material', dataRef.current.counters.material + 1);
       const movements = material.stock ? [{ id: uid(), date: today(), quantity: material.stock, note: 'Anfangsbestand' }] : [];
-      saved = { ...material, id: uid(), number: material.number || `ART-${String(n).padStart(4, '0')}`, movements };
-      update((d) => countUsage({ ...d, materials: [saved, ...d.materials], counters: { ...d.counters, material: Math.max(d.counters.material, n) } }, 'material'));
+      const id = uid();
+      saved = { ...material, id, number: material.number || (n === null ? provisionalNumber(id) : `ART-${String(n).padStart(4, '0')}`), movements };
+      update((d) => countUsage({ ...d, materials: [saved, ...d.materials], counters: { ...d.counters, material: Math.max(d.counters.material, n || 0) } }, 'material'));
     } else {
       update((d) => ({ ...d, materials: d.materials.map((m) => (m.id === material.id ? material : m)) }));
     }
     return saved;
-  }, [adapter, update, allow]);
+  }, [allocateNumber, update, allow]);
 
   const deleteMaterial = useCallback((id: string) => update((d) => ({ ...d, materials: d.materials.filter((m) => m.id !== id) })), [update]);
 
@@ -531,14 +718,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!allow(kind)) return null;
     const date = today();
     const year = date.slice(0, 4);
-    const n = await adapter.allocate(`${kind}:${year}`, (dataRef.current.counters[kind][year] || 0) + 1);
+    const n = await allocateNumber(`${kind}:${year}`, (dataRef.current.counters[kind][year] || 0) + 1);
     const d = dataRef.current;
     const prefix = (kind === 'invoice' ? d.company?.invoicePrefix : d.company?.offerPrefix) || (kind === 'invoice' ? 'RE' : 'AN');
-    const number = `${prefix}-${year}-${String(n).padStart(4, '0')}`;
+    const id = uid();
+    const number = n === null ? provisionalNumber(id) : `${prefix}-${year}-${String(n).padStart(4, '0')}`;
     const customer = d.customers.find((c) => c.id === customerId);
     const company = d.company;
     const doc: SalesDoc = {
-      id: uid(),
+      id,
       kind,
       number,
       status: 'draft',
@@ -563,10 +751,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     update((s) => countUsage({
       ...s,
       documents: [doc, ...s.documents],
-      counters: { ...s.counters, [kind]: { ...s.counters[kind], [year]: Math.max(s.counters[kind][year] || 0, n) } },
+      counters: { ...s.counters, [kind]: { ...s.counters[kind], [year]: Math.max(s.counters[kind][year] || 0, n || 0) } },
     }, kind));
     return doc;
-  }, [adapter, update, allow]);
+  }, [allocateNumber, update, allow]);
 
   const saveDoc = useCallback((doc: SalesDoc) => update((d) => ({ ...d, documents: d.documents.map((x) => (x.id === doc.id ? doc : x)) })), [update]);
 
@@ -580,6 +768,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const setDocStatus = useCallback((id: string, status: SalesDoc['status'], paidDate?: string) => update((d) => {
     const doc = d.documents.find((x) => x.id === id);
     if (!doc) return d;
+    // Mit vorläufiger Nummer (offline erstellt) nicht festschreiben – erst nach dem Abgleich
+    if (isProvisional(doc.number) && status !== 'draft') return d;
     let materials = d.materials;
     let stockBooked = doc.stockBooked;
     if (doc.kind === 'invoice') {

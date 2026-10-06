@@ -93,6 +93,12 @@ export class SupabaseAdapter implements StorageAdapter {
     this.companyId = null;
   }
 
+  /** Offline-Start: Firma aktivieren, ohne vom Server zu laden (Daten kommen vom Gerät). */
+  attach(companyId: string) {
+    this.companyId = companyId;
+    remember(companyId);
+  }
+
   async load(companyId?: string | null): Promise<Data> {
     const data = emptyData();
     const ids = (await this.listCompanies()).map((c) => c.id);

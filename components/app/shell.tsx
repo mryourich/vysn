@@ -113,7 +113,13 @@ function Shell({ children }: { children: React.ReactNode }) {
         ) : sync.state === 'offline' ? (
           <div className="sync-banner sync-offline" role="status">
             <CloudOff size={16} />
-            <span><strong>Keine Verbindung.</strong> {sync.pending === 1 ? 'Eine Änderung ist' : `${sync.pending} Änderungen sind`} auf diesem Gerät gesichert und {sync.pending === 1 ? 'wird' : 'werden'} automatisch übertragen.</span>
+            <span>
+              <strong>{sync.offlineSince ? 'Offline-Modus.' : 'Keine Verbindung.'}</strong>{' '}
+              {sync.offlineSince ? `Stand vom ${new Date(sync.offlineSince).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })}. ` : ''}
+              {sync.pending
+                ? `${sync.pending === 1 ? 'Eine Änderung ist' : `${sync.pending} Änderungen sind`} auf diesem Gerät gesichert und ${sync.pending === 1 ? 'wird' : 'werden'} automatisch übertragen.`
+                : 'Änderungen werden auf diesem Gerät gesichert und automatisch übertragen, sobald wieder Verbindung besteht.'}
+            </span>
           </div>
         ) : null}
         {sync.notice ? (
@@ -148,11 +154,14 @@ function SyncStatus() {
 
 function LoadError({ message }: { message: string | null }) {
   const { auth } = useStore();
+  const offline = (typeof navigator !== 'undefined' && !navigator.onLine) || /fetch|network|load failed/i.test(message || '');
   return (
     <div className="app-loading">
       <div className="empty">
-        <h3>Daten konnten nicht geladen werden</h3>
-        <p>{message || 'Bitte prüfen Sie Ihre Internetverbindung.'}</p>
+        <h3>{offline ? 'Keine Verbindung' : 'Daten konnten nicht geladen werden'}</h3>
+        <p>{offline
+          ? 'Diese Firma wurde auf diesem Gerät noch nicht geöffnet. Öffnen Sie VYSN One einmal mit Internet – danach steht sie auch offline zur Verfügung.'
+          : message || 'Bitte prüfen Sie Ihre Internetverbindung.'}</p>
         <div className="secondary-actions">
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Erneut versuchen</button>
           {auth.mode === 'supabase' ? <button className="btn" onClick={() => auth.signOut()}>Abmelden</button> : null}

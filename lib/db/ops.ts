@@ -81,3 +81,8 @@ export function syncErrorFrom(error: { message?: string; code?: string; hint?: s
 
 /** Abgelehnte Zeile (dauerhafter Fehler, z. B. Monatslimit oder fehlende Rechte). */
 export type Rejection = { table: string; id: string; message: string; hint: string };
+
+/** Vorläufige Nummer für offline angelegte Belege, Kunden und Artikel (endgültig beim Abgleich). */
+export const PROVISIONAL = 'OFFLINE-';
+export const isProvisional = (number: string | undefined | null) => !!number && number.startsWith(PROVISIONAL);
+export const provisionalNumber = (id: string) => `${PROVISIONAL}${id.slice(-4).toUpperCase()}`;

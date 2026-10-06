@@ -85,6 +85,20 @@ die Funktionen `invite_member`, `revoke_invite`, `set_member_role`, `remove_memb
 Endet der Tarif Team, hat nur noch der Inhaber Zugriff (`member_role()`); die Mitglieder bleiben
 gespeichert. Mit SMTP verschickt `/api/team/invite-mail` den Link per E-Mail, sonst wird er kopiert.
 
+## Monatslimits
+
+Migration `20261010090000_usage_limits.sql`: Je Firma und Kalendermonat (Europe/Berlin) zählt
+`usage_counters` jedes **neu angelegte** Element – Rechnungen, Angebote, Kunden, Artikel und
+Buchungen. Löschen gibt nichts zurück. Limits (`plan_monthly_limit`): start 10, solo 50,
+business/team unbegrenzt. Geprüft per Trigger `track_usage()`; erneut gesendete Datensätze
+(gleiche id) zählen nicht. Dieselbe Migration schreibt `materials.stock` aus den
+Lagerbewegungen fort (Client darf den Bestand nicht direkt setzen).
+
+## Realtime
+
+Migration `20261011090000_realtime.sql` nimmt die Firmentabellen in die Publikation
+`supabase_realtime` auf. Realtime prüft RLS; Löschungen enthalten nur den Primärschlüssel.
+
 ## Rechte (wichtig bei neuen Tabellen)
 
 Supabase vergibt per Standard alle Tabellenrechte an `anon` und `authenticated`. Migration

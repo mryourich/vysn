@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { AppShell } from '../../components/app/shell';
+import { ServiceWorker } from '../../components/app/service-worker';
 import './app.css';
 
 export const metadata: Metadata = {
@@ -9,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return <AppShell>{children}</AppShell>;
+  return <><ServiceWorker /><AppShell>{children}</AppShell></>;
 }

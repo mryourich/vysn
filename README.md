@@ -47,15 +47,25 @@ Unter *Firmendaten → Datensicherung* lassen sich in beiden Modi Sicherungen al
 - Kontakt-E-Mail/-Telefon auf der Startseite (`app/page.tsx`, Abschnitt `#kontakt`) anpassen
 - Preise in `components/site/pricing.tsx` prüfen
 
-## Fahrplan (vereinbart)
+## Synchronisation, Realtime & Offline
 
-1. **Kein Datenverlust bei Funklöchern:** Fehlgeschlagene Speichervorgänge in eine Warteschlange
-   (auf dem Gerät, übersteht Neuladen) und automatisch nachsenden, sobald wieder Verbindung besteht.
-   Hinweis „Offline – wird gespeichert, sobald Verbindung besteht“ statt Fehlermeldung.
-   *Heute:* Schlägt ein Speichern fehl, wird die Änderung nicht erneut versucht.
-2. **Realtime:** Änderungen anderer Geräte/Teammitglieder live übernehmen (Supabase Realtime).
-3. **Offline-Modus:** App-Shell per Service Worker, Firmendaten lokal (IndexedDB), Abgleich beim
-   Wiederverbinden – zuerst für Lager-Scanner und Entwürfe. Rechnungen erhalten ihre endgültige
-   Nummer erst online (lückenlose Nummernkreise, GoBD); Festschreiben/Versand nur online.
+- **Warteschlange:** Jede Änderung wird als Paket auf dem Gerät gespeichert (`lib/db/ops.ts`,
+  `lib/db/outbox.ts`) und dann gesendet. Bei Funklöchern automatische Wiederholung; die
+  Warteschlange übersteht Neuladen und Schließen. Dauerhaft abgelehnte Zeilen (Limit, Rechte)
+  betreffen nur sich selbst und werden gemeldet.
+- **Realtime:** Änderungen anderer Geräte/Teammitglieder kommen über Supabase Realtime
+  (`lib/db/remote.ts`). Eigene, noch nicht gesendete Änderungen haben Vorrang.
+- **Offline-Modus:** Service Worker (`public/sw.js`) hält App und Seiten auf dem Gerät, der
+  Datenstand liegt in IndexedDB (`lib/db/cache.ts`). Offline angelegte Belege, Kunden und Artikel
+  erhalten eine vorläufige Nummer (`OFFLINE-…`) und beim Abgleich die endgültige aus dem
+  Nummernkreis. Festschreiben und Versand sind erst danach möglich.
+- **Lagerbestand** wird in der Datenbank aus den Lagerbewegungen fortgeschrieben – Buchungen
+  mehrerer Geräte (auch offline) gehen nicht verloren.
+
+## Fahrplan
+
+1. ~~Kein Datenverlust bei Funklöchern~~ ✔
+2. ~~Realtime-Abgleich zwischen Geräten~~ ✔
+3. ~~Offline-Modus~~ ✔
 4. **Apps für iOS/Android** mit Capacitor (gleicher Code, Kamera nativ). In der iOS-App keine
    Tarif-Buchung anzeigen (Apple-Regeln für In-App-Käufe) – gebucht wird über die Website.
