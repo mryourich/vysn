@@ -23,7 +23,7 @@ const doc: SalesDoc = {
     { id: '3', description: 'CW-Profil 50 mm, 3 m', details: '', quantity: 36, unit: 'Stück', unitPrice: 5.9, vat: 19, discount: 0 },
     { id: '4', description: 'Anfahrt und Entsorgung', details: '', quantity: 1, unit: 'Pauschal', unitPrice: 120, vat: 19, discount: 0 },
   ],
-  paidDate: '', sourceId: '', stockBooked: false, createdAt: '',
+  paidDate: '', sourceId: '', stockBooked: false, createdAt: '', sentAt: '', sentTo: '',
 };
 
 const COLORS = ['#1f3a5f', '#0f5e56', '#7a2e2e', '#2d2d2d'];

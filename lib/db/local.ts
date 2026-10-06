@@ -1,5 +1,5 @@
 import { uid } from '../calc';
-import { defaultDesign, emptyCompany, emptyData } from '../defaults';
+import { defaultDesign, defaultSettings, emptyCompany, emptyData } from '../defaults';
 import type { CompanySummary, Data } from '../types';
 import type { StorageAdapter } from './adapter';
 
@@ -19,10 +19,15 @@ export function migrate(raw: unknown): Data {
     ...d,
     company: d.company ? { ...emptyCompany(), ...d.company } : null,
     customers: d.customers || [],
-    materials: (d.materials || []).map((m) => ({ ...m, movements: m.movements || [] })),
-    documents: d.documents || [],
-    expenses: d.expenses || [],
+    materials: (d.materials || []).map((m) => ({ ...m, locationId: m.locationId || '', movements: m.movements || [] })),
+    documents: (d.documents || []).map((x) => ({ ...x, sentAt: x.sentAt || '', sentTo: x.sentTo || '' })),
+    expenses: (d.expenses || []).map((e) => ({ ...e, kind: e.kind || 'expense' })),
+    locations: d.locations || [],
     design: { ...defaultDesign(), ...(d.design || {}) },
+    settings: {
+      datev: { ...defaultSettings().datev, ...(d.settings?.datev || {}) },
+      email: { ...defaultSettings().email, ...(d.settings?.email || {}) },
+    },
     counters: { ...base.counters, ...(d.counters || {}) },
   } as Data;
 }

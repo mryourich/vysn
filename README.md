@@ -33,6 +33,12 @@ Einrichtung, Datenmodell und Sicherheitskonzept: [`supabase/README.md`](supabase
 
 **Firmen & Tarife:** Ein Nutzer kann mehrere Firmen anlegen und über die Seitenleiste wechseln. Der Tarif gilt je Firma; im Tarif *Start* sind 10 Rechnungen pro Monat enthalten (`lib/plans.ts`, in Supabase zusätzlich per Datenbank-Trigger abgesichert). Im lokalen Modus lässt sich der Tarif unter *Firmendaten → Tarif* zum Testen umschalten.
 
+**Lager & QR-Codes:** Unter *Material & Lager → Lagerplätze & QR* lassen sich Regale/Fächer anlegen und QR-Etiketten (A4-Bogen 3 × 8, 70 × 37 mm) drucken – für Lagerplätze und Artikel. Ein Scan mit der normalen Handykamera öffnet direkt die Ein-/Auslagerung (`/app/scan`); alternativ scannt der integrierte Scanner im Browser. Über „Zum Home-Bildschirm“ lässt sich VYSN One wie eine App installieren (Web-App-Manifest). Damit Handy und Büro dieselben Bestände sehen, ist Supabase nötig – im lokalen Modus hat jedes Gerät eigene Daten.
+
+**E-Mail-Versand:** Angebote und Rechnungen werden mit PDF-Anhang versendet (`app/api/send`, SMTP-Variablen siehe `.env.example`). Optional gehen Rechnungen beim Festschreiben automatisch an den Kunden. Ohne Mailserver wird das PDF über das Gerät geteilt bzw. das E-Mail-Programm geöffnet.
+
+**DATEV:** *DATEV-Export* erzeugt einen Buchungsstapel (EXTF 700, SKR03/SKR04, ANSI) mit Rechnungen, Zahlungen, Einnahmen und Ausgaben inkl. BU-Schlüsseln; die Kontenzuordnung ist je Firma anpassbar (`lib/datev.ts`).
+
 Unter *Firmendaten → Datensicherung* lassen sich in beiden Modi Sicherungen als JSON exportieren und einspielen – darüber lassen sich auch lokal erfasste Daten nach Supabase übernehmen.
 
 ## Vor dem Livegang

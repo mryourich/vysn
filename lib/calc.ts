@@ -124,9 +124,14 @@ export function revenueDate(doc: SalesDoc, basis: Basis) {
 }
 
 const COST_OF_SALES = ['Material & Waren', 'Fremdleistungen'];
+/** Einnahme-Kategorien, die als Umsatzerlöse zählen; alle anderen sind sonstige Erträge. */
+export const REVENUE_INCOME = ['Umsatz ohne Rechnung', 'Barverkauf'];
 
 export type ProfitLoss = {
   revenue: number;
+  /** Erträge ohne Rechnung, die nicht Umsatz sind (Zinsen, Zuschüsse …) */
+  otherIncome: { category: string; amount: number }[];
+  otherIncomeTotal: number;
   outputVat: number;
   invoices: number;
   costOfSales: { category: string; amount: number }[];
@@ -154,9 +159,18 @@ export function profitLoss(data: Data, period: Period, basis: Basis): ProfitLoss
     invoices++;
   }
   const byCategory = new Map<string, number>();
+  const incomeByCategory = new Map<string, number>();
   let inputVat = 0;
   for (const e of data.expenses) {
     if (e.date < period.from || e.date > period.to) continue;
+    if (e.kind === 'income') {
+      // Kleinunternehmer weisen keine Steuer aus: Ertrag ist der Bruttobetrag.
+      const amount = small ? expenseGross(e) : e.net;
+      if (!small) outputVat += expenseVat(e);
+      if (REVENUE_INCOME.includes(e.category)) revenue += amount;
+      else incomeByCategory.set(e.category, (incomeByCategory.get(e.category) || 0) + amount);
+      continue;
+    }
     // Kleinunternehmer können keine Vorsteuer ziehen: Aufwand ist dann der Bruttobetrag.
     const amount = small ? expenseGross(e) : e.net;
     byCategory.set(e.category, (byCategory.get(e.category) || 0) + amount);
@@ -168,10 +182,14 @@ export function profitLoss(data: Data, period: Period, basis: Basis): ProfitLoss
   const costOfSalesTotal = round2(costOfSales.reduce((s, r) => s + r.amount, 0));
   const operatingTotal = round2(operating.reduce((s, r) => s + r.amount, 0));
   revenue = round2(revenue);
+  const otherIncome = [...incomeByCategory.entries()].map(([category, amount]) => ({ category, amount: round2(amount) })).sort((a, b) => b.amount - a.amount);
+  const otherIncomeTotal = round2(otherIncome.reduce((s, r) => s + r.amount, 0));
   const grossProfit = round2(revenue - costOfSalesTotal);
-  const result = round2(grossProfit - operatingTotal);
+  const result = round2(grossProfit + otherIncomeTotal - operatingTotal);
   return {
     revenue,
+    otherIncome,
+    otherIncomeTotal,
     outputVat: round2(outputVat),
     invoices,
     costOfSales,
@@ -197,7 +215,9 @@ export function monthlySeries(data: Data, year: number, basis: Basis) {
   }
   for (const e of data.expenses) {
     if (!e.date.startsWith(String(year))) continue;
-    rows[Number(e.date.slice(5, 7)) - 1].expenses += small ? expenseGross(e) : e.net;
+    const amount = small ? expenseGross(e) : e.net;
+    if (e.kind === 'income') rows[Number(e.date.slice(5, 7)) - 1].revenue += amount;
+    else rows[Number(e.date.slice(5, 7)) - 1].expenses += amount;
   }
   return rows.map((r) => ({ ...r, revenue: round2(r.revenue), expenses: round2(r.expenses), result: round2(r.revenue - r.expenses) }));
 }

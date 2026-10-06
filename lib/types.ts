@@ -64,7 +64,17 @@ export type Material = {
   vat: number;
   stock: number;
   minStock: number;
+  /** Lagerplatz (Regal/Fach), leer = ohne festen Platz */
+  locationId: string;
   movements: StockMovement[];
+};
+
+/** Lagerplatz, z. B. Regal A – Fach 3. Erhält ein QR-Etikett zum Scannen. */
+export type StorageLocation = {
+  id: string;
+  code: string;
+  name: string;
+  note: string;
 };
 
 export type LineItem = {
@@ -111,6 +121,9 @@ export type SalesDoc = {
   sourceId: string;
   stockBooked: boolean;
   createdAt: string;
+  /** Letzter E-Mail-Versand */
+  sentAt: string;
+  sentTo: string;
 };
 
 export const EXPENSE_CATEGORIES = [
@@ -126,8 +139,19 @@ export const EXPENSE_CATEGORIES = [
   'Sonstiges',
 ] as const;
 
+export const INCOME_CATEGORIES = [
+  'Umsatz ohne Rechnung',
+  'Barverkauf',
+  'Zinserträge',
+  'Fördermittel & Zuschüsse',
+  'Erstattungen',
+  'Sonstige Erträge',
+] as const;
+
+/** Buchung außerhalb der Rechnungen: Ausgabe (Beleg) oder Einnahme (z. B. Barverkauf). */
 export type Expense = {
   id: string;
+  kind: 'expense' | 'income';
   date: string;
   supplier: string;
   description: string;
@@ -154,6 +178,30 @@ export type InvoiceDesign = {
   offerOutro: string;
 };
 
+export type DatevSettings = {
+  advisorNumber: string;
+  clientNumber: string;
+  chart: 'SKR03' | 'SKR04';
+  fiscalYearStart: string;
+  accountLength: number;
+  /** true = je Kunde ein Debitorenkonto (10000 + Kundennummer), sonst Sammeldebitor */
+  debtorPerCustomer: boolean;
+  /** Kontonummern, die vom Standard abweichen (Schlüssel siehe lib/datev.ts) */
+  accounts: Record<string, string>;
+};
+
+export type EmailSettings = {
+  /** Rechnungen beim Festschreiben automatisch an den Kunden senden */
+  autoSendInvoices: boolean;
+  bcc: string;
+  invoiceSubject: string;
+  invoiceBody: string;
+  offerSubject: string;
+  offerBody: string;
+};
+
+export type Settings = { datev: DatevSettings; email: EmailSettings };
+
 /** Kurzinfo einer Firma für den Firmenwechsler */
 export type CompanySummary = { id: string; name: string; logo: string; plan: PlanId; role?: string };
 
@@ -164,6 +212,8 @@ export type Data = {
   materials: Material[];
   documents: SalesDoc[];
   expenses: Expense[];
+  locations: StorageLocation[];
   design: InvoiceDesign;
+  settings: Settings;
   counters: { invoice: Record<string, number>; offer: Record<string, number>; customer: number; material: number };
 };

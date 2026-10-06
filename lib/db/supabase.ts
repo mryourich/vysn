@@ -6,7 +6,7 @@ import { counterMap, countersFromMap, diffById } from './adapter';
 import type { StorageAdapter } from './adapter';
 import {
   companyFromRow, companyToRow, customerFromRow, customerToRow, documentFromRow, documentToRow, expenseFromRow, expenseToRow,
-  materialFromRow, materialToRow, movementFromRow, movementToRow,
+  locationFromRow, locationToRow, materialFromRow, materialToRow, movementFromRow, movementToRow,
 } from './mappers';
 import type { MovementWithMaterial } from './mappers';
 
@@ -92,14 +92,15 @@ export class SupabaseAdapter implements StorageAdapter {
     remember(this.companyId);
 
     const companyRow = check(await this.db.from('companies').select('*').eq('id', this.companyId).single());
-    const { company, design } = companyFromRow(companyRow as Record<string, unknown>);
-    const [customers, materials, movements, documents, expenses, counters] = await Promise.all([
+    const { company, design, settings } = companyFromRow(companyRow as Record<string, unknown>);
+    const [customers, materials, movements, documents, expenses, counters, locations] = await Promise.all([
       this.fetchAll('customers', 'created_at'),
       this.fetchAll('materials', 'name'),
       this.fetchAll('stock_movements', 'date'),
       this.fetchAll('documents', 'date'),
       this.fetchAll('expenses', 'date'),
       this.fetchAll('number_counters', 'key'),
+      this.fetchAll('storage_locations', 'code'),
     ]);
     const byMaterial = new Map<string, MovementWithMaterial[]>();
     for (const m of movements.map(movementFromRow)) byMaterial.set(m.materialId, [...(byMaterial.get(m.materialId) || []), m]);
@@ -108,6 +109,8 @@ export class SupabaseAdapter implements StorageAdapter {
       ...data,
       company,
       design,
+      settings,
+      locations: locations.map(locationFromRow).sort((a, b) => a.code.localeCompare(b.code, 'de')),
       customers: customers.map(customerFromRow),
       materials: materials.map((r) => materialFromRow(r, (byMaterial.get(String(r.id)) || []).map(({ materialId: _, ...mv }) => mv))),
       documents: documents.map(documentFromRow),
@@ -146,8 +149,8 @@ export class SupabaseAdapter implements StorageAdapter {
     }
     const cid = this.companyId;
 
-    if (prev.company !== next.company || prev.design !== next.design) {
-      check(await this.db.from('companies').update(companyToRow(next.company, next.design)).eq('id', cid));
+    if (prev.company !== next.company || prev.design !== next.design || prev.settings !== next.settings) {
+      check(await this.db.from('companies').update(companyToRow(next.company, next.design, next.settings)).eq('id', cid));
     }
 
     const customers = diffById(prev.customers, next.customers);
@@ -159,8 +162,10 @@ export class SupabaseAdapter implements StorageAdapter {
     const nextMoveIds = new Set(nextMoves.map((m) => m.id));
     const documents = diffById(prev.documents, next.documents);
     const expenses = diffById(prev.expenses, next.expenses);
+    const locations = diffById(prev.locations, next.locations);
 
     await this.upsert('customers', customers.upserts.map((c) => customerToRow(c, cid)));
+    await this.upsert('storage_locations', locations.upserts.map((l) => locationToRow(l, cid)));
     await this.upsert('materials', materials.upserts.map((m) => materialToRow(m, cid)));
     await this.upsert('stock_movements', nextMoves.filter((m) => !prevMoves.has(m.id)).map((m) => movementToRow(m, cid)));
     await this.upsert('documents', documents.upserts.map((d) => documentToRow(d, cid)));
@@ -171,6 +176,7 @@ export class SupabaseAdapter implements StorageAdapter {
     await this.remove('stock_movements', [...prevMoves].filter((id) => !nextMoveIds.has(id)));
     await this.remove('materials', materials.deletes);
     await this.remove('customers', customers.deletes);
+    await this.remove('storage_locations', locations.deletes);
 
     if (prev.counters !== next.counters) {
       const changed = Object.fromEntries(Object.entries(counterMap(next)).filter(([k, v]) => counterMap(prev)[k] !== v));

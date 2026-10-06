@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowLeft, ArrowUp, Ban, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
+  ArrowDown, ArrowLeft, ArrowUp, Ban, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
 } from 'lucide-react';
 import { displayStatus, docTotals, formatDate, lineNet, money, qty, today } from '../../lib/calc';
 import { UNITS, emptyItem } from '../../lib/defaults';
@@ -16,6 +16,8 @@ import { A4Preview } from './a4-preview';
 import { CustomerModal } from './customer-form';
 import { currencySymbol } from '../../lib/calc';
 import { formatRate, taxProfile } from '../../lib/tax';
+import { fillMail, mailStatus } from '../../lib/mail';
+import { SendDialog, useSendDocument } from './send-dialog';
 import { Badge, Field, Modal, NumberInput, VatSelect } from './ui';
 
 export function DocEditor() {
@@ -53,6 +55,9 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const [showAddress, setShowAddress] = useState(false);
   const [busy, setBusy] = useState(false);
   const [payDate, setPayDate] = useState<string | null>(null);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [flash, setFlash] = useState('');
 
   const update = (patch: Partial<SalesDoc>) => {
     if (locked) return;
@@ -93,15 +98,35 @@ function Editor({ doc }: { doc: SalesDoc }) {
   };
 
   const canSend = doc.items.length > 0 && doc.recipient.name.trim();
+  const sendDocument = useSendDocument();
+
+  /** Mit „automatisch versenden“ geht die Rechnung ohne Dialog direkt an die Kunden-E-Mail. */
+  const finalizeAndSend = async () => {
+    const email = customer?.email || '';
+    const auto = data.settings.email.autoSendInvoices && email && (await mailStatus()).enabled;
+    if (!auto) return setSendOpen(true);
+    if (!confirm(`Rechnung festschreiben und automatisch an ${email} senden?`)) return;
+    setSending(true);
+    try {
+      const tpl = data.settings.email;
+      await sendDocument(doc, { to: email, subject: fillMail(tpl.invoiceSubject, doc, company), text: fillMail(tpl.invoiceBody, doc, company) });
+      setFlash(`Rechnung wurde an ${email} gesendet.`);
+    } catch (e) {
+      alert(`Automatischer Versand fehlgeschlagen: ${(e as Error).message}`);
+    } finally {
+      setSending(false);
+    }
+  };
 
   const actions = (
     <>
       {isInvoice && doc.status === 'draft' ? (
-        <button className="btn btn-primary" disabled={!canSend} title={canSend ? '' : 'Empfänger und mindestens eine Position erforderlich'}
-          onClick={() => confirm('Rechnung festschreiben? Danach ist sie nicht mehr änderbar und verbrauchtes Material wird vom Lager abgebucht.') && setDocStatus(doc.id, 'sent')}>
-          <Send size={16} /> Festschreiben & versenden
+        <button className="btn btn-primary" disabled={!canSend || sending} title={canSend ? '' : 'Empfänger und mindestens eine Position erforderlich'} onClick={finalizeAndSend}>
+          <Send size={16} /> {sending ? 'Sende …' : 'Festschreiben & versenden'}
         </button>
       ) : null}
+      {isInvoice && doc.status !== 'draft' && doc.status !== 'cancelled' ? <button className="btn" onClick={() => setSendOpen(true)}><Mail size={16} /> {doc.sentAt ? 'Erneut senden' : 'Per E-Mail senden'}</button> : null}
+      {!isInvoice ? <button className="btn" disabled={!canSend} onClick={() => setSendOpen(true)}><Mail size={16} /> Per E-Mail senden</button> : null}
       {isInvoice && doc.status === 'sent' ? <button className="btn btn-primary" onClick={() => setPayDate(today())}><CheckCircle2 size={16} /> Zahlung erfassen</button> : null}
       {!isInvoice && doc.status === 'draft' ? <button className="btn" disabled={!canSend} onClick={() => setDocStatus(doc.id, 'sent')}><Send size={16} /> Als versendet markieren</button> : null}
       {!isInvoice && doc.status !== 'declined' ? (
@@ -121,7 +146,9 @@ function Editor({ doc }: { doc: SalesDoc }) {
         <div className="editor-title">
           <h1>{isInvoice ? 'Rechnung' : 'Angebot'} {doc.number}</h1>
           <Badge tone={status.tone}>{status.label}</Badge>
+          {doc.sentAt ? <span className="sent-line"><MailCheck size={14} /> gesendet {formatDate(doc.sentAt.slice(0, 10))}{doc.sentTo ? ` an ${doc.sentTo}` : ''}</span> : null}
         </div>
+        {flash ? <div className="notice notice-ok" role="status"><MailCheck size={16} /><span>{flash}</span></div> : null}
         <div className="page-actions">{actions}</div>
       </div>
 
@@ -244,6 +271,11 @@ function Editor({ doc }: { doc: SalesDoc }) {
 
           <div className="card card-plain">
             <div className="secondary-actions">
+              {isInvoice && doc.status === 'draft' ? (
+                <button className="btn btn-quiet" disabled={!canSend} onClick={() => confirm('Rechnung ohne E-Mail-Versand festschreiben? Danach ist sie nicht mehr änderbar und verbrauchtes Material wird vom Lager abgebucht.') && setDocStatus(doc.id, 'sent')}>
+                  <Lock size={16} /> Nur festschreiben
+                </button>
+              ) : null}
               {!isInvoice && doc.status === 'sent' ? <button className="btn" onClick={() => setDocStatus(doc.id, 'accepted')}><CheckCircle2 size={16} /> Angenommen</button> : null}
               {!isInvoice && (doc.status === 'sent' || doc.status === 'draft') ? <button className="btn" onClick={() => setDocStatus(doc.id, 'declined')}><XCircle size={16} /> Abgelehnt</button> : null}
               {!isInvoice && doc.status !== 'draft' ? <button className="btn btn-quiet" onClick={() => setDocStatus(doc.id, 'draft')}>Zurück auf Entwurf</button> : null}
@@ -277,6 +309,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
 
       {picker ? <MaterialPicker onClose={() => setPicker(false)} onPick={addMaterial} /> : null}
       {newCustomer ? <CustomerModal onClose={() => setNewCustomer(false)} onSaved={(c) => update({ customerId: c.id, recipient: { name: c.name, contactPerson: c.contactPerson, street: c.street, zip: c.zip, city: c.city, country: c.country, vatId: c.vatId } })} /> : null}
+      {sendOpen ? <SendDialog doc={doc} onClose={() => setSendOpen(false)} onSent={(to) => setFlash(`${isInvoice ? 'Rechnung' : 'Angebot'} wurde an ${to} gesendet.`)} /> : null}
       {payDate !== null ? (
         <Modal title="Zahlungseingang erfassen" onClose={() => setPayDate(null)}
           footer={<><button className="btn btn-quiet" onClick={() => setPayDate(null)}>Abbrechen</button><button className="btn btn-primary" onClick={() => { setDocStatus(doc.id, 'paid', payDate || today()); setPayDate(null); }}>Als bezahlt markieren</button></>}>

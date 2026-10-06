@@ -1,15 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Plus, Search, Trash2, Wallet } from 'lucide-react';
+import { ArrowDownLeft, Plus, Search, Trash2, Wallet } from 'lucide-react';
 import { MONTHS_LONG, currencySymbol, expenseGross, formatDate, money, round2, today } from '../../../lib/calc';
 import { formatRate, taxProfile } from '../../../lib/tax';
 import { useStore } from '../../../lib/store';
-import { EXPENSE_CATEGORIES } from '../../../lib/types';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../../../lib/types';
 import type { Expense } from '../../../lib/types';
 import { Empty, Field, Modal, NumberInput, PageHeader, Segmented, StatCard, VatSelect } from '../../../components/app/ui';
 
-const blank = (vat: number): Expense => ({ id: '', date: today(), supplier: '', description: '', category: 'Material & Waren', net: 0, vat, receiptNo: '' });
+const blank = (vat: number, kind: Expense['kind'] = 'expense'): Expense => ({
+  id: '', kind, date: today(), supplier: '', description: '', category: kind === 'income' ? 'Barverkauf' : 'Material & Waren', net: 0, vat, receiptNo: '',
+});
+
+type Filter = 'all' | 'expense' | 'income';
 
 export default function ExpensesPage() {
   const { data } = useStore();
@@ -20,13 +24,18 @@ export default function ExpensesPage() {
     return [...s].sort().reverse();
   }, [data.expenses]);
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [filter, setFilter] = useState<Filter>('all');
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');
   const small = !!data.company?.smallBusiness;
-  const defaultVat = small ? taxProfile(data.company).defaultRate : data.company?.defaultVat ?? taxProfile(data.company).defaultRate;
+  const tax = taxProfile(data.company);
+  const defaultVat = small ? tax.defaultRate : data.company?.defaultVat ?? tax.defaultRate;
+  const amountOf = (e: Expense) => (small ? expenseGross(e) : e.net);
+  const signed = (e: Expense) => (e.kind === 'income' ? amountOf(e) : -amountOf(e));
 
   const list = data.expenses
     .filter((e) => e.date.startsWith(year))
+    .filter((e) => filter === 'all' || e.kind === filter)
     .filter((e) => !category || e.category === category)
     .filter((e) => !q || `${e.supplier} ${e.description} ${e.receiptNo}`.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => b.date.localeCompare(a.date));
@@ -37,51 +46,60 @@ export default function ExpensesPage() {
     groups.set(key, [...(groups.get(key) || []), e]);
   }
   const yearAll = data.expenses.filter((e) => e.date.startsWith(year));
-  const thisMonth = today().slice(0, 7);
-  const byCat = new Map<string, number>();
-  for (const e of yearAll) byCat.set(e.category, (byCat.get(e.category) || 0) + (small ? expenseGross(e) : e.net));
-  const topCat = [...byCat.entries()].sort((a, b) => b[1] - a[1])[0];
+  const sumOf = (kind: Expense['kind']) => yearAll.filter((e) => e.kind === kind).reduce((s, e) => s + amountOf(e), 0);
+  const categories = filter === 'income' ? INCOME_CATEGORIES : filter === 'expense' ? EXPENSE_CATEGORIES : [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
   return (
     <div className="page">
-      <PageHeader title="Ausgaben" description="Belege und Kosten erfassen – sie fließen automatisch in GuV und Steuerauswertung ein."
-        actions={<button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Ausgabe erfassen</button>} />
+      <PageHeader title="Einnahmen & Ausgaben" description="Belege, Kosten und Einnahmen ohne Rechnung erfassen – alles fließt automatisch in GuV, Steuer und DATEV-Export."
+        actions={<>
+          <button className="btn" onClick={() => setEditing(blank(defaultVat, 'income'))}><ArrowDownLeft size={16} /> Einnahme</button>
+          <button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Ausgabe erfassen</button>
+        </>} />
 
       <div className="stats stats-3">
-        <StatCard label={`Ausgaben ${year}`} value={money(yearAll.reduce((s, e) => s + (small ? expenseGross(e) : e.net), 0))} sub={small ? 'brutto' : 'netto'} />
-        <StatCard label="Laufender Monat" value={money(data.expenses.filter((e) => e.date.startsWith(thisMonth)).reduce((s, e) => s + (small ? expenseGross(e) : e.net), 0))} sub={MONTHS_LONG[new Date().getMonth()]} />
-        <StatCard label="Größter Posten" value={topCat ? money(topCat[1]) : '–'} sub={topCat ? topCat[0] : 'Noch keine Ausgaben'} />
+        <StatCard label={`Ausgaben ${year}`} value={money(sumOf('expense'))} sub={small ? 'brutto' : 'netto'} />
+        <StatCard label={`Einnahmen ohne Rechnung ${year}`} value={money(sumOf('income'))} tone={sumOf('income') ? 'success' : undefined} sub="z. B. Barverkauf, Zinsen, Zuschüsse" />
+        <StatCard label="Laufender Monat" value={money(data.expenses.filter((e) => e.date.startsWith(today().slice(0, 7))).reduce((s, e) => s + signed(e), 0))}
+          sub={`Saldo ${MONTHS_LONG[new Date().getMonth()]} (Einnahmen – Ausgaben)`} />
       </div>
 
       <section className="card">
         {data.expenses.length ? (
           <>
             <div className="toolbar">
+              <Segmented value={filter} options={[['all', 'Alle'], ['expense', 'Ausgaben'], ['income', 'Einnahmen']]} onChange={(f) => { setFilter(f); setCategory(''); }} />
               <Segmented value={year} options={years.slice(0, 4).map((y) => [y, y] as [string, string])} onChange={setYear} />
               <select className="select-inline" value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">Alle Kategorien</option>
-                {EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                {categories.map((c) => <option key={c}>{c}</option>)}
               </select>
               <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Lieferant, Beschreibung…" /></label>
             </div>
-            {[...groups.entries()].map(([month, items]) => (
-              <div key={month} className="group">
-                <div className="group-head"><span>{MONTHS_LONG[Number(month.slice(5)) - 1]} {month.slice(0, 4)}</span><span>{money(items.reduce((s, e) => s + (small ? expenseGross(e) : e.net), 0))}</span></div>
-                <div className="table">
-                  {items.map((e) => (
-                    <div key={e.id} className="tr tr-exp" role="button" tabIndex={0} onClick={() => setEditing(e)} onKeyDown={(ev) => ev.key === 'Enter' && setEditing(e)}>
-                      <span className="td-main"><span className="avatar avatar-sq"><Wallet size={15} /></span><span><strong>{e.supplier || e.description || 'Ausgabe'}</strong><small>{[e.description !== e.supplier ? e.description : '', formatDate(e.date)].filter(Boolean).join(' · ')}</small></span></span>
-                      <span className="td-muted hide-sm">{e.category}</span>
-                      <span className="td-num">{money(small ? expenseGross(e) : e.net)}<small className="td-sub">{small ? 'brutto' : `+ ${formatRate(e.vat)} ${taxProfile(data.company).label}`}</small></span>
-                    </div>
-                  ))}
+            {[...groups.entries()].map(([month, items]) => {
+              const saldo = items.reduce((s, e) => s + signed(e), 0);
+              return (
+                <div key={month} className="group">
+                  <div className="group-head"><span>{MONTHS_LONG[Number(month.slice(5)) - 1]} {month.slice(0, 4)}</span><span className={saldo >= 0 ? 'text-success' : ''}>{saldo >= 0 ? '+ ' : '– '}{money(Math.abs(saldo))}</span></div>
+                  <div className="table">
+                    {items.map((e) => (
+                      <div key={e.id} className="tr tr-exp" role="button" tabIndex={0} onClick={() => setEditing(e)} onKeyDown={(ev) => ev.key === 'Enter' && setEditing(e)}>
+                        <span className="td-main">
+                          <span className={`avatar avatar-sq${e.kind === 'income' ? ' avatar-income' : ''}`}>{e.kind === 'income' ? <ArrowDownLeft size={15} /> : <Wallet size={15} />}</span>
+                          <span><strong>{e.supplier || e.description || (e.kind === 'income' ? 'Einnahme' : 'Ausgabe')}</strong><small>{[e.description !== e.supplier ? e.description : '', formatDate(e.date)].filter(Boolean).join(' · ')}</small></span>
+                        </span>
+                        <span className="td-muted hide-sm">{e.category}</span>
+                        <span className={`td-num${e.kind === 'income' ? ' text-success' : ''}`}>{e.kind === 'income' ? '+ ' : ''}{money(amountOf(e))}<small className="td-sub">{small ? 'brutto' : `${e.kind === 'income' ? 'zzgl.' : '+'} ${formatRate(e.vat)} ${tax.label}`}</small></span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-            {!list.length ? <p className="muted pad">Keine Ausgaben für diese Auswahl.</p> : null}
+              );
+            })}
+            {!list.length ? <p className="muted pad">Keine Einträge für diese Auswahl.</p> : null}
           </>
         ) : (
-          <Empty icon={<Wallet />} title="Noch keine Ausgaben" text="Erfassen Sie Einkäufe, Miete, Fahrzeugkosten und andere Belege. So entsteht Ihre GuV ganz nebenbei."
+          <Empty icon={<Wallet />} title="Noch keine Einträge" text="Erfassen Sie Einkäufe, Miete, Fahrzeugkosten und andere Belege – und Einnahmen ohne Rechnung wie Barverkäufe. So entsteht Ihre GuV ganz nebenbei."
             action={<button className="btn btn-primary" onClick={() => setEditing(blank(defaultVat))}><Plus size={16} /> Erste Ausgabe erfassen</button>} />
         )}
       </section>
@@ -98,6 +116,8 @@ function ExpenseModal({ expense, onClose }: { expense: Expense; onClose: () => v
   const [mode, setMode] = useState<'gross' | 'net'>('gross');
   const [amount, setAmount] = useState(expense.id ? expenseGross(expense) : 0);
   const net = mode === 'gross' ? round2(amount / (1 + e.vat / 100)) : amount;
+  const income = e.kind === 'income';
+  const noun = income ? 'Einnahme' : 'Ausgabe';
   const valid = amount > 0 && (e.supplier.trim() || e.description.trim());
   const submit = () => {
     if (!valid) return;
@@ -105,19 +125,21 @@ function ExpenseModal({ expense, onClose }: { expense: Expense; onClose: () => v
     onClose();
   };
   return (
-    <Modal title={expense.id ? 'Ausgabe bearbeiten' : 'Ausgabe erfassen'} onClose={onClose}
+    <Modal title={expense.id ? `${noun} bearbeiten` : `${noun} erfassen`} onClose={onClose}
       footer={<>
-        {expense.id ? <button className="btn btn-quiet danger mr-auto" onClick={() => { if (confirm('Ausgabe löschen?')) { deleteExpense(expense.id); onClose(); } }}><Trash2 size={16} /> Löschen</button> : null}
+        {expense.id ? <button className="btn btn-quiet danger mr-auto" onClick={() => { if (confirm(`${noun} löschen?`)) { deleteExpense(expense.id); onClose(); } }}><Trash2 size={16} /> Löschen</button> : null}
         <button className="btn btn-quiet" onClick={onClose}>Abbrechen</button>
         <button className="btn btn-primary" disabled={!valid} onClick={submit}>Speichern</button>
       </>}>
+      <Segmented value={e.kind} options={[['expense', 'Ausgabe'], ['income', 'Einnahme']]}
+        onChange={(kind) => setE({ ...e, kind, category: kind === 'income' ? INCOME_CATEGORIES[1] : EXPENSE_CATEGORIES[0] })} />
       <form className="form-grid" onSubmit={(ev) => { ev.preventDefault(); submit(); }}>
-        <Field label="Lieferant / Empfänger" span={2}><input value={e.supplier} onChange={(ev) => setE({ ...e, supplier: ev.target.value })} autoFocus /></Field>
+        <Field label={income ? 'Zahler / Herkunft' : 'Lieferant / Empfänger'} span={2}><input value={e.supplier} onChange={(ev) => setE({ ...e, supplier: ev.target.value })} autoFocus /></Field>
         <Field label="Datum"><input type="date" value={e.date} onChange={(ev) => setE({ ...e, date: ev.target.value })} /></Field>
         <Field label="Beschreibung" span={2}><input value={e.description} onChange={(ev) => setE({ ...e, description: ev.target.value })} /></Field>
         <Field label="Belegnummer"><input value={e.receiptNo} onChange={(ev) => setE({ ...e, receiptNo: ev.target.value })} placeholder="optional" /></Field>
         <Field label="Kategorie" span={3}>
-          <select value={e.category} onChange={(ev) => setE({ ...e, category: ev.target.value })}>{EXPENSE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
+          <select value={e.category} onChange={(ev) => setE({ ...e, category: ev.target.value })}>{(income ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => <option key={c}>{c}</option>)}</select>
         </Field>
         <Field label="Betrag"><NumberInput value={amount} onChange={setAmount} suffix={currencySymbol()} min={0} /></Field>
         <Field label="Betrag ist"><Segmented value={mode} options={[['gross', 'Brutto'], ['net', 'Netto']]} onChange={setMode} /></Field>

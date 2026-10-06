@@ -39,6 +39,9 @@ export function ReportTemplate({ company, pl, periodLabel, basisLabel, accent }:
       {row('Material- und Wareneinsatz', pl.costOfSalesTotal, { sign: '-' })}
       <V style={{ height: 8 }} />
       {row('Rohertrag', pl.grossProfit, { strong: true })}
+      {pl.otherIncome.length ? <V style={{ height: 8 }} /> : null}
+      {pl.otherIncome.map((r) => row(r.category, r.amount, { indent: true }))}
+      {pl.otherIncome.length ? row('Sonstige betriebliche Erträge', pl.otherIncomeTotal) : null}
       <V style={{ height: 8 }} />
       {pl.operating.map((r) => row(r.category, r.amount, { indent: true, sign: '-' }))}
       {row('Betriebliche Aufwendungen', pl.operatingTotal, { sign: '-' })}

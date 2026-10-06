@@ -1,5 +1,6 @@
 import { defaultDesign, emptyCompany } from '../defaults';
-import type { Company, Customer, Expense, InvoiceDesign, LineItem, Material, Recipient, SalesDoc, StockMovement } from '../types';
+import { defaultSettings } from '../defaults';
+import type { Company, Customer, Expense, InvoiceDesign, LineItem, Material, Recipient, SalesDoc, Settings, StockMovement, StorageLocation } from '../types';
 
 /*
  * Conversion between the app model (camelCase, '' for empty dates) and the
@@ -14,7 +15,8 @@ const str = (v: unknown) => (v == null ? '' : String(v));
 const num = (v: unknown) => (v == null || v === '' ? 0 : Number(v));
 
 /** `plan` wird bewusst nicht geschrieben – der Tarif wird serverseitig gepflegt. */
-export const companyToRow = (c: Company, design: InvoiceDesign): Row => ({
+export const companyToRow = (c: Company, design: InvoiceDesign, settings: Settings): Row => ({
+  settings,
   name: c.name,
   owner: c.owner,
   street: c.street,
@@ -42,7 +44,11 @@ export const companyToRow = (c: Company, design: InvoiceDesign): Row => ({
   design,
 });
 
-export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesign } => ({
+export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesign; settings: Settings } => ({
+  settings: {
+    datev: { ...defaultSettings().datev, ...(((r.settings as Partial<Settings>) || {}).datev || {}) },
+    email: { ...defaultSettings().email, ...(((r.settings as Partial<Settings>) || {}).email || {}) },
+  },
   company: {
     ...emptyCompany(),
     plan: (['start', 'business', 'team'].includes(str(r.plan)) ? str(r.plan) : 'start') as Company['plan'],
@@ -120,6 +126,7 @@ export const materialToRow = (m: Material, companyId: string): Row => ({
   vat: m.vat,
   stock: m.stock,
   min_stock: m.minStock,
+  location_id: m.locationId || null,
 });
 
 export const materialFromRow = (r: Row, movements: StockMovement[]): Material => ({
@@ -134,6 +141,7 @@ export const materialFromRow = (r: Row, movements: StockMovement[]): Material =>
   vat: num(r.vat),
   stock: num(r.stock),
   minStock: num(r.min_stock),
+  locationId: str(r.location_id),
   movements,
 });
 
@@ -174,6 +182,8 @@ export const documentToRow = (d: SalesDoc, companyId: string): Row => ({
   paid_date: dateOrNull(d.paidDate),
   source_id: d.sourceId,
   stock_booked: d.stockBooked,
+  sent_at: d.sentAt || null,
+  sent_to: d.sentTo,
   created_at: d.createdAt || new Date().toISOString(),
 });
 
@@ -194,12 +204,15 @@ export const documentFromRow = (r: Row): SalesDoc => ({
   paidDate: str(r.paid_date),
   sourceId: str(r.source_id),
   stockBooked: !!r.stock_booked,
+  sentAt: r.sent_at ? new Date(str(r.sent_at)).toISOString() : '',
+  sentTo: str(r.sent_to),
   createdAt: str(r.created_at),
 });
 
 export const expenseToRow = (e: Expense, companyId: string): Row => ({
   company_id: companyId,
   id: e.id,
+  kind: e.kind,
   date: e.date,
   supplier: e.supplier,
   description: e.description,
@@ -211,6 +224,7 @@ export const expenseToRow = (e: Expense, companyId: string): Row => ({
 
 export const expenseFromRow = (r: Row): Expense => ({
   id: str(r.id),
+  kind: r.kind === 'income' ? 'income' : 'expense',
   date: str(r.date),
   supplier: str(r.supplier),
   description: str(r.description),
@@ -218,4 +232,19 @@ export const expenseFromRow = (r: Row): Expense => ({
   net: num(r.net),
   vat: num(r.vat),
   receiptNo: str(r.receipt_no),
+});
+
+export const locationToRow = (l: StorageLocation, companyId: string): Row => ({
+  company_id: companyId,
+  id: l.id,
+  code: l.code,
+  name: l.name,
+  note: l.note,
+});
+
+export const locationFromRow = (r: Row): StorageLocation => ({
+  id: str(r.id),
+  code: str(r.code),
+  name: str(r.name),
+  note: str(r.note),
 });

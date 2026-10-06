@@ -1,5 +1,5 @@
 import { addDays, toISO, uid } from './calc';
-import type { Company, Customer, Data, Expense, InvoiceDesign, LineItem, Material, SalesDoc } from './types';
+import type { Company, Customer, Data, Expense, InvoiceDesign, LineItem, Material, SalesDoc, Settings } from './types';
 
 export const emptyCompany = (): Company => ({
   plan: 'start',
@@ -46,6 +46,18 @@ export const defaultDesign = (): InvoiceDesign => ({
   offerOutro: 'Dieses Angebot ist gültig bis zum {gueltig}. Wir freuen uns auf Ihre Auftragserteilung.\n\nMit freundlichen Grüßen',
 });
 
+export const defaultSettings = (): Settings => ({
+  datev: { advisorNumber: '', clientNumber: '', chart: 'SKR03', fiscalYearStart: '01-01', accountLength: 4, debtorPerCustomer: false, accounts: {} },
+  email: {
+    autoSendInvoices: false,
+    bcc: '',
+    invoiceSubject: 'Rechnung {nummer} von {firma}',
+    invoiceBody: 'Guten Tag,\n\nanbei erhalten Sie unsere Rechnung {nummer} über {betrag}. Bitte überweisen Sie den Betrag bis zum {faellig}.\n\nMit freundlichen Grüßen\n{firma}',
+    offerSubject: 'Angebot {nummer} von {firma}',
+    offerBody: 'Guten Tag,\n\nanbei erhalten Sie unser Angebot {nummer} über {betrag}. Es ist gültig bis zum {gueltig}.\n\nWir freuen uns auf Ihre Rückmeldung.\n\nMit freundlichen Grüßen\n{firma}',
+  },
+});
+
 export const emptyData = (): Data => ({
   version: 1,
   company: null,
@@ -53,7 +65,9 @@ export const emptyData = (): Data => ({
   materials: [],
   documents: [],
   expenses: [],
+  locations: [],
   design: defaultDesign(),
+  settings: defaultSettings(),
   counters: { invoice: {}, offer: {}, customer: 0, material: 0 },
 });
 
@@ -85,6 +99,7 @@ export const emptyMaterial = (vat = 19): Material => ({
   vat,
   stock: 0,
   minStock: 0,
+  locationId: '',
   movements: [],
 });
 
@@ -170,6 +185,13 @@ export function demoData(): Data {
     movements: [{ id: uid(), date: `${year}-01-02`, quantity: stock, note: 'Anfangsbestand' }],
   }));
   data.counters.material = materials.length;
+  data.locations = [
+    { id: uid(), code: 'A-01', name: 'Regal A · Trockenbau', note: 'Halle links' },
+    { id: uid(), code: 'B-01', name: 'Regal B · Boden & Dämmung', note: 'Halle rechts' },
+    { id: uid(), code: 'C-01', name: 'Regal C · Kleinteile & Türen', note: 'Werkstatt' },
+  ];
+  const locationFor = ['A-01', 'A-01', 'B-01', 'A-01', 'B-01', 'B-01', 'C-01', 'C-01'];
+  data.materials = data.materials.map((m, i) => ({ ...m, locationId: data.locations.find((l) => l.code === locationFor[i])!.id }));
 
   const labour = (hours: number): LineItem => ({ id: uid(), description: 'Montagearbeiten Facharbeiter', details: '', quantity: hours, unit: 'Std.', unitPrice: 62, vat: 19, discount: 0 });
   const mat = (index: number, quantity: number): LineItem => {
@@ -211,6 +233,8 @@ export function demoData(): Data {
         sourceId: '',
         stockBooked: true,
         createdAt: date,
+        sentAt: status === 'draft' ? '' : date + 'T09:00:00.000Z',
+        sentTo: status === 'draft' ? '' : customer.email,
       });
     }
     if (back <= 2) {
@@ -237,6 +261,8 @@ export function demoData(): Data {
         sourceId: '',
         stockBooked: false,
         createdAt: date,
+        sentAt: '',
+        sentTo: '',
       });
     }
   }
@@ -255,15 +281,21 @@ export function demoData(): Data {
     for (const [category, supplier, description, net, vat] of fixed) {
       const date = toISO(new Date(month.getFullYear(), month.getMonth(), 3));
       if (date > toISO(now)) continue;
-      expenses.push({ id: uid(), date, supplier, description, category, net, vat, receiptNo: '' });
+      expenses.push({ id: uid(), kind: 'expense', date, supplier, description, category, net, vat, receiptNo: '' });
     }
     const date = toISO(new Date(month.getFullYear(), month.getMonth(), 18));
     if (date <= toISO(now)) {
-      expenses.push({ id: uid(), date, supplier: 'Baustoff Union', description: 'Materialeinkauf', category: 'Material & Waren', net: 1800 + ((back * 373) % 1400), vat: 19, receiptNo: `BU-${4400 + back}` });
-      if (back % 3 === 0) expenses.push({ id: uid(), date, supplier: 'Elektro Maier', description: 'Elektroinstallation (Subunternehmer)', category: 'Fremdleistungen', net: 1200 + back * 90, vat: 19, receiptNo: '' });
-      if (back % 4 === 1) expenses.push({ id: uid(), date, supplier: 'Druckerei Ost', description: 'Flyer & Fahrzeugbeschriftung', category: 'Marketing', net: 340, vat: 19, receiptNo: '' });
+      expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Baustoff Union', description: 'Materialeinkauf', category: 'Material & Waren', net: 1800 + ((back * 373) % 1400), vat: 19, receiptNo: `BU-${4400 + back}` });
+      if (back % 3 === 0) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Elektro Maier', description: 'Elektroinstallation (Subunternehmer)', category: 'Fremdleistungen', net: 1200 + back * 90, vat: 19, receiptNo: '' });
+      if (back % 4 === 1) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Druckerei Ost', description: 'Flyer & Fahrzeugbeschriftung', category: 'Marketing', net: 340, vat: 19, receiptNo: '' });
     }
   }
+  // einige Einnahmen ohne Rechnung
+  for (const back of [1, 4, 7]) {
+    const date = toISO(new Date(year, now.getMonth() - back, 22));
+    expenses.push({ id: uid(), kind: 'income', date, supplier: 'Barverkauf Werkstatt', description: 'Restmaterial an Privatkunden', category: 'Barverkauf', net: 180 + back * 25, vat: 19, receiptNo: `KB-${100 + back}` });
+  }
+  expenses.sort((a, b) => a.date.localeCompare(b.date));
   data.expenses = expenses.reverse();
   return data;
 }

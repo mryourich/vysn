@@ -100,6 +100,8 @@ export default function ProfitLossPage() {
             {pl.costOfSales.map((r) => <Line key={r.category} label={r.category} value={r.amount} indent minus />)}
             <Line label="Material- und Wareneinsatz" value={pl.costOfSalesTotal} minus />
             <Line label="Rohertrag" value={pl.grossProfit} strong />
+            {pl.otherIncome.map((r) => <Line key={r.category} label={r.category} value={r.amount} indent />)}
+            {pl.otherIncome.length ? <Line label="Sonstige Erträge" value={pl.otherIncomeTotal} /> : null}
             {pl.operating.map((r) => <Line key={r.category} label={r.category} value={r.amount} indent minus />)}
             <Line label="Betriebliche Aufwendungen" value={pl.operatingTotal} minus />
             <Line label={pl.result >= 0 ? 'Gewinn vor Steuern' : 'Verlust vor Steuern'} value={pl.result} strong />
