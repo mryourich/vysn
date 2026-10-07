@@ -63,7 +63,8 @@ const ACTIVE = new Set(['active', 'trialing', 'past_due']);
 const iso = (unix?: number | null) => (unix ? new Date(unix * 1000).toISOString() : null);
 
 /** Überträgt den Zustand eines Stripe-Abos auf die Firma (Tarif, Status, Testphase, Laufzeit). */
-export async function applySubscription(sub: Stripe.Subscription) {
+export async function applySubscription(input: Stripe.Subscription) {
+  let sub = input;
   const db = adminDb();
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
   let companyId = sub.metadata?.companyId || '';
@@ -74,9 +75,12 @@ export async function applySubscription(sub: Stripe.Subscription) {
   if (!companyId) throw new Error(`Keine Firma zu Stripe-Kunde ${customerId} gefunden.`);
 
   // Verspätete Ereignisse eines alten Abos dürfen ein neueres nicht überschreiben.
-  const { data: current } = await db.from('companies').select('stripe_subscription_id').eq('id', companyId).maybeSingle();
+  const { data: current } = await db.from('companies').select('*').eq('id', companyId).maybeSingle();
   const currentSub = (current?.stripe_subscription_id as string) || '';
   if (currentSub && currentSub !== sub.id && !ACTIVE.has(sub.status)) return { companyId, plan: null, skipped: true };
+
+  // Tarifwechsel in der Testphase beendet die Testphase: neuer Tarif gilt sofort und wird abgerechnet
+  if (current && trialChanged(sub, current)) sub = await endTrialNow(sub);
 
   const item = sub.items?.data?.[0];
   const plan = item ? planForPrice(item.price.id) : null;
@@ -158,6 +162,43 @@ function currentPeriodEnd(sub: Stripe.Subscription): number | undefined {
   const item = sub.items?.data?.[0];
   return (item as unknown as { current_period_end?: number })?.current_period_end
     ?? (sub as unknown as { current_period_end?: number }).current_period_end;
+}
+
+/**
+ * Wurde ein Abo in der Testphase gewechselt (anderer Tarif/Rhythmus oder von Stripe zum
+ * Laufzeitende vorgemerkt)? Nur für das bereits bekannte Abo – nicht bei der Erstbuchung.
+ */
+function trialChanged(sub: Stripe.Subscription, current: Record<string, unknown>) {
+  if (sub.status !== 'trialing' || current.stripe_subscription_id !== sub.id) return false;
+  const known = String(current.plan || '');
+  if (!PAID_PLANS.includes(known as PaidPlan)) return false;
+  const price = sub.items?.data?.[0]?.price.id || '';
+  const knownInterval = String(current.billing_interval || '');
+  return Boolean(sub.schedule)
+    || planForPrice(price) !== known
+    || (!!knownInterval && intervalForPrice(price) !== knownInterval);
+}
+
+/**
+ * Testphase sofort beenden: ein von Stripe vorgemerkter Wechsel (Schedule) wird gleich
+ * übernommen, danach startet die Abrechnung mit dem neuen Tarif ab heute.
+ */
+async function endTrialNow(sub: Stripe.Subscription, s: Stripe = stripe()) {
+  const item = sub.items.data[0];
+  let price = item.price.id;
+  const scheduleId = typeof sub.schedule === 'string' ? sub.schedule : sub.schedule?.id;
+  if (scheduleId) {
+    const schedule = await s.subscriptionSchedules.retrieve(scheduleId);
+    const now = Math.floor(Date.now() / 1000);
+    const next = schedule.phases.find((ph) => ph.start_date > now)?.items?.[0]?.price;
+    price = (typeof next === 'string' ? next : next?.id) || price;
+    await s.subscriptionSchedules.release(scheduleId);
+  }
+  return s.subscriptions.update(sub.id, {
+    ...(price !== item.price.id ? { items: [{ id: item.id, price }] } : {}),
+    trial_end: 'now',
+    proration_behavior: 'none',
+  });
 }
 
 /** Vorgemerkten Wechsel (Schedule) bzw. Kündigung zum Laufzeitende aufheben. */
