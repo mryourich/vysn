@@ -63,7 +63,7 @@ export function ProfilePanel({ onClose }: { onClose: () => void }) {
 }
 
 /** Firmenkarte unten in der Seitenleiste – öffnet das Profil mit den Einstellungen. */
-export function ProfileButton() {
+export function ProfileButton({ onMobile }: { onMobile?: () => void } = {}) {
   const { data } = useStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -82,7 +82,7 @@ export function ProfileButton() {
   return (
     <div className="switcher" ref={ref}>
       {open ? <div className="switcher-menu profile-popover" role="dialog" aria-label="Profil & Einstellungen"><ProfilePanel onClose={() => setOpen(false)} /></div> : null}
-      <button className="company-card" onClick={() => setOpen(!open)} aria-expanded={open} aria-haspopup="dialog" title="Profil & Einstellungen">
+      <button className="company-card" onClick={() => { if (onMobile && window.matchMedia('(max-width: 860px)').matches) onMobile(); else setOpen(!open); }} aria-expanded={open} aria-haspopup="dialog" title="Profil & Einstellungen">
         <CompanyAvatar name={company.name} logo={company.logo} size={36} />
         <span><strong>{company.name}</strong><small>Profil & Einstellungen</small></span>
         <ChevronsUpDown size={16} className="switcher-chevron" />

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
-  BarChart3, Boxes, FileSpreadsheet, FileText, LayoutDashboard, Lock, ReceiptText, ScanLine, Users, Wallet, CloudOff, X, Sparkles,
+  BarChart3, Boxes, FileSpreadsheet, FileText, LayoutDashboard, Lock, Menu, ReceiptText, Users, Wallet, CloudOff, X, Sparkles,
 } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
@@ -29,7 +29,6 @@ const NAV: NavGroup[] = [
   ] },
   { group: 'Betrieb', items: [
     { href: '/app/material', label: 'Material & Lager', icon: Boxes },
-    { href: '/app/scan', label: 'Lager-Scanner', icon: ScanLine },
     { href: '/app/ausgaben', label: 'Einnahmen & Ausgaben', icon: Wallet },
   ] },
   { group: 'Auswertung', items: [
@@ -44,8 +43,18 @@ function Shell({ children }: { children: React.ReactNode }) {
   const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can, requireFeature } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
-  const [sheet, setSheet] = useState<'menu' | 'create' | 'profile' | null>(null);
-  useEffect(() => setSheet(null), [pathname]);
+  const [sheet, setSheet] = useState<'create' | 'profile' | null>(null);
+  /** Handy: Seitenmenü (dieselbe Seitenleiste wie am Computer) */
+  const [drawer, setDrawer] = useState(false);
+  useEffect(() => { setSheet(null); setDrawer(false); }, [pathname]);
+  useEffect(() => {
+    if (!drawer) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [drawer]);
   const invitePage = pathname.startsWith('/app/einladung');
   // Offene Einladung (z. B. nach Registrierung und E-Mail-Bestätigung) zuerst annehmen
   useEffect(() => {
@@ -73,9 +82,13 @@ function Shell({ children }: { children: React.ReactNode }) {
   const lockedFor = (href: string) => { const f = featureForPath(href); return f && !can(f) ? f : null; };
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <Brand href="/app" />
+    <div className={`app${drawer ? ' drawer-open' : ''}`}>
+      {drawer ? <div className="drawer-backdrop" onClick={() => setDrawer(false)} aria-hidden="true" /> : null}
+      <aside className="sidebar" aria-label="Navigation">
+        <div className="sidebar-head">
+          <Brand href="/app" />
+          <button className="icon-btn sidebar-close" onClick={() => setDrawer(false)} aria-label="Menü schließen"><X size={20} /></button>
+        </div>
         <nav>
           {nav.map((g) => (
             <div key={g.group || 'main'} className="nav-group">
@@ -91,7 +104,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <ProfileButton />
+          <ProfileButton onMobile={() => { setDrawer(false); setSheet('profile'); }} />
           <div className="sidebar-meta">
             <SyncStatus />
             <LogoutButton className="logout-btn" />
@@ -101,6 +114,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="app-main">
         <header className="topbar">
+          <button className="topbar-menu" onClick={() => setDrawer(true)} aria-label="Menü öffnen" aria-expanded={drawer}><Menu size={22} /></button>
           <Brand href="/app" />
           <button className="topbar-company" onClick={() => setSheet('profile')} aria-label={`Profil & Einstellungen – ${company.name}`}>
             <span>{company.name}</span>
@@ -133,7 +147,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : featureLocked ? <FeatureLocked feature={featureLocked} /> : children}</main>
       </div>
       <UpgradeDialog />
-      <MobileNav nav={nav} open={sheet} onOpen={setSheet} />
+      <MobileNav open={sheet} onOpen={setSheet} onMenu={() => setDrawer(true)} menuOpen={drawer} />
     </div>
   );
 }

@@ -4,14 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
-  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, FileText, LayoutDashboard, Lock, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
+  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, FileText, LayoutDashboard, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { PLANS } from '../../lib/plans';
 import { useStore } from '../../lib/store';
-import { ROLE_LABEL } from '../../lib/team';
 import { featureForPath } from '../../lib/plans';
-import { CompanyAvatar } from './company-switcher';
 import { ProfilePanel } from './profile';
 import { CREATE_EVENT } from './ui';
 
@@ -20,10 +17,10 @@ export type NavGroup = { group: string; items: NavItem[] };
 
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
-type Sheet = 'menu' | 'create' | 'profile' | null;
+type Sheet = 'create' | 'profile' | null;
 
 /** Handy-Navigation: Tab-Leiste mit „+“ (Schnellaktionen) und gruppiertem Menü. */
-export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet; onOpen: (s: Sheet) => void }) {
+export function MobileNav({ open, onOpen, onMenu, menuOpen }: { open: Sheet; onOpen: (s: Sheet) => void; onMenu: () => void; menuOpen: boolean }) {
   const pathname = usePathname() || '/app';
   const close = () => onOpen(null);
   const { can, requireFeature } = useStore();
@@ -58,16 +55,15 @@ export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet;
           <span><Plus size={24} strokeWidth={2.2} /></span>
         </button>
         {tab('/app/scan', 'Scannen', ScanLine)}
-        <button className={open === 'menu' ? 'active' : ''} onClick={() => onOpen(open === 'menu' ? null : 'menu')} aria-expanded={open === 'menu'}>
+        <button className={menuOpen ? 'active' : ''} onClick={() => { onOpen(null); onMenu(); }} aria-expanded={menuOpen}>
           <Menu size={21} strokeWidth={1.8} /><span>Menü</span>
         </button>
       </nav>
       {open ? (
         <div className="sheet-backdrop" onClick={close}>
-          <div className={`sheet ${open === 'create' ? 'create-sheet' : 'menu-sheet'}`} role="dialog" aria-modal="true" aria-label={open === 'menu' ? 'Menü' : open === 'profile' ? 'Profil & Einstellungen' : 'Neu erstellen'} onClick={(e) => e.stopPropagation()}>
+          <div className={`sheet ${open === 'create' ? 'create-sheet' : 'menu-sheet'}`} role="dialog" aria-modal="true" aria-label={open === 'profile' ? 'Profil & Einstellungen' : 'Neu erstellen'} onClick={(e) => e.stopPropagation()}>
             <span className="sheet-grabber" aria-hidden="true" />
-            {open === 'menu' ? <MenuSheet nav={nav} pathname={pathname} onClose={close} guard={guard} onProfile={() => onOpen('profile')} />
-              : open === 'profile' ? (
+            {open === 'profile' ? (
                 <>
                   <div className="sheet-head"><strong>Profil & Einstellungen</strong><button className="icon-btn" onClick={close} aria-label="Schließen"><X size={18} /></button></div>
                   <div className="sheet-body"><ProfilePanel onClose={close} /></div>
@@ -76,49 +72,6 @@ export function MobileNav({ nav, open, onOpen }: { nav: NavGroup[]; open: Sheet;
           </div>
         </div>
       ) : null}
-    </>
-  );
-}
-
-function MenuSheet({ nav, pathname, onClose, guard, onProfile }: { nav: NavGroup[]; pathname: string; onClose: () => void; guard: (href: string) => (e: React.MouseEvent) => void; onProfile: () => void }) {
-  const { data, role, can } = useStore();
-  const company = data.company!;
-  const groups = nav.map((g) => ({ ...g, items: g.items.filter((i) => i.href !== '/app') })).filter((g) => g.items.length);
-
-  return (
-    <>
-      <div className="sheet-head">
-        <strong>Menü</strong>
-        <button className="icon-btn" onClick={onClose} aria-label="Schließen"><X size={18} /></button>
-      </div>
-      <div className="sheet-body">
-        <div className="menu-card">
-          <button className="menu-company" onClick={onProfile}>
-            <CompanyAvatar name={company.name} logo={company.logo} size={40} />
-            <span>
-              <strong>{company.name}</strong>
-              <small>Tarif {PLANS[company.plan]?.label ?? company.plan}{role !== 'owner' ? ` · ${ROLE_LABEL[role]}` : ''}</small>
-            </span>
-            <em>Profil & Einstellungen<ChevronRight size={15} /></em>
-          </button>
-        </div>
-
-        {groups.map((g) => (
-          <section key={g.group} className="menu-group">
-            <span className="menu-group-label">{g.group}</span>
-            <div className="menu-card">
-              {g.items.map((item) => (
-                <Link key={item.href} href={item.href} onClick={(e) => { guard(item.href)(e); if (!e.defaultPrevented) onClose(); }} className={`menu-row${isActive(pathname, item.href) ? ' active' : ''}`}>
-                  <span className="menu-icon"><item.icon size={17} strokeWidth={1.9} /></span>
-                  <span className="menu-label">{item.label}</span>
-                  {(() => { const f = featureForPath(item.href); return f && !can(f) ? <Lock size={14} className="menu-chevron" /> : <ChevronRight size={16} className="menu-chevron" />; })()}
-                </Link>
-              ))}
-            </div>
-          </section>
-        ))}
-
-      </div>
     </>
   );
 }

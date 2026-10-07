@@ -340,7 +340,16 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 }
 
 @media (max-width: 860px) {
-  .sidebar { display: none; }
+  /* Handy: Seitenleiste als Seitenmenü von links */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; z-index: 70; width: min(300px, 86vw); height: 100dvh;
+    overflow-y: auto; overscroll-behavior: contain; padding-bottom: calc(14px + env(safe-area-inset-bottom));
+    transform: translateX(-104%); transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1); visibility: hidden;
+  }
+  .app.drawer-open .sidebar { transform: none; visibility: visible; box-shadow: 24px 0 60px -20px rgba(0, 0, 0, 0.6); }
+  .drawer-backdrop { position: fixed; inset: 0; z-index: 65; background: rgba(7, 11, 22, 0.5); backdrop-filter: blur(2px); animation: fade 0.15s; }
+  .sidebar .nav-link { min-height: 46px; font-size: 15px; }
+  .sidebar .sidebar-close { display: grid !important; color: #c3cad8; }
   .topbar {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     position: sticky; top: 0; z-index: 30; height: 56px; padding: 0 16px;
@@ -758,3 +767,15 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .page-tabs button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 14px; font-size: 14px; }
 .tab-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .tab-toolbar p { margin: 0; }
+
+/* Kopf der Seitenleiste (Logo + am Handy „Schließen“) */
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sidebar-close { display: none !important; }
+.topbar-menu { display: none; }
+@media (max-width: 860px) {
+  .topbar-menu { display: grid; place-items: center; width: 40px; height: 40px; margin-left: -8px; border: none; background: none; color: #fff; border-radius: 10px; cursor: pointer; flex: none; -webkit-tap-highlight-color: transparent; }
+  .topbar-menu:active { background: rgba(255, 255, 255, 0.08); }
+  .topbar { justify-content: flex-start; }
+  .topbar .topbar-company { margin-left: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .sidebar { transition: none; } }
