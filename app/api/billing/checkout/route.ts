@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-import { TRIAL_DAYS } from '../../../../lib/plans';
 import { billingConfigured, priceId, siteOrigin, stripe } from '../../../../lib/server/billing';
 import { PAID_PLANS } from '../../../../lib/plans';
 import type { Interval } from '../../../../lib/server/billing';
@@ -29,7 +28,7 @@ export async function POST(req: Request) {
 
   const db = adminDb();
   const { data: company, error } = await db.from('companies')
-    .select('id, name, email, stripe_customer_id, stripe_subscription_id, subscription_status, trial_used').eq('id', companyId).single();
+    .select('id, name, email, stripe_customer_id, stripe_subscription_id, subscription_status').eq('id', companyId).single();
   if (error || !company) return NextResponse.json({ error: 'Firma nicht gefunden.' }, { status: 404 });
 
   const s = stripe();
@@ -56,10 +55,8 @@ export async function POST(req: Request) {
     customer: customerId,
     client_reference_id: companyId,
     line_items: [{ price, quantity: 1 }],
-    subscription_data: {
-      metadata: { companyId },
-      ...(company.trial_used ? {} : { trial_period_days: TRIAL_DAYS }),
-    },
+    // Keine Testphase bei bezahlten Tarifen – zum Ausprobieren gibt es den kostenlosen Tarif Start
+    subscription_data: { metadata: { companyId } },
     metadata: { companyId, plan, interval },
     allow_promotion_codes: true,
     billing_address_collection: 'required',

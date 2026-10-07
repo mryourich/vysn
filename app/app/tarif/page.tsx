@@ -7,7 +7,7 @@ import { formatDate } from '../../../lib/calc';
 import { billingInfo, changePlan, openPortal, startCheckout, syncBilling } from '../../../lib/billing';
 import type { ChangeResult } from '../../../lib/billing';
 import type { BillingInfo } from '../../../lib/billing';
-import { PLAN_OFFERS, PLANS, TRIAL_DAYS, formatPlanPrice, isUpgrade } from '../../../lib/plans';
+import { PLAN_OFFERS, PLANS, formatPlanPrice, isUpgrade } from '../../../lib/plans';
 import type { PaidPlan, PlanId } from '../../../lib/types';
 import { useStore } from '../../../lib/store';
 import { QuotaList } from '../../../components/app/quota';
@@ -152,7 +152,6 @@ function Plan() {
       </>
     );
   };
-  const trialAvailable = !billing?.trialUsed;
 
   return (
     <div className="page">
@@ -190,7 +189,7 @@ function Plan() {
           <button className={!yearly ? 'active' : ''} onClick={() => setYearly(false)}>Monatlich</button>
           <button className={yearly ? 'active' : ''} onClick={() => setYearly(true)}>Jährlich <span className="text-success">–20 %</span></button>
         </div>
-        {trialAvailable && !subscribed ? <span className="muted small">{TRIAL_DAYS} Tage kostenlos testen – erst danach wird abgebucht.</span> : null}
+        {!subscribed ? <span className="muted small">Zum Ausprobieren ist Start dauerhaft kostenlos. Bezahlte Tarife werden ab der Buchung abgerechnet.</span> : null}
       </div>
 
       <div className="plan-grid">
@@ -213,7 +212,7 @@ function Plan() {
               ) : (
                 <button className={`btn ${p.featured ? 'btn-primary' : ''}`} disabled={!canManage || !bookable || !!busy}
                   onClick={() => go(p.id, () => startCheckout(activeCompanyId!, p.id as PaidPlan, yearly ? 'yearly' : 'monthly'))}>
-                  <Sparkles size={16} /> {busy === p.id ? 'Weiterleitung …' : company.plan !== 'start' ? `Zu ${p.name} wechseln` : trialAvailable ? `${TRIAL_DAYS} Tage testen` : `${p.name} buchen`}
+                  <Sparkles size={16} /> {busy === p.id ? 'Weiterleitung …' : company.plan !== 'start' ? `Zu ${p.name} wechseln` : `${p.name} buchen`}
                 </button>
               )}
             </article>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Check, Lock, Sparkles } from 'lucide-react';
-import { FEATURES, PLANS, PLAN_OFFERS, TRIAL_DAYS, formatPlanPrice, isFeature, nextPlanForLimits, planOf, usageLabel, usageQuota } from '../../lib/plans';
+import { FEATURES, PLANS, PLAN_OFFERS, formatPlanPrice, isFeature, nextPlanForLimits, planOf, usageLabel, usageQuota } from '../../lib/plans';
 import type { Feature } from '../../lib/plans';
 import type { UsageKind } from '../../lib/types';
 import { useStore } from '../../lib/store';
@@ -37,7 +37,7 @@ function FeatureUpgrade({ feature, onClose }: { feature: Feature; onClose: () =>
           <p>{f.text}</p>
         </div>
       </div>
-      <p>Diese Funktion ist ab dem Tarif <strong>{offer.name}</strong> enthalten – ab <strong>{formatPlanPrice(offer.yearly)} €</strong> im Monat zzgl. USt., {TRIAL_DAYS} Tage kostenlos testen.
+      <p>Diese Funktion ist ab dem Tarif <strong>{offer.name}</strong> enthalten – ab <strong>{formatPlanPrice(offer.yearly)} €</strong> im Monat zzgl. USt., monatlich kündbar.
         {' '}Ihr aktueller Tarif: {PLANS[planOf(data)].label}.</p>
       <ul className="upgrade-list">
         {offer.features.slice(0, 5).map((x) => <li key={x}><Check size={15} />{x}</li>)}
