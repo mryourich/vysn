@@ -130,7 +130,7 @@ export const nextPlanForLimits = (plan: PlanId): PaidPlan | null => (plan === 's
  * Funktionen je Tarif
  * Nicht enthaltene Funktionen bleiben sichtbar (mit Schloss); ein Klick öffnet „Jetzt upgraden“.
  * ------------------------------------------------------------------------- */
-export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team';
+export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team' | 'ai';
 
 export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team'; text: string }> = {
   design: { label: 'Dokumentenlayout & Standardtexte', plan: 'business', text: 'Farben, Schrift, Logo-Position, Aufbau und Standardtexte aller Belege frei gestalten.' },
@@ -140,6 +140,7 @@ export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team
   email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote, Rechnungen und alle weiteren Belege direkt aus VYSNER One per E-Mail versenden – mit PDF im Anhang.' },
   scanner: { label: 'Lager-Scanner & QR-Etiketten', plan: 'business', text: 'Regale und Artikel mit QR-Codes versehen und per Handy ein- und auslagern.' },
   companies: { label: 'Mehrere Firmen', plan: 'business', text: 'Mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummern und eigenem Design.' },
+  ai: { label: 'KI-Sprachassistent', plan: 'business', text: 'Angebote und Rechnungen per Sprachmemo erstellen – die KI findet Kunden und Artikel, fragt bei Unklarheiten nach und legt den Entwurf nach Ihrer Bestätigung an.' },
   team: { label: 'Team & Rechte', plan: 'team', text: 'Bis zu 5 Personen je Firma einladen – mit Rollen für Inhaber, Admin und Mitarbeiter.' },
 };
 

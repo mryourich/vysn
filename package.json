@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
     "@react-pdf/renderer": "^4.3.0",
     "@supabase/supabase-js": "^2.117.2",
     "jsqr": "^1.4.0",

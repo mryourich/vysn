@@ -46,6 +46,8 @@ export type Billing = {
   pendingPlan: PlanId | '';
   pendingInterval: 'monthly' | 'yearly' | '';
   pendingAt: string;
+  /** Tarif kommt von dieser Firma (weitere Firma eines Business-/Team-Inhabers) */
+  parentId: string;
 };
 
 export type Customer = {
@@ -110,6 +112,8 @@ export type LineItem = {
   variant?: 'optional' | 'alternative';
   /** Vom Kunden gewählt: wird beim Umwandeln (Auftragsbestätigung/Rechnung) als normale Position übernommen */
   chosen?: boolean;
+  /** Alternative zu einer anderen Position (Nummer z. B. 1.1) */
+  parentId?: string;
 };
 
 /** Belegarten: Angebot, Auftragsbestätigung, Lieferschein, Rechnung, Bestellung (an Lieferanten). */

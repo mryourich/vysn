@@ -73,7 +73,8 @@ export const emptyData = (): Data => ({
   usage: { month: '', counts: {} },
 });
 
-export const emptyCustomer = (): Customer => ({
+/** Neuer Kunde – Land vorbelegt mit dem Land der Firma. */
+export const emptyCustomer = (country = 'Deutschland'): Customer => ({
   id: '',
   number: '',
   name: '',
@@ -81,7 +82,7 @@ export const emptyCustomer = (): Customer => ({
   street: '',
   zip: '',
   city: '',
-  country: 'Deutschland',
+  country,
   email: '',
   phone: '',
   vatId: '',

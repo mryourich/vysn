@@ -32,3 +32,12 @@ export async function memberRole(companyId: string, userId: string): Promise<str
   const { data } = await adminDb().from('company_members').select('role').eq('company_id', companyId).eq('user_id', userId).maybeSingle();
   return (data?.role as string) || null;
 }
+
+/** Datenbankzugriff im Namen des angemeldeten Nutzers (Row Level Security bleibt aktiv). */
+export function userDb(req: Request): SupabaseClient {
+  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  return createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
