@@ -3,7 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Loader2, Lock, Mic, MicOff, RotateCcw, Send, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
-import { AgentError, askAgent } from '../../lib/agent';
+import { AgentError, agentStatus, askAgent } from '../../lib/agent';
 import type { AgentHistory, AgentProposal } from '../../lib/agent';
 import { docTotals, money, qty, uid } from '../../lib/calc';
 import { DOC_KINDS, docEditPath } from '../../lib/docs';
@@ -49,12 +49,16 @@ export function VoiceAssistant() {
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [speak, setSpeak] = useState(true);
+  const [enabled, setEnabled] = useState(false);
+  const [remaining, setRemaining] = useState<number | null>(null);
   const recRef = useRef<Recognition | null>(null);
   const finalRef = useRef('');
   const listRef = useRef<HTMLDivElement>(null);
   const supported = typeof window !== 'undefined' && !!createRecognition('de-DE');
 
-  const show = useCallback(() => { if (requireFeature('ai')) setOpen(true); }, [requireFeature]);
+  // Ohne API-Schlüssel auf dem Server bleibt der Assistent unsichtbar (keine Kosten)
+  useEffect(() => { agentStatus().then((s) => setEnabled(s.enabled)); }, []);
+  const show = useCallback(() => { if (enabled && requireFeature('ai')) setOpen(true); }, [enabled, requireFeature]);
   useEffect(() => {
     const onOpen = () => show();
     window.addEventListener(ASSISTANT_EVENT, onOpen);
@@ -89,6 +93,7 @@ export function VoiceAssistant() {
     try {
       const r = await askAgent(activeCompanyId, history, text);
       setHistory(r.messages);
+      if (typeof r.remaining === 'number') setRemaining(r.remaining);
       const reply = r.reply || (r.proposal ? 'Hier ist mein Vorschlag. Passt das so?' : '');
       setBubbles((b) => [...b, { role: 'assistant', text: reply, proposal: r.proposal }]);
       say(reply);
@@ -164,6 +169,8 @@ export function VoiceAssistant() {
     router.push(docEditPath(doc));
   };
 
+  if (!enabled) return null;
+
   return (
     <>
       <button className={`assistant-fab${allowed ? '' : ' locked'}`} onClick={show} aria-label="KI-Sprachassistent öffnen" title="KI-Sprachassistent">
@@ -210,6 +217,7 @@ export function VoiceAssistant() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }} />
               <button className="btn btn-primary assistant-send" disabled={busy || !input.trim() || listening} aria-label="Senden"><Send size={17} /></button>
             </form>
+            {remaining !== null && remaining <= 5 ? <p className="assistant-quota">{remaining ? `Heute noch ${remaining} ${remaining === 1 ? 'Anfrage' : 'Anfragen'}` : 'Tageslimit erreicht – morgen geht es weiter'}</p> : null}
           </aside>
         </div>
       ) : null}

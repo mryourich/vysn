@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-import { applySubscription, stripe, syncCustomer } from '../../../../lib/server/billing';
+import { stripe, syncCustomer } from '../../../../lib/server/billing';
+import { applyAnySubscription, syncAiCustomer } from '../../../../lib/server/ai-addon';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -27,13 +28,17 @@ export async function POST(req: Request) {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
-        await applySubscription(event.data.object as Stripe.Subscription);
+        await applyAnySubscription(event.data.object as Stripe.Subscription);
         break;
       case 'checkout.session.completed':
       case 'invoice.payment_failed': {
         const obj = event.data.object as { customer?: string | { id: string } | null };
         const customer = typeof obj.customer === 'string' ? obj.customer : obj.customer?.id;
-        if (customer) await syncCustomer(customer);
+        if (!customer) break;
+        // Tarif und KI-Zusatzbuchung haben getrennte Stripe-Kunden
+        const ai = (event.data.object as { metadata?: Record<string, string> | null }).metadata?.product === 'ai';
+        if (ai) await syncAiCustomer(customer);
+        else await syncCustomer(customer);
         break;
       }
       default:

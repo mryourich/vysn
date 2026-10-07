@@ -13,6 +13,7 @@ import { PAID_PLANS } from '../plans';
  *   STRIPE_PRICE_SOLO_MONTHLY,     STRIPE_PRICE_SOLO_YEARLY,
  *   STRIPE_PRICE_BUSINESS_MONTHLY, STRIPE_PRICE_BUSINESS_YEARLY,
  *   STRIPE_PRICE_TEAM_MONTHLY,     STRIPE_PRICE_TEAM_YEARLY      price_…
+ *   STRIPE_PRICE_AI_MONTHLY      price_… (KI-Sprachassistent, eigenes Abo – siehe ai-addon.ts)
  *   STRIPE_AUTOMATIC_TAX=true    (optional, wenn Stripe Tax eingerichtet ist)
  *   SUPABASE_SERVICE_ROLE_KEY    geheimer Supabase-Schlüssel (sb_secret_…)
  */
@@ -43,6 +44,15 @@ export function intervalForPrice(price: string): Interval | null {
   return null;
 }
 
+export const aiPrice = () => process.env.STRIPE_PRICE_AI_MONTHLY || '';
+
+/** Gehört das Abo zur KI-Zusatzbuchung (eigenes Abo) statt zum Tarif? */
+export function isAiSubscription(sub: Stripe.Subscription) {
+  if (sub.metadata?.product === 'ai') return true;
+  const price = aiPrice();
+  return !!price && (sub.items?.data || []).some((i) => i.price?.id === price);
+}
+
 export const billingConfigured = () =>
   Boolean(process.env.STRIPE_SECRET_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && PAID_PLANS.some((p) => priceId(p, 'monthly') || priceId(p, 'yearly')));
 
@@ -64,6 +74,7 @@ const iso = (unix?: number | null) => (unix ? new Date(unix * 1000).toISOString(
 
 /** Überträgt den Zustand eines Stripe-Abos auf die Firma (Tarif, Status, Testphase, Laufzeit). */
 export async function applySubscription(input: Stripe.Subscription) {
+  if (isAiSubscription(input)) throw new Error('KI-Abo über applyAiSubscription verarbeiten.');
   let sub = input;
   const db = adminDb();
   const customerId = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
@@ -120,7 +131,8 @@ export async function applySubscription(input: Stripe.Subscription) {
 /** Liest alle Abos eines Kunden bei Stripe und übernimmt das relevante (aktives vor beendetem). */
 export async function syncCustomer(customerId: string) {
   const subs = await stripe().subscriptions.list({ customer: customerId, status: 'all', limit: 10 });
-  const sorted = [...subs.data].sort((a, b) => Number(ACTIVE.has(b.status)) - Number(ACTIVE.has(a.status)) || b.created - a.created);
+  // KI-Zusatzbuchungen laufen über eigene Kunden/Abos und zählen hier nicht
+  const sorted = subs.data.filter((x) => !isAiSubscription(x)).sort((a, b) => Number(ACTIVE.has(b.status)) - Number(ACTIVE.has(a.status)) || b.created - a.created);
   if (sorted[0]) return applySubscription(sorted[0]);
   return null;
 }

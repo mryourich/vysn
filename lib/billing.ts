@@ -46,3 +46,11 @@ export const withdraw = (companyId: string, name: string) =>
   call('/api/billing/withdraw', { companyId, name }) as unknown as Promise<{ ok: boolean; refunded: number; currency: string; mailed: boolean }>;
 export const openPortal = (companyId: string) => call('/api/billing/portal', { companyId });
 export const syncBilling = (companyId: string) => call('/api/billing/sync', { companyId });
+
+/** KI-Sprachassistent (Zusatzbuchung, eigenes Abo) */
+export type AiAction = 'checkout' | 'portal' | 'cancel' | 'resume' | 'sync';
+export const aiBilling = (companyId: string, action: AiAction) => call('/api/billing/ai', { companyId, action });
+export const aiWithdrawalInfo = (companyId: string) =>
+  (call('/api/billing/ai', { companyId, action: 'withdraw-info' }) as unknown as Promise<{ eligible: boolean; until?: string }>).catch(() => ({ eligible: false } as { eligible: boolean; until?: string }));
+export const aiWithdraw = (companyId: string, name: string) =>
+  call('/api/billing/ai', { companyId, action: 'withdraw', name }) as unknown as Promise<{ ok: boolean; refunded: number; currency: string; mailed: boolean }>;

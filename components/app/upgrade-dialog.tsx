@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Check, Lock, Sparkles } from 'lucide-react';
-import { FEATURES, PLANS, PLAN_OFFERS, formatPlanPrice, isFeature, nextPlanForLimits, planOf, usageLabel, usageQuota } from '../../lib/plans';
+import { AI_ADDON, FEATURES, PLANS, PLAN_OFFERS, formatPlanPrice, isFeature, nextPlanForLimits, planOf, usageLabel, usageQuota } from '../../lib/plans';
 import type { Feature } from '../../lib/plans';
 import type { UsageKind } from '../../lib/types';
 import { useStore } from '../../lib/store';
@@ -12,6 +12,7 @@ import { Modal } from './ui';
 export function UpgradeDialog() {
   const { upgradeNotice, dismissUpgrade } = useStore();
   if (!upgradeNotice) return null;
+  if (upgradeNotice === 'ai') return <AiUpgrade onClose={dismissUpgrade} />;
   return isFeature(upgradeNotice) ? <FeatureUpgrade feature={upgradeNotice} onClose={dismissUpgrade} /> : <LimitUpgrade kind={upgradeNotice} onClose={dismissUpgrade} />;
 }
 
@@ -21,6 +22,29 @@ function Footer({ onClose }: { onClose: () => void }) {
       <button className="btn btn-quiet" onClick={onClose}>Später</button>
       <Link className="btn btn-primary" href="/app/tarif" onClick={onClose}><Sparkles size={16} /> Jetzt upgraden</Link>
     </>
+  );
+}
+
+/** KI-Sprachassistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif */
+function AiUpgrade({ onClose }: { onClose: () => void }) {
+  const f = FEATURES.ai;
+  return (
+    <Modal title="KI-Sprachassistent dazubuchen" onClose={onClose} footer={<>
+      <button className="btn btn-quiet" onClick={onClose}>Später</button>
+      <Link className="btn btn-primary" href="/app/erweiterungen#ki" onClick={onClose}><Sparkles size={16} /> Jetzt buchen</Link>
+    </>}>
+      <div className="upgrade-feature">
+        <div className="upgrade-hero"><Sparkles size={22} /></div>
+        <div>
+          <h3>{f.label}</h3>
+          <p>{f.text}</p>
+        </div>
+      </div>
+      <p>Der Assistent ist eine Zusatzbuchung für <strong>{formatPlanPrice(AI_ADDON.monthly)} € im Monat</strong> zzgl. USt. – in jedem Tarif buchbar, auch in Start, monatlich kündbar.</p>
+      <ul className="upgrade-list">
+        {['Belege per Sprachmemo diktieren', 'Rückfragen bei Unklarheiten (z. B. welche Variante)', 'Fragen zu Umsatz, offenen Rechnungen und Lager', '14 Tage Widerrufsrecht mit voller Erstattung'].map((x) => <li key={x}><Check size={15} />{x}</li>)}
+      </ul>
+    </Modal>
   );
 }
 

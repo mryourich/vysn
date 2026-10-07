@@ -14,9 +14,14 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - **Status:** offen
 - Platzhalter in `app/impressum/page.tsx` und `app/widerruf/page.tsx` durch echte Angaben ersetzen und Texte rechtlich prüfen lassen.
 
-## KI-Sprachassistent: API-Schlüssel und Datenschutz
-- **Status:** offen
-- **API-Schlüssel:** In der Anthropic Console (console.anthropic.com) einen API-Schlüssel anlegen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat. Ohne Schlüssel zeigt der Assistent „noch nicht eingerichtet“.
-- **Kosten im Blick behalten:** Abrechnung pro Nutzung bei Anthropic (Modell Claude Opus 5.5, Aufwand „low“). In der Console ein monatliches Ausgabenlimit setzen.
+## KI-Sprachassistent: Zusatzbuchung, API-Schlüssel und Datenschutz
+- **Status:** offen – bewusst ausgeschaltet, bis die ersten Kunden ihn buchen wollen
+- **Angebot:** Zusatzbuchung für 25 € / Monat (netto), eigenes Stripe-Abo, in jedem Tarif buchbar (auch Start), monatlich kündbar, 14 Tage Widerruf.
+- **Solange nicht eingerichtet:** Ohne `ANTHROPIC_API_KEY` oder ohne `STRIPE_PRICE_AI_MONTHLY` ist der Assistent unsichtbar (kein KI-Knopf, Erweiterung „Demnächst“) und verursacht keine Kosten.
+- **Einschalten:**
+  1. In Stripe ein Produkt „KI-Sprachassistent“ mit Preis 25 € monatlich (wiederkehrend) anlegen und die Preis-ID bei Hostinger als `STRIPE_PRICE_AI_MONTHLY` hinterlegen.
+  2. Auf platform.claude.com ein Konto anlegen, Guthaben aufladen, einen API-Schlüssel erstellen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat.
+  3. Neu deployen. Der Stripe-Webhook braucht keine Änderung.
+- **Kosten je Firma (gedeckelt):** Modell Claude Sonnet 5.5, Aufwand „low“; etwa 1–3 Cent je Anfrage. Höchstens 30 Anfragen am Tag (`AI_DAILY_LIMIT`) und 500 im Monat (`AI_MONTHLY_LIMIT`) – damit bleiben die Kosten je Firma bei höchstens ca. 15 € im Monat. Zusätzlich auf der Plattform ein monatliches Ausgabenlimit setzen.
 - **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel- und Belegdaten an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen.
 - **Spracherkennung:** läuft im Browser (Web Speech API; Chrome, Edge, Safari). In Firefox nur Texteingabe.

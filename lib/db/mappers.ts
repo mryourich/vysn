@@ -65,6 +65,12 @@ export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesig
       pendingInterval: (['monthly', 'yearly'].includes(str(r.pending_interval)) ? str(r.pending_interval) : '') as Billing['pendingInterval'],
       pendingAt: str(r.pending_change_at),
       parentId: str(r.billing_parent),
+      ai: {
+        status: str(r.ai_status),
+        periodEnd: str(r.ai_period_end),
+        cancelAtPeriodEnd: !!r.ai_cancel_at_period_end,
+        hasCustomer: !!r.ai_customer_id,
+      },
     },
     name: str(r.name),
     owner: str(r.owner),

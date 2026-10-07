@@ -48,6 +48,15 @@ export type Billing = {
   pendingAt: string;
   /** Tarif kommt von dieser Firma (weitere Firma eines Business-/Team-Inhabers) */
   parentId: string;
+  /** KI-Sprachassistent als Zusatzbuchung (eigenes Abo) */
+  ai: AiAddon;
+};
+
+export type AiAddon = {
+  status: string;
+  periodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  hasCustomer: boolean;
 };
 
 export type Customer = {

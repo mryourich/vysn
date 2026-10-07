@@ -905,6 +905,7 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .proposal-sum { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 6px; font-size: 14px; }
 .assistant-input { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); background: var(--surface); }
 .assistant-input textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; padding: 11px 12px; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: 15px; }
+.assistant-quota { margin: 0; padding: 0 12px 10px; font-size: 12.5px; color: var(--muted); text-align: center; background: var(--surface); }
 .assistant-mic { width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; cursor: pointer; flex: none; }
 .assistant-mic.on { background: var(--danger); color: #fff; animation: pulse-mic 1.4s ease-out infinite; }
 @keyframes pulse-mic { 0% { box-shadow: 0 0 0 0 rgba(192, 31, 20, 0.45); } 100% { box-shadow: 0 0 0 14px rgba(192, 31, 20, 0); } }
@@ -927,3 +928,11 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .file-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .file-name strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .file-name small { color: var(--muted); font-size: 12px; }
+
+/* KI-Zusatzbuchung */
+.ext-card-ai { border-color: color-mix(in srgb, var(--primary) 35%, var(--line)); }
+.ext-points { list-style: none; margin: -4px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13.5px; color: var(--ink-2); }
+.ext-points li { display: flex; gap: 6px; align-items: center; }
+.ext-points svg { color: var(--primary); flex: none; }
+.ext-card p.small { flex: none; margin: 0; }
+.ext-withdraw .link-btn { display: inline-flex; gap: 4px; align-items: center; background: none; border: 0; padding: 0; color: var(--primary); font: inherit; cursor: pointer; text-decoration: underline; }
