@@ -11,6 +11,14 @@ export const maxDuration = 120;
 
 const MAX_HISTORY_CHARS = 400_000;
 
+/** Anfragen je Firma und Tag (Kostenschutz), über AI_DAILY_LIMIT anpassbar. */
+const dailyLimit = () => Math.max(1, Number(process.env.AI_DAILY_LIMIT) || 30);
+
+/** Ist der Assistent eingerichtet? Ohne API-Schlüssel blendet die App ihn aus. */
+export async function GET() {
+  return NextResponse.json({ enabled: !!process.env.ANTHROPIC_API_KEY, dailyLimit: dailyLimit() });
+}
+
 /** KI-Sprachassistent (Business & Team): ein Gesprächsschritt. */
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'Der KI-Assistent ist noch nicht eingerichtet (ANTHROPIC_API_KEY fehlt).' }, { status: 503 });
@@ -29,6 +37,15 @@ export async function POST(req: Request) {
   if (!company || !hasFeature(company.plan as PlanId, 'ai')) {
     return NextResponse.json({ error: 'Der KI-Sprachassistent ist ab dem Tarif Business enthalten.', upgrade: 'ai' }, { status: 402 });
   }
+  // Tageslimit: erst zählen, dann fragen – ohne Zähler (SQL fehlt) lieber gar nicht
+  const { data: remaining, error: limitError } = await adminDb().rpc('ai_take', { p_company: companyId, p_limit: dailyLimit() });
+  if (limitError) {
+    console.error('ai_take', limitError);
+    return NextResponse.json({ error: 'Der KI-Assistent ist noch nicht vollständig eingerichtet (Tageslimit fehlt).' }, { status: 503 });
+  }
+  if (remaining < 0) {
+    return NextResponse.json({ error: `Das Tageslimit von ${dailyLimit()} Anfragen ist für heute erreicht. Morgen geht es weiter.` }, { status: 429 });
+  }
   const country = String(company.country || 'Deutschland');
   try {
     const result = await agentTurn(history, text, {
@@ -38,7 +55,7 @@ export async function POST(req: Request) {
       country,
       currency: /schweiz|switzerland|liechtenstein/i.test(country) ? 'CHF' : 'EUR',
     }, userDb(req), companyId);
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, remaining });
   } catch (e) {
     console.error('agent', e);
     if (e instanceof Anthropic.RateLimitError) return NextResponse.json({ error: 'Der Assistent ist gerade ausgelastet. Bitte in einem Moment erneut versuchen.' }, { status: 429 });

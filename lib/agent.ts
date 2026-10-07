@@ -14,7 +14,19 @@ export type AgentProposal = {
   items: { material_id: string; description: string; details: string; quantity: number; unit: string; unit_price: number; vat: number }[];
 };
 
-export type AgentResult = { messages: AgentHistory; reply: string; proposal: AgentProposal | null };
+export type AgentResult = { messages: AgentHistory; reply: string; proposal: AgentProposal | null; remaining?: number };
+
+export type AgentStatus = { enabled: boolean; dailyLimit: number };
+
+let statusPromise: Promise<AgentStatus> | null = null;
+
+/** Ob der Assistent auf dem Server eingerichtet ist (API-Schlüssel vorhanden) – einmal je Sitzung abgefragt. */
+export function agentStatus(): Promise<AgentStatus> {
+  statusPromise ??= fetch('/api/agent')
+    .then((r) => (r.ok ? r.json() : { enabled: false, dailyLimit: 0 }))
+    .catch(() => { statusPromise = null; return { enabled: false, dailyLimit: 0 }; });
+  return statusPromise;
+}
 
 export class AgentError extends Error {
   constructor(message: string, readonly upgrade?: string) { super(message); }

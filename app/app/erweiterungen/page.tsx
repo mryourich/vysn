@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { Code2, CreditCard, Mic, FileCode2, FileSpreadsheet, Lock, Mail, ScanLine } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Feature } from '../../../lib/plans';
+import { agentStatus } from '../../../lib/agent';
 import { useStore } from '../../../lib/store';
 import { Badge, PageHeader } from '../../../components/app/ui';
 
@@ -31,18 +33,22 @@ const EXTENSIONS: Extension[] = [
 
 export default function ExtensionsPage() {
   const { can, requireFeature } = useStore();
+  // KI erst sichtbar, wenn der Server eingerichtet ist (API-Schlüssel vorhanden)
+  const [aiReady, setAiReady] = useState(false);
+  useEffect(() => { agentStatus().then((s) => setAiReady(s.enabled)); }, []);
   return (
     <div className="page">
       <PageHeader title="Erweiterungen" description="Verbinden Sie VYSNER One mit Ihrer Buchhaltung und Ihren Abläufen." />
       <div className="ext-grid">
-        {EXTENSIONS.map((x) => {
+        {EXTENSIONS.map((ext) => {
+          const x: Extension = 'feature' in ext && ext.feature === 'ai' && !aiReady ? { ...ext, status: 'planned' } : ext;
           const locked = x.status === 'ready' && x.feature && !can(x.feature) ? x.feature : null;
           return (
             <article key={x.name} className="ext-card">
               <div className="ext-top">
                 <span className="ext-logo" style={{ background: x.color }}><x.icon size={22} /></span>
                 <div><strong>{x.name}</strong><small>{x.by}</small></div>
-                {x.status === 'ready' ? <Badge tone="success">Verfügbar</Badge> : <Badge>Geplant</Badge>}
+                {x.status === 'ready' ? <Badge tone="success">Verfügbar</Badge> : <Badge>{x.name === 'KI-Sprachassistent' ? 'Demnächst' : 'Geplant'}</Badge>}
               </div>
               <p>{x.text}</p>
               <div className="ext-actions">

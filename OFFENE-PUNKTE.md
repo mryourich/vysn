@@ -15,8 +15,9 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - Platzhalter in `app/impressum/page.tsx` und `app/widerruf/page.tsx` durch echte Angaben ersetzen und Texte rechtlich prüfen lassen.
 
 ## KI-Sprachassistent: API-Schlüssel und Datenschutz
-- **Status:** offen
-- **API-Schlüssel:** In der Anthropic Console (console.anthropic.com) einen API-Schlüssel anlegen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat. Ohne Schlüssel zeigt der Assistent „noch nicht eingerichtet“.
-- **Kosten im Blick behalten:** Abrechnung pro Nutzung bei Anthropic (Modell Claude Opus 5.5, Aufwand „low“). In der Console ein monatliches Ausgabenlimit setzen.
+- **Status:** offen – bewusst ausgeschaltet, bis zahlende Business-/Team-Kunden da sind
+- **Solange kein Schlüssel hinterlegt ist:** Der Assistent ist unsichtbar (kein KI-Knopf, Erweiterung „Demnächst“) und verursacht keine Kosten.
+- **Einschalten:** Auf platform.claude.com ein Konto anlegen, Guthaben aufladen, einen API-Schlüssel erstellen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat. Danach neu deployen.
+- **Kosten:** Abrechnung pro Nutzung bei Anthropic (Modell Claude Sonnet 5.5, Aufwand „low“; etwa 1–3 Cent je Anfrage). Tageslimit je Firma: 30 Anfragen (änderbar über `AI_DAILY_LIMIT`). Zusätzlich auf der Plattform ein monatliches Ausgabenlimit setzen.
 - **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel- und Belegdaten an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen.
 - **Spracherkennung:** läuft im Browser (Web Speech API; Chrome, Edge, Safari). In Firefox nur Texteingabe.

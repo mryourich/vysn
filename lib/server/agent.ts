@@ -10,7 +10,7 @@ import type { Company, Data } from '../types';
  * Firma, stellt Rückfragen bei Mehrdeutigkeit und schlägt einen Belegentwurf vor.
  * Angelegt wird erst, wenn der Nutzer den Vorschlag in der App bestätigt.
  */
-export const AGENT_MODEL = 'claude-opus-5-5';
+export const AGENT_MODEL = 'claude-sonnet-5-5';
 const MAX_STEPS = 8;
 
 export type AgentProposal = {
