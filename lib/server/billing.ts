@@ -2,7 +2,7 @@ import 'server-only';
 import Stripe from 'stripe';
 import type { PaidPlan, PlanId } from '../types';
 import { adminDb } from './supabase-admin';
-import { PAID_PLANS, isUpgrade } from '../plans';
+import { PAID_PLANS } from '../plans';
 
 /**
  * Abrechnung über Stripe.
@@ -125,12 +125,11 @@ export function siteOrigin(req: Request) {
 }
 
 /* ---------------------------------------------------------------------------
- * Tarifwechsel
+ * Tarifwechsel – immer mit Bestätigung auf einer Stripe-Seite
  * Teurer (höherer Tarif bzw. monatlich → jährlich): sofort, Differenz anteilig.
- * Günstiger (niedrigerer Tarif bzw. jährlich → monatlich): zum Ende der Laufzeit
- * über einen Stripe Subscription Schedule; bis dahin bleibt der bisherige Tarif.
- * Start (kostenlos): Kündigung zum Laufzeitende.
- * In der Testphase gilt jeder Wechsel sofort (es wurde noch nichts berechnet).
+ * Günstiger (niedrigerer Tarif bzw. jährlich → monatlich): Stripe plant den Wechsel
+ * zum Ende der Laufzeit (schedule_at_period_end); bis dahin bleibt der bisherige Tarif.
+ * Start (kostenlos): Kündigung zum Laufzeitende über die Stripe-Kündigungsseite.
  * ------------------------------------------------------------------------- */
 
 type Pending = { plan: PlanId; interval: Interval | null; at: string | null };
@@ -161,89 +160,82 @@ function currentPeriodEnd(sub: Stripe.Subscription): number | undefined {
     ?? (sub as unknown as { current_period_end?: number }).current_period_end;
 }
 
-export type ChangeResult = { mode: 'now' | 'scheduled' | 'unchanged'; plan: PlanId; interval: Interval | null; at: string | null };
-
-/** Führt einen Tarifwechsel für ein laufendes Abo aus (siehe Regeln oben). */
-export async function changePlan(sub: Stripe.Subscription, plan: PlanId, interval: Interval, s: Stripe = stripe()): Promise<ChangeResult> {
-  const item = sub.items.data[0];
-  const fromPrice = item.price.id;
-  const from = { plan: planForPrice(fromPrice) || 'start', interval: intervalForPrice(fromPrice) || 'monthly' } as { plan: PlanId; interval: Interval };
+/** Vorgemerkten Wechsel (Schedule) bzw. Kündigung zum Laufzeitende aufheben. */
+export async function releasePending(sub: Stripe.Subscription, s: Stripe = stripe()) {
   const scheduleId = typeof sub.schedule === 'string' ? sub.schedule : sub.schedule?.id;
-  const periodEnd = currentPeriodEnd(sub);
-
-  // Bisherige Vormerkung (Schedule bzw. Kündigung) aufheben – sie wird ggf. neu gesetzt
-  const clearPending = async () => {
-    if (scheduleId) await s.subscriptionSchedules.release(scheduleId);
-    if (sub.cancel_at_period_end) await s.subscriptions.update(sub.id, { cancel_at_period_end: false });
-  };
-
-  // Gleicher Tarif und Rhythmus: nur Vormerkung zurücknehmen
-  if (plan === from.plan && interval === from.interval) {
-    await clearPending();
-    return { mode: 'unchanged', plan, interval, at: null };
-  }
-
-  // Kündigung zum Laufzeitende (zurück zu Start)
-  if (plan === 'start') {
-    if (scheduleId) await s.subscriptionSchedules.release(scheduleId);
-    await s.subscriptions.update(sub.id, { cancel_at_period_end: true });
-    return { mode: 'scheduled', plan: 'start', interval: null, at: iso(periodEnd) };
-  }
-
-  const price = priceId(plan as PaidPlan, interval);
-  if (!price) throw new Error('Dieser Tarif ist noch nicht buchbar.');
-
-  if (sub.status === 'trialing' || isUpgrade(from, { plan, interval })) {
-    await clearPending();
-    await s.subscriptions.update(sub.id, {
-      items: [{ id: item.id, price }],
-      // Testphase: nichts berechnen; sonst Differenz sofort anteilig abrechnen
-      proration_behavior: sub.status === 'trialing' ? 'none' : 'always_invoice',
-      // Schlägt die Zahlung fehl, bleibt der bisherige Tarif
-      payment_behavior: 'error_if_incomplete',
-    });
-    return { mode: 'now', plan, interval, at: null };
-  }
-
-  // Günstiger: bis zum Laufzeitende bisheriger Tarif, danach der neue
+  if (scheduleId) await s.subscriptionSchedules.release(scheduleId);
   if (sub.cancel_at_period_end) await s.subscriptions.update(sub.id, { cancel_at_period_end: false });
-  const schedule = scheduleId
-    ? await s.subscriptionSchedules.retrieve(scheduleId)
-    : await s.subscriptionSchedules.create({ from_subscription: sub.id });
-  const now = Math.floor(Date.now() / 1000);
-  const current = schedule.phases.find((ph) => ph.start_date <= now && ph.end_date > now) || schedule.phases[0];
-  await s.subscriptionSchedules.update(schedule.id, {
-    end_behavior: 'release',
-    proration_behavior: 'none',
-    phases: [
-      { items: [{ price: fromPrice, quantity: 1 }], start_date: current.start_date, end_date: current.end_date },
-      // Eine Laufzeit im neuen Tarif, danach läuft das Abo ohne Schedule normal weiter
-      { items: [{ price, quantity: 1 }], duration: { interval: interval === 'yearly' ? 'year' : 'month', interval_count: 1 } },
-    ],
-  });
-  return { mode: 'scheduled', plan, interval, at: iso(current.end_date) };
 }
 
 /**
- * Kundenportal ohne eigenen Tarifwechsel (der läuft über VYSNER One mit obigen Regeln):
- * Zahlungsart, Rechnungen, Rechnungsadresse und Kündigung zum Laufzeitende.
+ * Stripe-Bestätigungsseite für einen Tarifwechsel bzw. die Kündigung.
+ * Liefert die URL, auf die der Kunde weitergeleitet wird.
+ */
+export async function confirmChangeUrl(sub: Stripe.Subscription, plan: PlanId, interval: Interval, returnUrl: string, s: Stripe = stripe()) {
+  const configuration = await portalConfiguration(s);
+  const customer = typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+  const after = { type: 'redirect' as const, redirect: { return_url: returnUrl } };
+  if (plan === 'start') {
+    if (sub.cancel_at_period_end) throw new Error('Das Abo ist bereits zum Laufzeitende gekündigt.');
+    const session = await s.billingPortal.sessions.create({
+      customer, locale: 'de', return_url: returnUrl, ...(configuration ? { configuration } : {}),
+      flow_data: { type: 'subscription_cancel', subscription_cancel: { subscription: sub.id }, after_completion: after },
+    });
+    return session.url;
+  }
+  const price = priceId(plan as PaidPlan, interval);
+  if (!price) throw new Error('Dieser Tarif ist noch nicht buchbar.');
+  // Ein vorgemerkter Wechsel bzw. eine Kündigung blockiert Änderungen – die neue Auswahl ersetzt sie
+  await releasePending(sub, s);
+  const session = await s.billingPortal.sessions.create({
+    customer, locale: 'de', return_url: returnUrl, ...(configuration ? { configuration } : {}),
+    flow_data: {
+      type: 'subscription_update_confirm',
+      subscription_update_confirm: { subscription: sub.id, items: [{ id: sub.items.data[0].id, price, quantity: 1 }] },
+      after_completion: after,
+    },
+  });
+  return session.url;
+}
+
+/**
+ * Kundenportal mit den Tarifwechsel-Regeln von VYSNER One: Zahlungsart, Rechnungen,
+ * Adresse, Kündigung zum Laufzeitende und Tarifwechsel (teurer sofort, günstiger zum
+ * Laufzeitende). Die Konfiguration wird einmalig per API angelegt.
  */
 let portalConfig: string | null = null;
 export async function portalConfiguration(s: Stripe = stripe()): Promise<string | undefined> {
   if (portalConfig) return portalConfig;
   try {
     const list = await s.billingPortal.configurations.list({ active: true, limit: 100 });
-    const found = list.data.find((c) => c.metadata?.vysn === 'v2');
+    const found = list.data.find((c) => c.metadata?.vysn === 'v3');
     if (found) return (portalConfig = found.id);
+    // Buchbare Preise je Produkt (Solo, Business, Team – monatlich und jährlich)
+    const byProduct = new Map<string, string[]>();
+    for (const plan of PAID_PLANS) {
+      for (const interval of ['monthly', 'yearly'] as const) {
+        const id = priceId(plan, interval);
+        if (!id) continue;
+        const p = await s.prices.retrieve(id);
+        const product = typeof p.product === 'string' ? p.product : p.product.id;
+        byProduct.set(product, [...(byProduct.get(product) || []), id]);
+      }
+    }
     const created = await s.billingPortal.configurations.create({
-      metadata: { vysn: 'v2' },
-      business_profile: { headline: 'VYSNER One – Zahlung & Rechnungen' },
+      metadata: { vysn: 'v3' },
+      business_profile: { headline: 'VYSNER One – Tarif, Zahlung & Rechnungen' },
       features: {
         invoice_history: { enabled: true },
         payment_method_update: { enabled: true },
         customer_update: { enabled: true, allowed_updates: ['address', 'email', 'name', 'tax_id'] },
         subscription_cancel: { enabled: true, mode: 'at_period_end' },
-        subscription_update: { enabled: false },
+        subscription_update: {
+          enabled: true,
+          default_allowed_updates: ['price'],
+          products: [...byProduct].map(([product, prices]) => ({ product, prices })),
+          proration_behavior: 'always_invoice',
+          schedule_at_period_end: { conditions: [{ type: 'decreasing_item_amount' }, { type: 'shortening_interval' }] },
+        },
       },
     });
     return (portalConfig = created.id);

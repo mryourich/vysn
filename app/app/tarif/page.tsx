@@ -60,6 +60,12 @@ function Plan() {
         .then((r) => setNotice(r.plan && r.plan !== 'start' ? `Tarif ${PLANS[r.plan as PaidPlan].label} ist aktiv. Viel Erfolg!` : 'Die Zahlung wird noch bestätigt – das kann einen Moment dauern.'))
         .catch(() => setNotice('Die Zahlung wird noch bestätigt – das kann einen Moment dauern.'))
         .finally(() => { router.replace('/app/tarif'); switchCompany(activeCompanyId); });
+    } else if (checkout === 'changed') {
+      setNotice('Ihre Änderung wurde bei Stripe bestätigt. Der Tarif wird aktualisiert …');
+      syncBilling(activeCompanyId)
+        .then(() => setNotice('Ihre Änderung wurde bei Stripe bestätigt. Die aktuelle Übersicht sehen Sie unten.', true))
+        .catch(() => setNotice('Ihre Änderung wurde bei Stripe bestätigt – die Übersicht aktualisiert sich in Kürze.', true))
+        .finally(() => { router.replace('/app/tarif'); switchCompany(activeCompanyId); });
     } else if (checkout === 'cancel') {
       setNotice('Die Buchung wurde abgebrochen. Es wurde nichts berechnet.');
       router.replace('/app/tarif');
@@ -97,25 +103,21 @@ function Plan() {
   const rhythm = (i: string | null) => (i === 'monthly' ? 'monatlich' : 'jährlich');
   const pendingAt = billing?.pendingAt ? formatDate(billing.pendingAt.slice(0, 10)) : endDate;
 
-  const change = async (plan: PlanId, interval: Interval, question: string) => {
-    if (question && !confirm(question)) return;
+  /** Wechsel bzw. Kündigung: Bestätigung auf einer Stripe-Seite; gleicher Tarif nimmt eine Vormerkung zurück */
+  const change = async (plan: PlanId, interval: Interval) => {
+    const replaces = billing?.pendingPlan && !(plan === company.plan && interval === curInterval);
+    if (replaces && !confirm(`Ihre Vormerkung (${billing!.pendingPlan === 'start' ? 'Kündigung' : `Wechsel zu ${PLANS[billing!.pendingPlan as PlanId].label}`} zum ${pendingAt}) wird durch die neue Auswahl ersetzt. Fortfahren?`)) return;
     setBusy(`change-${plan}`);
     setError('');
     setNotice('');
     try {
-      const r: ChangeResult = await changePlan(activeCompanyId!, plan, interval);
-      const at = r.at ? formatDate(r.at.slice(0, 10)) : endDate;
-      setNotice(
-        r.mode === 'now' ? `Tarif ${PLANS[plan].label} (${rhythm(interval)}) ist ab sofort aktiv.${trialing ? ' Ihre kostenlose Testphase läuft weiter.' : ' Für die restliche Laufzeit wird nur die Differenz anteilig berechnet.'}`
-          : r.mode === 'unchanged' ? 'Die Vormerkung wurde zurückgenommen. Ihr Tarif läuft unverändert weiter.'
-          : plan === 'start' ? `Gekündigt zum ${at}. Bis dahin bleibt ${PLANS[company.plan].label} vollständig nutzbar.`
-          : `Wechsel zu ${PLANS[plan].label} (${rhythm(interval)}) zum ${at} vorgemerkt. Bis dahin bleibt ${PLANS[company.plan].label} aktiv – es wird nichts zurückgebucht oder doppelt berechnet.`,
-        true,
-      );
+      const r = await changePlan(activeCompanyId!, plan, interval) as ChangeResult & { url?: string };
+      if (r.url) { window.location.href = r.url; return; }
+      setNotice('Die Vormerkung wurde zurückgenommen. Ihr Tarif läuft unverändert weiter.', true);
       await switchCompany(activeCompanyId!);
+      setBusy('');
     } catch (e) {
       setError((e as Error).message);
-    } finally {
       setBusy('');
     }
   };
@@ -125,7 +127,7 @@ function Plan() {
     const disabled = !canManage || !!busy || !info?.enabled;
     if (id === 'start') {
       if (billing?.pendingPlan === 'start') return <button className="btn" disabled><CalendarClock size={16} /> Gekündigt zum {pendingAt}</button>;
-      return <><button className="btn" disabled={disabled} onClick={() => change('start', curInterval, `Abo zum ${endDate} kündigen? Bis dahin bleibt ${PLANS[company.plan].label} vollständig nutzbar, danach gilt der kostenlose Tarif Start.`)}>Zum Laufzeitende kündigen</button><small className="plan-change-hint">Wirksam zum {endDate}</small></>;
+      return <><button className="btn" disabled={disabled} onClick={() => change('start', curInterval)}>{busy === 'change-start' ? 'Weiterleitung …' : 'Zum Laufzeitende kündigen'}</button><small className="plan-change-hint">Bestätigung bei Stripe · wirksam zum {endDate}</small></>;
     }
     if (id === company.plan && selInterval === curInterval) {
       return <button className="btn" disabled={!canManage || !!busy || !billing?.hasCustomer} onClick={() => go('portal', () => openPortal(activeCompanyId!))}>Zahlung & Rechnungen</button>;
@@ -134,17 +136,13 @@ function Plan() {
       return <button className="btn" disabled><CalendarClock size={16} /> Vorgemerkt zum {pendingAt}</button>;
     }
     const up = isUpgrade({ plan: company.plan, interval: curInterval }, { plan: id, interval: selInterval });
-    const now = trialing || up;
     const label = id === company.plan ? `Auf ${rhythm(selInterval)} umstellen` : up ? `Jetzt auf ${name} upgraden` : `Zu ${name} wechseln`;
-    const question = now
-      ? `${id === company.plan ? `Auf ${rhythm(selInterval)}e Zahlung umstellen` : up ? `Auf ${name} (${rhythm(selInterval)}) upgraden` : `Zu ${name} (${rhythm(selInterval)}) wechseln`}? Der Wechsel gilt sofort.${trialing ? ' Ihre kostenlose Testphase läuft weiter.' : ' Für die restliche Laufzeit wird nur die Differenz anteilig berechnet.'}`
-      : `${id === company.plan ? `Auf ${rhythm(selInterval)}e Zahlung umstellen` : `Zu ${name} (${rhythm(selInterval)}) wechseln`}? Der Wechsel erfolgt zum ${endDate}. Bis dahin bleibt ${PLANS[company.plan].label} aktiv.`;
     return (
       <>
-        <button className={`btn ${up && (featured || id !== company.plan) ? 'btn-primary' : ''}`} disabled={disabled} onClick={() => change(id, selInterval, question)}>
-          {up ? <Sparkles size={16} /> : now ? null : <CalendarClock size={16} />} {busy === `change-${id}` ? 'Wird umgestellt …' : label}
+        <button className={`btn ${up && (featured || id !== company.plan) ? 'btn-primary' : ''}`} disabled={disabled} onClick={() => change(id, selInterval)}>
+          {up ? <Sparkles size={16} /> : <CalendarClock size={16} />} {busy === `change-${id}` ? 'Weiterleitung zu Stripe …' : label}
         </button>
-        <small className="plan-change-hint">{now ? (trialing ? 'Sofort aktiv – in der Testphase kostenlos' : 'Sofort aktiv – Differenz anteilig') : `Wirksam zum ${endDate}`}</small>
+        <small className="plan-change-hint">Bestätigung bei Stripe · {up ? (trialing ? 'sofort aktiv, in der Testphase kostenlos' : 'sofort aktiv, Differenz anteilig') : `wirksam zum ${endDate}`}</small>
       </>
     );
   };
@@ -170,7 +168,7 @@ function Plan() {
                 <span>{billing.pendingPlan === 'start'
                   ? <>Gekündigt zum <strong>{pendingAt}</strong> – danach gilt der kostenlose Tarif Start.</>
                   : <>Wechsel zu <strong>{PLANS[billing.pendingPlan].label} ({rhythm(billing.pendingInterval)})</strong> zum <strong>{pendingAt}</strong> vorgemerkt.</>}</span>
-                {canManage ? <button className="btn btn-small" disabled={!!busy} onClick={() => change(company.plan, curInterval, '')}><Undo2 size={14} /> Zurücknehmen</button> : null}
+                {canManage ? <button className="btn btn-small" disabled={!!busy} onClick={() => change(company.plan, curInterval)}><Undo2 size={14} /> Zurücknehmen</button> : null}
               </div>
             ) : null}
             {billing?.status === 'past_due' ? <small className="text-danger">Die letzte Zahlung ist fehlgeschlagen. Bitte Zahlungsmethode aktualisieren.</small> : null}
