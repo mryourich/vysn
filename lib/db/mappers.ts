@@ -48,6 +48,7 @@ export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesig
   settings: {
     datev: { ...defaultSettings().datev, ...(((r.settings as Partial<Settings>) || {}).datev || {}) },
     email: { ...defaultSettings().email, ...(((r.settings as Partial<Settings>) || {}).email || {}) },
+    numbers: { prefixes: { ...(((r.settings as Partial<Settings>) || {}).numbers?.prefixes || {}) } },
   },
   company: {
     ...emptyCompany(),

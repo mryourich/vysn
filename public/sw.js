@@ -12,6 +12,8 @@ const PAGES = `vysn-pages-${VERSION}`;
 const STATIC = `vysn-static-${VERSION}`;
 const APP_PAGES = [
   '/app', '/app/angebote', '/app/angebote/bearbeiten', '/app/rechnungen', '/app/rechnungen/bearbeiten', '/app/kunden',
+  '/app/auftragsbestaetigungen', '/app/auftragsbestaetigungen/bearbeiten', '/app/lieferscheine', '/app/lieferscheine/bearbeiten',
+  '/app/bestellungen', '/app/bestellungen/bearbeiten',
   '/app/material', '/app/scan', '/app/ausgaben', '/app/guv', '/app/export', '/app/firma', '/app/design',
   '/app/einstellungen', '/app/team', '/app/tarif',
 ];

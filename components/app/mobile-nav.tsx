@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import {
-  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, FileText, LayoutDashboard, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
+  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, ClipboardCheck, ShoppingCart, Truck, FileText, LayoutDashboard, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import type { DocKind } from '../../lib/types';
 import { useStore } from '../../lib/store';
+import { docEditPath } from '../../lib/docs';
 import { featureForPath } from '../../lib/plans';
 import { ProfilePanel } from './profile';
 import { CREATE_EVENT } from './ui';
@@ -82,10 +84,10 @@ function CreateSheet({ pathname, onClose, guard }: { pathname: string; onClose: 
   const { createDoc } = useStore();
   const router = useRouter();
 
-  const doc = async (kind: 'invoice' | 'offer') => {
+  const doc = async (kind: DocKind) => {
     onClose();
     const d = await createDoc(kind);
-    if (d) router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${d.id}`);
+    if (d) router.push(docEditPath(d));
   };
   const open = (path: string, value = '1') => {
     onClose();
@@ -96,6 +98,9 @@ function CreateSheet({ pathname, onClose, guard }: { pathname: string; onClose: 
   const actions: Action[] = [
     { key: 'invoice', label: 'Rechnung', hint: 'Schreiben & senden', icon: ReceiptText, tone: 'blue', run: () => doc('invoice') },
     { key: 'offer', label: 'Angebot', hint: 'Kostenvoranschlag', icon: FileText, tone: 'cyan', run: () => doc('offer') },
+    { key: 'confirmation', label: 'Auftrag', hint: 'Auftragsbestätigung', icon: ClipboardCheck, tone: 'blue', run: () => doc('confirmation') },
+    { key: 'delivery', label: 'Lieferschein', hint: 'Ohne Preise', icon: Truck, tone: 'cyan', run: () => doc('delivery') },
+    { key: 'order', label: 'Bestellung', hint: 'Beim Lieferanten', icon: ShoppingCart, tone: 'slate', run: () => doc('order') },
     { key: 'customer', label: 'Kunde', hint: 'Kontakt anlegen', icon: UserPlus, tone: 'violet', run: () => open('/app/kunden') },
     { key: 'expense', label: 'Ausgabe', hint: 'Beleg erfassen', icon: ArrowUpRight, tone: 'orange', run: () => open('/app/ausgaben', 'ausgabe') },
     { key: 'income', label: 'Einnahme', hint: 'Barverkauf & Co.', icon: ArrowDownLeft, tone: 'green', run: () => open('/app/ausgaben', 'einnahme') },

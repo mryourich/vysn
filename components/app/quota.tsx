@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { PLANS, PLAN_OFFERS, formatPlanPrice, planOf, usageLabel, usageQuota } from '../../lib/plans';
+import { PLANS, PLAN_OFFERS, USAGE_KINDS, formatPlanPrice, planOf, usageLabel, usageQuota } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import type { UsageKind } from '../../lib/types';
 
@@ -27,10 +27,10 @@ export function QuotaBar({ kind }: { kind: UsageKind }) {
 export function QuotaList() {
   const { data } = useStore();
   const limit = PLANS[planOf(data)].monthlyLimit;
-  if (limit === null) return <small>Unbegrenzt Rechnungen, Angebote, Kunden, Artikel und Buchungen</small>;
+  if (limit === null) return <small>Unbegrenzt Belege, Kunden, Artikel und Buchungen</small>;
   return (
     <div className="quota-list">
-      {(['invoice', 'offer', 'customer', 'material', 'booking'] as UsageKind[]).map((kind) => {
+      {USAGE_KINDS.map(({ kind }) => {
         const q = usageQuota(data, kind);
         return (
           <div key={kind} className={`quota-row${q.reached ? ' full' : ''}`}>

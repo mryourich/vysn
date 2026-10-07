@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, ArrowRight, FilePlus2, FileText, Plus, ReceiptText } from 'lucide-react';
+import { AlertTriangle, ArrowRight, FilePlus2, FileText, Plus } from 'lucide-react';
+import { DOC_ICONS } from '../../components/app/doc-list';
+import type { DocKind } from '../../lib/types';
 import { displayStatus, docTotals, formatDate, isOverdue, money, monthlySeries, periodFor, profitLoss, today } from '../../lib/calc';
 import { useStore } from '../../lib/store';
+import { DOC_KINDS, docEditPath } from '../../lib/docs';
 import { RevenueChart } from '../../components/app/bar-chart';
 import { Badge, PageHeader, StatCard } from '../../components/app/ui';
 
@@ -31,10 +34,10 @@ export default function DashboardPage() {
 
   const hour = new Date().getHours();
   const hello = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
-  const newDoc = async (kind: 'invoice' | 'offer') => {
+  const newDoc = async (kind: DocKind) => {
     const doc = await createDoc(kind);
     if (!doc) return;
-    router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
+    router.push(docEditPath(doc));
   };
 
   return (
@@ -70,7 +73,7 @@ export default function DashboardPage() {
           <div className="card-head"><div><h2>Zu erledigen</h2><p>Was heute Aufmerksamkeit braucht</p></div></div>
           <ul className="todo">
             {overdue.slice(0, 4).map((d) => (
-              <li key={d.id}><Link href={`/app/rechnungen/bearbeiten?id=${d.id}`}>
+              <li key={d.id}><Link href={docEditPath(d)}>
                 <AlertTriangle size={16} className="text-danger" />
                 <span><strong>{d.number} überfällig</strong><small>{d.recipient.name} · fällig {formatDate(d.dueDate)}</small></span>
                 <b>{money(docTotals(d.items, small).gross)}</b>
@@ -84,9 +87,9 @@ export default function DashboardPage() {
               </Link></li>
             ))}
             {data.documents.filter((d) => d.status === 'draft').slice(0, 3).map((d) => (
-              <li key={d.id}><Link href={`/app/${d.kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${d.id}`}>
+              <li key={d.id}><Link href={docEditPath(d)}>
                 <FileText size={16} className="text-muted" />
-                <span><strong>{d.kind === 'invoice' ? 'Rechnung' : 'Angebot'} {d.number} im Entwurf</strong><small>{d.recipient.name || 'Kein Empfänger'}</small></span>
+                <span><strong>{DOC_KINDS[d.kind].one} {d.number} im Entwurf</strong><small>{d.recipient.name || 'Kein Empfänger'}</small></span>
                 <b>Öffnen</b>
               </Link></li>
             ))}
@@ -107,8 +110,8 @@ export default function DashboardPage() {
             {recent.map((d) => {
               const st = displayStatus(d);
               return (
-                <Link key={d.id} className="tr" href={`/app/${d.kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${d.id}`}>
-                  <span className="td-main">{d.kind === 'invoice' ? <ReceiptText size={16} /> : <FileText size={16} />}<span><strong>{d.number}</strong><small>{d.recipient.name || '—'}{d.subject ? ` · ${d.subject}` : ''}</small></span></span>
+                <Link key={d.id} className="tr" href={docEditPath(d)}>
+                  <span className="td-main">{(() => { const I = DOC_ICONS[d.kind]; return <I size={16} />; })()}<span><strong>{d.number}</strong><small>{d.recipient.name || '—'}{d.subject ? ` · ${d.subject}` : ''}</small></span></span>
                   <span className="td-muted hide-sm">{formatDate(d.date)}</span>
                   <span><Badge tone={st.tone}>{st.label}</Badge></span>
                   <span className="td-num">{money(docTotals(d.items, small).gross)}</span>

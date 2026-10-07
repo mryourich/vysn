@@ -60,7 +60,7 @@ function LimitUpgrade({ kind, onClose }: { kind: UsageKind; onClose: () => void 
       <p className="muted">
         {next === 'solo' && nextOffer
           ? <>Mit <strong>Solo</strong> ab {formatPlanPrice(nextOffer.yearly)} € im Monat sind es je {PLANS.solo.monthlyLimit} pro Monat, mit <strong>Business</strong> unbegrenzt.</>
-          : <>Mit <strong>Business</strong> legen Sie unbegrenzt Rechnungen, Angebote, Kunden, Artikel und Buchungen an.</>}
+          : <>Mit <strong>Business</strong> legen Sie unbegrenzt Belege, Kunden, Artikel und Buchungen an.</>}
         {' '}Ihre bestehenden Daten können Sie weiterhin bearbeiten. Ab dem 1. des nächsten Monats beginnt das Kontingent neu.
       </p>
     </Modal>
