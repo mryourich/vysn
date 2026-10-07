@@ -106,6 +106,12 @@ function Plan() {
   /** Wechsel bzw. Kündigung: Bestätigung auf einer Stripe-Seite; gleicher Tarif nimmt eine Vormerkung zurück */
   const change = async (plan: PlanId, interval: Interval) => {
     const replaces = billing?.pendingPlan && !(plan === company.plan && interval === curInterval);
+    const undo = plan === company.plan && interval === curInterval;
+    if (trialing && plan !== 'start' && !undo) {
+      const offer = PLAN_OFFERS.find((o) => o.id === plan);
+      const price = offer ? formatPlanPrice(interval === 'yearly' ? offer.yearly * 12 : offer.monthly) : '';
+      if (!confirm(`Mit dem Wechsel zu ${PLANS[plan].label} (${rhythm(interval)}) endet Ihre kostenlose Testphase sofort. Nach der Bestätigung bei Stripe werden ${price} € zzgl. USt. für ${interval === 'yearly' ? 'das erste Jahr' : 'den ersten Monat'} abgebucht.\n\nHinweis: Die Stripe-Seite zeigt während der Testphase noch 0 € an.`)) return;
+    }
     if (replaces && !confirm(`Ihre Vormerkung (${billing!.pendingPlan === 'start' ? 'Kündigung' : `Wechsel zu ${PLANS[billing!.pendingPlan as PlanId].label}`} zum ${pendingAt}) wird durch die neue Auswahl ersetzt. Fortfahren?`)) return;
     setBusy(`change-${plan}`);
     setError('');
@@ -142,7 +148,7 @@ function Plan() {
         <button className={`btn ${up && (featured || id !== company.plan) ? 'btn-primary' : ''}`} disabled={disabled} onClick={() => change(id, selInterval)}>
           {up ? <Sparkles size={16} /> : <CalendarClock size={16} />} {busy === `change-${id}` ? 'Weiterleitung zu Stripe …' : label}
         </button>
-        <small className="plan-change-hint">Bestätigung bei Stripe · {up ? (trialing ? 'sofort aktiv, in der Testphase kostenlos' : 'sofort aktiv, Differenz anteilig') : `wirksam zum ${endDate}`}</small>
+        <small className="plan-change-hint">Bestätigung bei Stripe · {trialing ? 'Testphase endet, Abrechnung ab heute' : up ? 'sofort aktiv, Differenz anteilig' : `wirksam zum ${endDate}`}</small>
       </>
     );
   };
