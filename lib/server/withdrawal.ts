@@ -1,6 +1,7 @@
 import 'server-only';
 import type Stripe from 'stripe';
-import { applySubscription, stripe } from './billing';
+import { stripe } from './billing';
+import { applyAnySubscription } from './ai-addon';
 import { mailFrom, smtpConfigured, smtpTransport } from './smtp';
 
 /**
@@ -34,7 +35,7 @@ export async function executeWithdrawal(sub: Stripe.Subscription, s: Stripe = st
     refunded += open;
   }
   const cancelled = await s.subscriptions.cancel(sub.id, { invoice_now: false, prorate: false, cancellation_details: { comment: 'Widerruf innerhalb von 14 Tagen' } });
-  await applySubscription(cancelled);
+  await applyAnySubscription(cancelled);
   return { refunded, currency: (charges.data[0]?.currency || 'eur').toUpperCase() };
 }
 

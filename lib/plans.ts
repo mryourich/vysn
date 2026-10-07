@@ -146,6 +146,10 @@ export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team
 
 const PLAN_RANK: Record<PlanId, number> = { start: 0, solo: 1, business: 2, team: 3 };
 
+/** KI-Sprachassistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif buchbar (Preis netto je Monat). */
+export const AI_ADDON = { monthly: 25 };
+export const aiAddonActive = (ai?: { status: string } | null) => ['active', 'trialing', 'past_due'].includes(ai?.status || '');
+
 export const hasFeature = (plan: PlanId, feature: Feature) => PLAN_RANK[plan] >= PLAN_RANK[FEATURES[feature].plan];
 
 /** Seiten, die eine Funktion voraussetzen. */

@@ -6,6 +6,7 @@ import { Code2, CreditCard, Mic, FileCode2, FileSpreadsheet, Lock, Mail, ScanLin
 import type { LucideIcon } from 'lucide-react';
 import type { Feature } from '../../../lib/plans';
 import { agentStatus } from '../../../lib/agent';
+import { AiAddonCard } from '../../../components/app/ai-addon';
 import { useStore } from '../../../lib/store';
 import { Badge, PageHeader } from '../../../components/app/ui';
 
@@ -15,8 +16,6 @@ type Extension = { name: string; by: string; text: string; icon: LucideIcon; col
 );
 
 const EXTENSIONS: Extension[] = [
-  { name: 'KI-Sprachassistent', by: 'Künstliche Intelligenz', icon: Mic, color: '#13873e', status: 'ready', href: '/app?ki=1', feature: 'ai', action: 'Öffnen',
-    text: 'Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.' },
   { name: 'DATEV-Export', by: 'Buchhaltung', icon: FileSpreadsheet, color: '#2b8a3e', status: 'ready', href: '/app/export', feature: 'datev', action: 'Exportieren',
     text: 'Rechnungen, Einnahmen und Ausgaben als DATEV-Buchungsstapel (CSV) für Ihre Steuerberatung.' },
   { name: 'E-Mail-Versand', by: 'Versand', icon: Mail, color: '#13873e', status: 'ready', href: '/app/einstellungen?bereich=email', feature: 'email', action: 'Einrichten',
@@ -40,15 +39,25 @@ export default function ExtensionsPage() {
     <div className="page">
       <PageHeader title="Erweiterungen" description="Verbinden Sie VYSNER One mit Ihrer Buchhaltung und Ihren Abläufen." />
       <div className="ext-grid">
-        {EXTENSIONS.map((ext) => {
-          const x: Extension = 'feature' in ext && ext.feature === 'ai' && !aiReady ? { ...ext, status: 'planned' } : ext;
+        {aiReady ? <AiAddonCard /> : (
+          <article className="ext-card">
+            <div className="ext-top">
+              <span className="ext-logo" style={{ background: '#13873e' }}><Mic size={22} /></span>
+              <div><strong>KI-Sprachassistent</strong><small>Künstliche Intelligenz</small></div>
+              <Badge>Demnächst</Badge>
+            </div>
+            <p>Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.</p>
+            <div className="ext-actions"><a className="btn" href={`mailto:hallo@vysn.de?subject=${encodeURIComponent('Interesse: KI-Sprachassistent')}`}>Interesse melden</a></div>
+          </article>
+        )}
+        {EXTENSIONS.map((x) => {
           const locked = x.status === 'ready' && x.feature && !can(x.feature) ? x.feature : null;
           return (
             <article key={x.name} className="ext-card">
               <div className="ext-top">
                 <span className="ext-logo" style={{ background: x.color }}><x.icon size={22} /></span>
                 <div><strong>{x.name}</strong><small>{x.by}</small></div>
-                {x.status === 'ready' ? <Badge tone="success">Verfügbar</Badge> : <Badge>{x.name === 'KI-Sprachassistent' ? 'Demnächst' : 'Geplant'}</Badge>}
+                {x.status === 'ready' ? <Badge tone="success">Verfügbar</Badge> : <Badge>Geplant</Badge>}
               </div>
               <p>{x.text}</p>
               <div className="ext-actions">
