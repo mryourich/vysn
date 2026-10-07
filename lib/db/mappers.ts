@@ -1,6 +1,6 @@
 import { defaultDesign, emptyCompany } from '../defaults';
 import { defaultSettings } from '../defaults';
-import type { Company, Customer, Expense, InvoiceDesign, LineItem, Material, Recipient, SalesDoc, Settings, StockMovement, StorageLocation } from '../types';
+import type { Billing, Company, Customer, Expense, InvoiceDesign, LineItem, Material, Recipient, SalesDoc, Settings, StockMovement, StorageLocation } from '../types';
 
 /*
  * Conversion between the app model (camelCase, '' for empty dates) and the
@@ -60,6 +60,10 @@ export const companyFromRow = (r: Row): { company: Company; design: InvoiceDesig
       cancelAtPeriodEnd: !!r.cancel_at_period_end,
       hasCustomer: !!r.stripe_customer_id,
       trialUsed: !!r.trial_used,
+      interval: (['monthly', 'yearly'].includes(str(r.billing_interval)) ? str(r.billing_interval) : '') as Billing['interval'],
+      pendingPlan: (['start', 'solo', 'business', 'team'].includes(str(r.pending_plan)) ? str(r.pending_plan) : '') as Billing['pendingPlan'],
+      pendingInterval: (['monthly', 'yearly'].includes(str(r.pending_interval)) ? str(r.pending_interval) : '') as Billing['pendingInterval'],
+      pendingAt: str(r.pending_change_at),
     },
     name: str(r.name),
     owner: str(r.owner),

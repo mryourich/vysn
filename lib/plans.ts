@@ -162,3 +162,12 @@ export const featureForPath = (pathname: string): Feature | null =>
 /** Upgrade-Hinweis: Monatslimit einer Art oder fehlende Funktion. */
 export type UpgradeTopic = UsageKind | Feature;
 export const isFeature = (topic: UpgradeTopic): topic is Feature => topic in FEATURES;
+
+/* Tarifwechsel: teurer sofort, günstiger zum Laufzeitende (siehe lib/server/billing.ts) */
+type PlanChoice = { plan: PlanId; interval: 'monthly' | 'yearly' };
+
+/** true = Wechsel gilt sofort (höherer Tarif oder monatlich → jährlich), false = zum Laufzeitende */
+export function isUpgrade(from: PlanChoice, to: PlanChoice) {
+  if (PLAN_RANK[to.plan] !== PLAN_RANK[from.plan]) return PLAN_RANK[to.plan] > PLAN_RANK[from.plan];
+  return from.interval === 'monthly' && to.interval === 'yearly';
+}

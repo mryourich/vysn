@@ -2,7 +2,7 @@ import 'server-only';
 import Stripe from 'stripe';
 import type { PaidPlan, PlanId } from '../types';
 import { adminDb } from './supabase-admin';
-import { PAID_PLANS } from '../plans';
+import { PAID_PLANS, isUpgrade } from '../plans';
 
 /**
  * Abrechnung über Stripe.
@@ -30,6 +30,15 @@ export const priceId = (plan: PaidPlan, interval: Interval) => process.env[PRICE
 export function planForPrice(price: string): PlanId | null {
   for (const plan of PAID_PLANS) {
     if (price && (price === priceId(plan, 'monthly') || price === priceId(plan, 'yearly'))) return plan;
+  }
+  return null;
+}
+
+export function intervalForPrice(price: string): Interval | null {
+  for (const plan of PAID_PLANS) {
+    if (!price) break;
+    if (price === priceId(plan, 'monthly')) return 'monthly';
+    if (price === priceId(plan, 'yearly')) return 'yearly';
   }
   return null;
 }
@@ -76,8 +85,13 @@ export async function applySubscription(sub: Stripe.Subscription) {
   const periodEnd = (item as unknown as { current_period_end?: number })?.current_period_end
     ?? (sub as unknown as { current_period_end?: number }).current_period_end;
 
+  const pending = await pendingChange(sub);
   const update: Record<string, unknown> = {
     plan: active ? plan : 'start',
+    billing_interval: item ? intervalForPrice(item.price.id) : null,
+    pending_plan: pending?.plan ?? null,
+    pending_interval: pending?.interval ?? null,
+    pending_change_at: pending?.at ?? null,
     stripe_customer_id: customerId,
     stripe_subscription_id: sub.status === 'canceled' ? null : sub.id,
     subscription_status: sub.status,
@@ -102,4 +116,133 @@ export async function syncCustomer(customerId: string) {
 /** Öffentliche Basis-URL der Seite für Rücksprünge aus Stripe. */
 export function siteOrigin(req: Request) {
   return process.env.NEXT_PUBLIC_SITE_URL || req.headers.get('origin') || new URL(req.url).origin;
+}
+
+/* ---------------------------------------------------------------------------
+ * Tarifwechsel
+ * Teurer (höherer Tarif bzw. monatlich → jährlich): sofort, Differenz anteilig.
+ * Günstiger (niedrigerer Tarif bzw. jährlich → monatlich): zum Ende der Laufzeit
+ * über einen Stripe Subscription Schedule; bis dahin bleibt der bisherige Tarif.
+ * Start (kostenlos): Kündigung zum Laufzeitende.
+ * In der Testphase gilt jeder Wechsel sofort (es wurde noch nichts berechnet).
+ * ------------------------------------------------------------------------- */
+
+type Pending = { plan: PlanId; interval: Interval | null; at: string | null };
+
+/** Vorgemerkter Wechsel eines Abos (Kündigung zum Laufzeitende oder nächste Phase eines Schedules). */
+async function pendingChange(sub: Stripe.Subscription, s?: Stripe): Promise<Pending | null> {
+  if (sub.status === 'canceled') return null;
+  const periodEnd = currentPeriodEnd(sub);
+  if (sub.cancel_at_period_end) return { plan: 'start', interval: null, at: iso(sub.cancel_at ?? periodEnd) };
+  const scheduleId = typeof sub.schedule === 'string' ? sub.schedule : sub.schedule?.id;
+  if (!scheduleId) return null;
+  try {
+    const schedule = await (s || stripe()).subscriptionSchedules.retrieve(scheduleId);
+    const now = Math.floor(Date.now() / 1000);
+    const next = schedule.phases.find((ph) => ph.start_date > now);
+    const price = next?.items?.[0]?.price;
+    const id = typeof price === 'string' ? price : price?.id || '';
+    const plan = planForPrice(id);
+    return plan && next ? { plan, interval: intervalForPrice(id), at: iso(next.start_date) } : null;
+  } catch {
+    return null;
+  }
+}
+
+function currentPeriodEnd(sub: Stripe.Subscription): number | undefined {
+  const item = sub.items?.data?.[0];
+  return (item as unknown as { current_period_end?: number })?.current_period_end
+    ?? (sub as unknown as { current_period_end?: number }).current_period_end;
+}
+
+export type ChangeResult = { mode: 'now' | 'scheduled' | 'unchanged'; plan: PlanId; interval: Interval | null; at: string | null };
+
+/** Führt einen Tarifwechsel für ein laufendes Abo aus (siehe Regeln oben). */
+export async function changePlan(sub: Stripe.Subscription, plan: PlanId, interval: Interval, s: Stripe = stripe()): Promise<ChangeResult> {
+  const item = sub.items.data[0];
+  const fromPrice = item.price.id;
+  const from = { plan: planForPrice(fromPrice) || 'start', interval: intervalForPrice(fromPrice) || 'monthly' } as { plan: PlanId; interval: Interval };
+  const scheduleId = typeof sub.schedule === 'string' ? sub.schedule : sub.schedule?.id;
+  const periodEnd = currentPeriodEnd(sub);
+
+  // Bisherige Vormerkung (Schedule bzw. Kündigung) aufheben – sie wird ggf. neu gesetzt
+  const clearPending = async () => {
+    if (scheduleId) await s.subscriptionSchedules.release(scheduleId);
+    if (sub.cancel_at_period_end) await s.subscriptions.update(sub.id, { cancel_at_period_end: false });
+  };
+
+  // Gleicher Tarif und Rhythmus: nur Vormerkung zurücknehmen
+  if (plan === from.plan && interval === from.interval) {
+    await clearPending();
+    return { mode: 'unchanged', plan, interval, at: null };
+  }
+
+  // Kündigung zum Laufzeitende (zurück zu Start)
+  if (plan === 'start') {
+    if (scheduleId) await s.subscriptionSchedules.release(scheduleId);
+    await s.subscriptions.update(sub.id, { cancel_at_period_end: true });
+    return { mode: 'scheduled', plan: 'start', interval: null, at: iso(periodEnd) };
+  }
+
+  const price = priceId(plan as PaidPlan, interval);
+  if (!price) throw new Error('Dieser Tarif ist noch nicht buchbar.');
+
+  if (sub.status === 'trialing' || isUpgrade(from, { plan, interval })) {
+    await clearPending();
+    await s.subscriptions.update(sub.id, {
+      items: [{ id: item.id, price }],
+      // Testphase: nichts berechnen; sonst Differenz sofort anteilig abrechnen
+      proration_behavior: sub.status === 'trialing' ? 'none' : 'always_invoice',
+      // Schlägt die Zahlung fehl, bleibt der bisherige Tarif
+      payment_behavior: 'error_if_incomplete',
+    });
+    return { mode: 'now', plan, interval, at: null };
+  }
+
+  // Günstiger: bis zum Laufzeitende bisheriger Tarif, danach der neue
+  if (sub.cancel_at_period_end) await s.subscriptions.update(sub.id, { cancel_at_period_end: false });
+  const schedule = scheduleId
+    ? await s.subscriptionSchedules.retrieve(scheduleId)
+    : await s.subscriptionSchedules.create({ from_subscription: sub.id });
+  const now = Math.floor(Date.now() / 1000);
+  const current = schedule.phases.find((ph) => ph.start_date <= now && ph.end_date > now) || schedule.phases[0];
+  await s.subscriptionSchedules.update(schedule.id, {
+    end_behavior: 'release',
+    proration_behavior: 'none',
+    phases: [
+      { items: [{ price: fromPrice, quantity: 1 }], start_date: current.start_date, end_date: current.end_date },
+      // Eine Laufzeit im neuen Tarif, danach läuft das Abo ohne Schedule normal weiter
+      { items: [{ price, quantity: 1 }], duration: { interval: interval === 'yearly' ? 'year' : 'month', interval_count: 1 } },
+    ],
+  });
+  return { mode: 'scheduled', plan, interval, at: iso(current.end_date) };
+}
+
+/**
+ * Kundenportal ohne eigenen Tarifwechsel (der läuft über VYSN One mit obigen Regeln):
+ * Zahlungsart, Rechnungen, Rechnungsadresse und Kündigung zum Laufzeitende.
+ */
+let portalConfig: string | null = null;
+export async function portalConfiguration(s: Stripe = stripe()): Promise<string | undefined> {
+  if (portalConfig) return portalConfig;
+  try {
+    const list = await s.billingPortal.configurations.list({ active: true, limit: 100 });
+    const found = list.data.find((c) => c.metadata?.vysn === 'v1');
+    if (found) return (portalConfig = found.id);
+    const created = await s.billingPortal.configurations.create({
+      metadata: { vysn: 'v1' },
+      business_profile: { headline: 'VYSN One – Zahlung & Rechnungen' },
+      features: {
+        invoice_history: { enabled: true },
+        payment_method_update: { enabled: true },
+        customer_update: { enabled: true, allowed_updates: ['address', 'email', 'name', 'tax_id'] },
+        subscription_cancel: { enabled: true, mode: 'at_period_end' },
+        subscription_update: { enabled: false },
+      },
+    });
+    return (portalConfig = created.id);
+  } catch (e) {
+    console.error('stripe portal configuration', e);
+    return undefined; // Standard-Konfiguration aus dem Stripe-Dashboard
+  }
 }

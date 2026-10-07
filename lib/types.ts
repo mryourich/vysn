@@ -40,6 +40,12 @@ export type Billing = {
   cancelAtPeriodEnd: boolean;
   hasCustomer: boolean;
   trialUsed: boolean;
+  /** Zahlungsrhythmus des laufenden Abos */
+  interval: 'monthly' | 'yearly' | '';
+  /** Vorgemerkter Wechsel zum Laufzeitende ('start' = gekündigt) */
+  pendingPlan: PlanId | '';
+  pendingInterval: 'monthly' | 'yearly' | '';
+  pendingAt: string;
 };
 
 export type Customer = {
