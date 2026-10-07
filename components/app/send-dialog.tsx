@@ -90,7 +90,7 @@ export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: (
       </>}>
       {isInvoice && doc.status === 'draft' ? <div className="notice"><Mail size={16} /><span>Die Rechnung wird beim Versand festgeschrieben und ist danach nicht mehr änderbar.</span></div> : null}
       {status && !status.enabled ? (
-        <div className="notice notice-warn"><Mail size={16} /><span>{status.smtp ? 'Direkter Versand ist nur mit Anmeldung (Supabase) möglich.' : 'Für den direkten Versand ist noch kein Mailserver eingerichtet (siehe „E-Mail & Versand“).'} Sie können das PDF stattdessen über Ihr Gerät teilen bzw. mit Ihrem E-Mail-Programm senden.</span></div>
+        <div className="notice notice-warn"><Mail size={16} /><span>{status.smtp ? 'Direkter Versand ist nur mit Anmeldung (Supabase) möglich.' : 'Für den direkten Versand ist noch kein Mailserver eingerichtet (siehe Einstellungen › E-Mail-Versand).'} Sie können das PDF stattdessen über Ihr Gerät teilen bzw. mit Ihrem E-Mail-Programm senden.</span></div>
       ) : null}
       <div className="form-grid">
         <Field label="An *" span={2}><input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="kunde@beispiel.de" autoFocus={!to} /></Field>

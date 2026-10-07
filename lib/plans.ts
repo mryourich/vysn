@@ -134,7 +134,7 @@ export const nextPlanForLimits = (plan: PlanId): PaidPlan | null => (plan === 's
 export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team';
 
 export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team'; text: string }> = {
-  design: { label: 'Rechnungsdesign', plan: 'business', text: 'Farben, Schrift, Logo-Position und Aufbau Ihrer Rechnungen und Angebote frei gestalten.' },
+  design: { label: 'Dokumentenlayout & Standardtexte', plan: 'business', text: 'Farben, Schrift, Logo-Position, Aufbau und Standardtexte aller Belege frei gestalten.' },
   logoBackground: { label: 'Logo-Hintergrund entfernen', plan: 'business', text: 'Den Hintergrund Ihres Logos automatisch freistellen – für saubere Rechnungen.' },
   reports: { label: 'GuV & Finanzen', plan: 'business', text: 'Gewinn und Verlust, Umsatzsteuer und Auswertungen nach Monat, Quartal und Jahr.' },
   datev: { label: 'DATEV-Export', plan: 'business', text: 'Buchungsstapel für Ihre Steuerberatung mit einem Klick erzeugen.' },
@@ -150,10 +150,8 @@ export const hasFeature = (plan: PlanId, feature: Feature) => PLAN_RANK[plan] >=
 
 /** Seiten, die eine Funktion voraussetzen. */
 export const FEATURE_PATHS: [string, Feature][] = [
-  ['/app/design', 'design'],
   ['/app/guv', 'reports'],
   ['/app/export', 'datev'],
-  ['/app/einstellungen', 'email'],
   ['/app/scan', 'scanner'],
   ['/app/team', 'team'],
 ];

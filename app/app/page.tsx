@@ -102,7 +102,7 @@ export default function DashboardPage() {
 
       <section className="card">
         <div className="card-head">
-          <div><h2>Zuletzt bearbeitet</h2><p>Angebote und Rechnungen</p></div>
+          <div><h2>Zuletzt bearbeitet</h2><p>Ihre Belege</p></div>
           <Link href="/app/rechnungen" className="link">Alle Rechnungen <ArrowRight size={14} /></Link>
         </div>
         {recent.length ? (

@@ -323,7 +323,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
         <div className="editor-preview">
           <div className="preview-head">
             <span>Vorschau</span>
-            <Link href="/app/firma?tab=design" className="link">Design anpassen</Link>
+            <Link href="/app/einstellungen?bereich=layout" className="link">Design anpassen</Link>
           </div>
           <A4Preview><DocumentTemplate company={company} doc={doc} design={store.design} customerNumber={customer?.number} /></A4Preview>
         </div>

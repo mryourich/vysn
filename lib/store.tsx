@@ -47,6 +47,10 @@ export type Auth = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<void>;
+  /** Neues Passwort setzen (Konto-Seite bzw. nach „Passwort vergessen“) */
+  updatePassword: (password: string) => Promise<void>;
+  /** Über den Link aus „Passwort vergessen“ angemeldet – neues Passwort vergeben */
+  recovery: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -132,6 +136,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(!supabaseConfigured);
+  const [recovery, setRecovery] = useState(false);
   const [sync, setSync] = useState<SyncInfo>({ state: 'idle', error: null, pending: 0, notice: null });
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
@@ -189,6 +194,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     };
     const adopt = (s: Session | null, event?: string, retryable = false) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
       if (s) { offlineAuth.current = false; setSession(s); return; }
       if (event !== 'SIGNED_OUT' && (retryable || !navigator.onLine || offlineAuth.current)) {
         const fallback = stored();
@@ -668,6 +674,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { error } = await getSupabase().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/app` });
       if (error) throw error;
     },
+    updatePassword: async (password) => {
+      const { error } = await getSupabase().auth.updateUser({ password });
+      if (error) throw error;
+      setRecovery(false);
+    },
+    recovery,
     signOut: async () => {
       if (!supabaseConfigured) return;
       const uid = session?.user.id;
@@ -676,7 +688,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // Datenkopie vom Gerät entfernen; nicht übertragene Änderungen bleiben für die nächste Anmeldung erhalten
       if (uid) await clearUserCache(uid);
     },
-  }), [session]);
+  }), [session, recovery]);
 
   const update = useCallback((fn: (d: Data) => Data) => setData((d) => fn(d)), []);
 

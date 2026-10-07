@@ -10,7 +10,7 @@ import { A4Preview } from './a4-preview';
 import { DocumentTemplate } from '../pdf/document-template';
 import { downloadPdf } from '../pdf/export';
 import { Field, Segmented } from './ui';
-import { DocKindSelect, DocTextsFields } from './doc-texts';
+import { DocKindSelect } from './doc-texts';
 import { DOC_KINDS } from '../../lib/docs';
 import type { DocKind } from '../../lib/types';
 
@@ -31,7 +31,7 @@ function sampleDoc(kind: DocKind): SalesDoc {
   };
 }
 
-/** Rechnungsdesign bearbeiten (Tab „Rechnungsdesign“ unter Unternehmen). */
+/** Dokumentenlayout bearbeiten (Einstellungen › Dokumentenlayout). */
 export function DesignEditor({ onEditCompany }: { onEditCompany?: () => void }) {
   const { data, saveDesign } = useStore();
   const company = data.company!;
@@ -101,10 +101,6 @@ export function DesignEditor({ onEditCompany }: { onEditCompany?: () => void }) 
             </div>
           </section>
 
-          <section className="card">
-            <div className="card-head"><div><h2>Standardtexte</h2><p>Für die in der Vorschau gewählte Belegart. Platzhalter: {'{nummer} {datum} {faellig} {gueltig} {kunde} {betrag}'}</p></div><DocKindSelect value={kind} onChange={setKind} /></div>
-            <DocTextsFields kind={kind} />
-          </section>
         </div>
 
         <div className="editor-preview">

@@ -28,7 +28,7 @@ export function Onboarding() {
         <Brand />
         <div>
           <h1>{canCancel ? 'Weitere Firma anlegen.' : 'Willkommen bei VYSN One.'}</h1>
-          <p>{canCancel ? 'Jede Firma hat eigene Kunden, Nummernkreise, Material, Zahlen und ein eigenes Rechnungsdesign. Sie wechseln jederzeit unten in der Seitenleiste.' : 'In drei kurzen Schritten richten Sie Ihr Unternehmen ein. Danach erstellen Sie direkt Ihr erstes Angebot oder Ihre erste Rechnung.'}</p>
+          <p>{canCancel ? 'Jede Firma hat eigene Kunden, Nummernkreise, Material, Zahlen und ein eigenes Rechnungsdesign. Sie wechseln jederzeit oben rechts bzw. am Handy im Profil.' : 'In drei kurzen Schritten richten Sie Ihr Unternehmen ein. Danach erstellen Sie direkt Ihr erstes Angebot oder Ihre erste Rechnung.'}</p>
           <ol className="steps">
             {STEPS.map((s, i) => (
               <li key={s.title} className={i === step ? 'active' : i < step ? 'done' : ''}>

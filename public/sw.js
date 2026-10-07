@@ -15,7 +15,7 @@ const APP_PAGES = [
   '/app/auftragsbestaetigungen', '/app/auftragsbestaetigungen/bearbeiten', '/app/lieferscheine', '/app/lieferscheine/bearbeiten',
   '/app/bestellungen', '/app/bestellungen/bearbeiten',
   '/app/material', '/app/scan', '/app/ausgaben', '/app/guv', '/app/export', '/app/firma', '/app/design',
-  '/app/einstellungen', '/app/team', '/app/tarif',
+  '/app/einstellungen', '/app/team', '/app/tarif', '/app/konto', '/app/erweiterungen',
 ];
 const ASSETS = ['/manifest.webmanifest', '/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
 const NETWORK_TIMEOUT = 4000;

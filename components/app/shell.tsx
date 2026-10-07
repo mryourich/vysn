@@ -3,9 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import {
-  BarChart3, Boxes, FileSpreadsheet, FileText, LayoutDashboard, Lock, Menu, ReceiptText, Users, Wallet, CloudOff, X, Sparkles,
-} from 'lucide-react';
+import { Lock, Menu, CloudOff, X, Sparkles } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
 import { FEATURES, featureForPath } from '../../lib/plans';
@@ -15,32 +13,16 @@ import { Empty } from './ui';
 import { CompanyAvatar, LogoutButton } from './company-switcher';
 import { ProfileButton } from './profile';
 import { MobileNav } from './mobile-nav';
-import type { NavGroup } from './mobile-nav';
+import { SideNav } from './side-nav';
+import { DeskBar } from './account-menu';
 import { UpgradeDialog } from './upgrade-dialog';
 import { Login } from './login';
 import { Onboarding } from './onboarding';
 
-const NAV: NavGroup[] = [
-  { group: '', items: [{ href: '/app', label: 'Dashboard', icon: LayoutDashboard }] },
-  { group: 'Verkauf', items: [
-    { href: '/app/angebote', label: 'Angebote', icon: FileText },
-    { href: '/app/rechnungen', label: 'Rechnungen', icon: ReceiptText },
-    { href: '/app/kunden', label: 'Kunden', icon: Users },
-  ] },
-  { group: 'Betrieb', items: [
-    { href: '/app/material', label: 'Material & Lager', icon: Boxes },
-    { href: '/app/ausgaben', label: 'Einnahmen & Ausgaben', icon: Wallet },
-  ] },
-  { group: 'Auswertung', items: [
-    { href: '/app/guv', label: 'GuV & Finanzen', icon: BarChart3 },
-    { href: '/app/export', label: 'DATEV-Export', icon: FileSpreadsheet },
-  ] },
-];
-
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can, requireFeature } = useStore();
+  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
   const [sheet, setSheet] = useState<'create' | 'profile' | null>(null);
@@ -63,6 +45,11 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (token) router.replace(`/app/einladung?token=${token}`);
   }, [authenticated, auth.mode, invitePage, router]);
 
+  // Über „Passwort vergessen“ angemeldet: zuerst ein neues Passwort vergeben
+  useEffect(() => {
+    if (auth.recovery && !pathname.startsWith('/app/konto')) router.replace('/app/konto?passwort=neu');
+  }, [auth.recovery, pathname, router]);
+
   if (invitePage) return <>{children}</>;
 
   if (!ready) return <div className="app-loading"><span className="spinner" /></div>;
@@ -74,12 +61,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const company = data.company;
   const admin = isAdminRole(role);
-  const nav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => admin || !ADMIN_PATHS.includes(i.href)) })).filter((g) => g.items.length);
   const blocked = !admin && ADMIN_PATHS.some((p) => isActive(pathname, p));
   const pageFeature = featureForPath(pathname);
   const featureLocked = pageFeature && !can(pageFeature) ? pageFeature : null;
-  /** Gesperrte Funktion: Link bleibt sichtbar, Klick öffnet „Jetzt upgraden“. */
-  const lockedFor = (href: string) => { const f = featureForPath(href); return f && !can(f) ? f : null; };
 
   return (
     <div className={`app${drawer ? ' drawer-open' : ''}`}>
@@ -89,20 +73,7 @@ function Shell({ children }: { children: React.ReactNode }) {
           <Brand href="/app" />
           <button className="icon-btn sidebar-close" onClick={() => setDrawer(false)} aria-label="Menü schließen"><X size={20} /></button>
         </div>
-        <nav>
-          {nav.map((g) => (
-            <div key={g.group || 'main'} className="nav-group">
-              {g.group ? <span className="nav-group-label">{g.group}</span> : null}
-              {g.items.map((item) => (
-                <Link key={item.href} href={item.href} className={`nav-link${isActive(pathname, item.href) ? ' active' : ''}`}
-                  onClick={(e) => { const f = lockedFor(item.href); if (f) { e.preventDefault(); requireFeature(f); } }}>
-                  <item.icon size={17} strokeWidth={1.8} />{item.label}
-                  {lockedFor(item.href) ? <Lock size={13} className="nav-lock" aria-label="Nicht im Tarif" /> : null}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
+        <SideNav />
         <div className="sidebar-foot">
           <ProfileButton onMobile={() => { setDrawer(false); setSheet('profile'); }} />
           <div className="sidebar-meta">
@@ -113,6 +84,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="app-main">
+        <DeskBar />
         <header className="topbar">
           <button className="topbar-menu" onClick={() => setDrawer(true)} aria-label="Menü öffnen" aria-expanded={drawer}><Menu size={22} /></button>
           <Brand href="/app" />
