@@ -27,6 +27,9 @@ export const canAddCompany = (companies: CompanySummary[]) => {
 export const USAGE_KINDS: { kind: UsageKind; one: string; many: string }[] = [
   { kind: 'invoice', one: 'Rechnung', many: 'Rechnungen' },
   { kind: 'offer', one: 'Angebot', many: 'Angebote' },
+  { kind: 'confirmation', one: 'Auftragsbestätigung', many: 'Auftragsbestätigungen' },
+  { kind: 'delivery', one: 'Lieferschein', many: 'Lieferscheine' },
+  { kind: 'order', one: 'Bestellung', many: 'Bestellungen' },
   { kind: 'customer', one: 'Kunde', many: 'Kunden' },
   { kind: 'material', one: 'Artikel', many: 'Artikel' },
   { kind: 'booking', one: 'Buchung', many: 'Buchungen' },
@@ -80,7 +83,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 0,
     yearly: 0,
     text: 'Für Gründer und Nebengewerbe, die sauber starten wollen.',
-    features: ['Je 10 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
+    features: ['Je 10 Belege jeder Art, Kunden, Artikel und Buchungen pro Monat', 'Angebote, Auftragsbestätigungen, Lieferscheine, Rechnungen & Bestellungen als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: 'Kostenlos starten',
   },
   {
@@ -89,7 +92,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 9.9,
     yearly: 7.9,
     text: 'Für Selbstständige mit regelmäßigen Aufträgen.',
-    features: ['Je 50 Rechnungen, Angebote, Kunden, Artikel und Buchungen pro Monat', 'Rechnungen & Angebote als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
+    features: ['Je 50 Belege jeder Art, Kunden, Artikel und Buchungen pro Monat', 'Angebote, Auftragsbestätigungen, Lieferscheine, Rechnungen & Bestellungen als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
     cta: '30 Tage kostenlos testen',
   },
   {
@@ -98,7 +101,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     monthly: 24.9,
     yearly: 19.9,
     text: 'Für Betriebe, die ihre Zahlen im Griff haben wollen.',
-    features: ['Unbegrenzt Rechnungen, Angebote, Kunden & Artikel', 'Mehrere Firmen unter einem Login', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
+    features: ['Unbegrenzt Belege, Kunden & Artikel', 'Mehrere Firmen unter einem Login', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
     cta: '30 Tage kostenlos testen',
     featured: true,
   },
@@ -131,11 +134,11 @@ export const nextPlanForLimits = (plan: PlanId): PaidPlan | null => (plan === 's
 export type Feature = 'design' | 'logoBackground' | 'reports' | 'datev' | 'email' | 'scanner' | 'companies' | 'team';
 
 export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team'; text: string }> = {
-  design: { label: 'Rechnungsdesign', plan: 'business', text: 'Farben, Schrift, Logo-Position und Aufbau Ihrer Rechnungen und Angebote frei gestalten.' },
+  design: { label: 'Dokumentenlayout & Standardtexte', plan: 'business', text: 'Farben, Schrift, Logo-Position, Aufbau und Standardtexte aller Belege frei gestalten.' },
   logoBackground: { label: 'Logo-Hintergrund entfernen', plan: 'business', text: 'Den Hintergrund Ihres Logos automatisch freistellen – für saubere Rechnungen.' },
   reports: { label: 'GuV & Finanzen', plan: 'business', text: 'Gewinn und Verlust, Umsatzsteuer und Auswertungen nach Monat, Quartal und Jahr.' },
   datev: { label: 'DATEV-Export', plan: 'business', text: 'Buchungsstapel für Ihre Steuerberatung mit einem Klick erzeugen.' },
-  email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote und Rechnungen direkt aus VYSN One per E-Mail versenden – mit PDF im Anhang.' },
+  email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote, Rechnungen und alle weiteren Belege direkt aus VYSNER One per E-Mail versenden – mit PDF im Anhang.' },
   scanner: { label: 'Lager-Scanner & QR-Etiketten', plan: 'business', text: 'Regale und Artikel mit QR-Codes versehen und per Handy ein- und auslagern.' },
   companies: { label: 'Mehrere Firmen', plan: 'business', text: 'Mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummern und eigenem Design.' },
   team: { label: 'Team & Rechte', plan: 'team', text: 'Bis zu 5 Personen je Firma einladen – mit Rollen für Inhaber, Admin und Mitarbeiter.' },
@@ -147,10 +150,8 @@ export const hasFeature = (plan: PlanId, feature: Feature) => PLAN_RANK[plan] >=
 
 /** Seiten, die eine Funktion voraussetzen. */
 export const FEATURE_PATHS: [string, Feature][] = [
-  ['/app/design', 'design'],
   ['/app/guv', 'reports'],
   ['/app/export', 'datev'],
-  ['/app/einstellungen', 'email'],
   ['/app/scan', 'scanner'],
   ['/app/team', 'team'],
 ];
@@ -161,3 +162,12 @@ export const featureForPath = (pathname: string): Feature | null =>
 /** Upgrade-Hinweis: Monatslimit einer Art oder fehlende Funktion. */
 export type UpgradeTopic = UsageKind | Feature;
 export const isFeature = (topic: UpgradeTopic): topic is Feature => topic in FEATURES;
+
+/* Tarifwechsel: teurer sofort, günstiger zum Laufzeitende (siehe lib/server/billing.ts) */
+type PlanChoice = { plan: PlanId; interval: 'monthly' | 'yearly' };
+
+/** true = Wechsel gilt sofort (höherer Tarif oder monatlich → jährlich), false = zum Laufzeitende */
+export function isUpgrade(from: PlanChoice, to: PlanChoice) {
+  if (PLAN_RANK[to.plan] !== PLAN_RANK[from.plan]) return PLAN_RANK[to.plan] > PLAN_RANK[from.plan];
+  return from.interval === 'monthly' && to.interval === 'yearly';
+}

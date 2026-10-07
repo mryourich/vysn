@@ -5,7 +5,8 @@ import { useState } from 'react';
 import { FilePlus2, Mail, Pencil, Phone, Plus, ReceiptText, Search, Trash2, Users } from 'lucide-react';
 import { docTotals, money } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
-import type { Customer } from '../../../lib/types';
+import { docEditPath } from '../../../lib/docs';
+import type { Customer, DocKind } from '../../../lib/types';
 import { CustomerModal } from '../../../components/app/customer-form';
 import { Empty, PageHeader, useCreateAction } from '../../../components/app/ui';
 import { QuotaBar } from '../../../components/app/quota';
@@ -29,10 +30,10 @@ export default function CustomersPage() {
     .filter((c) => !q || `${c.name} ${c.contactPerson} ${c.city} ${c.number} ${c.email}`.toLowerCase().includes(q.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 
-  const newDoc = async (kind: 'invoice' | 'offer', customerId: string) => {
+  const newDoc = async (kind: DocKind, customerId: string) => {
     const doc = await createDoc(kind, customerId);
     if (!doc) return;
-    router.push(`/app/${kind === 'invoice' ? 'rechnungen' : 'angebote'}/bearbeiten?id=${doc.id}`);
+    router.push(docEditPath(doc));
   };
 
   return (

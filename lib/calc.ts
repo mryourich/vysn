@@ -1,4 +1,5 @@
 import type { Data, Expense, LineItem, SalesDoc } from './types';
+import { DOC_KINDS } from './docs';
 
 const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 });
 
@@ -50,10 +51,13 @@ export const lineNet = (item: LineItem) => round2(item.quantity * item.unitPrice
 
 export type Totals = { net: number; vat: number; gross: number; vatGroups: { rate: number; net: number; vat: number }[] };
 
+/** Optionale und Alternativpositionen zählen nicht zur Summe. */
+export const inTotal = (item: LineItem) => !item.variant;
+
 export function docTotals(items: LineItem[], smallBusiness: boolean): Totals {
   const groups = new Map<number, number>();
   let net = 0;
-  for (const item of items) {
+  for (const item of items.filter(inTotal)) {
     const n = lineNet(item);
     net += n;
     const rate = smallBusiness ? 0 : item.vat;
@@ -77,22 +81,8 @@ export function isOverdue(doc: SalesDoc) {
 }
 
 export function displayStatus(doc: SalesDoc): DisplayStatus {
-  if (doc.kind === 'invoice') {
-    if (isOverdue(doc)) return { label: 'Überfällig', tone: 'danger' };
-    switch (doc.status) {
-      case 'draft': return { label: 'Entwurf', tone: 'neutral' };
-      case 'sent': return { label: 'Offen', tone: 'info' };
-      case 'paid': return { label: 'Bezahlt', tone: 'success' };
-      case 'cancelled': return { label: 'Storniert', tone: 'neutral' };
-    }
-  }
-  switch (doc.status) {
-    case 'draft': return { label: 'Entwurf', tone: 'neutral' };
-    case 'sent': return { label: 'Versendet', tone: 'info' };
-    case 'accepted': return { label: 'Angenommen', tone: 'success' };
-    case 'declined': return { label: 'Abgelehnt', tone: 'danger' };
-  }
-  return { label: doc.status, tone: 'neutral' };
+  if (isOverdue(doc)) return { label: 'Überfällig', tone: 'danger' };
+  return DOC_KINDS[doc.kind]?.status[doc.status] ?? { label: doc.status, tone: 'neutral' };
 }
 
 export type Period = { from: string; to: string; label: string };

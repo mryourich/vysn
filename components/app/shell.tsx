@@ -3,9 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import {
-  BarChart3, Boxes, FileSpreadsheet, FileText, LayoutDashboard, Lock, ReceiptText, ScanLine, Users, Wallet, CloudOff, X, Sparkles,
-} from 'lucide-react';
+import { Lock, Menu, CloudOff, X, Sparkles } from 'lucide-react';
 import { StoreProvider, useStore } from '../../lib/store';
 import { ADMIN_PATHS, ROLE_LABEL, isAdminRole, pendingInvite } from '../../lib/team';
 import { FEATURES, featureForPath } from '../../lib/plans';
@@ -15,37 +13,30 @@ import { Empty } from './ui';
 import { CompanyAvatar, LogoutButton } from './company-switcher';
 import { ProfileButton } from './profile';
 import { MobileNav } from './mobile-nav';
-import type { NavGroup } from './mobile-nav';
+import { SideNav } from './side-nav';
+import { DeskBar } from './account-menu';
 import { UpgradeDialog } from './upgrade-dialog';
 import { Login } from './login';
 import { Onboarding } from './onboarding';
 
-const NAV: NavGroup[] = [
-  { group: '', items: [{ href: '/app', label: 'Dashboard', icon: LayoutDashboard }] },
-  { group: 'Verkauf', items: [
-    { href: '/app/angebote', label: 'Angebote', icon: FileText },
-    { href: '/app/rechnungen', label: 'Rechnungen', icon: ReceiptText },
-    { href: '/app/kunden', label: 'Kunden', icon: Users },
-  ] },
-  { group: 'Betrieb', items: [
-    { href: '/app/material', label: 'Material & Lager', icon: Boxes },
-    { href: '/app/scan', label: 'Lager-Scanner', icon: ScanLine },
-    { href: '/app/ausgaben', label: 'Einnahmen & Ausgaben', icon: Wallet },
-  ] },
-  { group: 'Auswertung', items: [
-    { href: '/app/guv', label: 'GuV & Finanzen', icon: BarChart3 },
-    { href: '/app/export', label: 'DATEV-Export', icon: FileSpreadsheet },
-  ] },
-];
-
 const isActive = (pathname: string, href: string) => (href === '/app' ? pathname === '/app' : pathname.startsWith(href));
 
 function Shell({ children }: { children: React.ReactNode }) {
-  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can, requireFeature } = useStore();
+  const { data, ready, authenticated, auth, sync, role, dismissSyncNotice, can } = useStore();
   const pathname = usePathname() || '/app';
   const router = useRouter();
-  const [sheet, setSheet] = useState<'menu' | 'create' | 'profile' | null>(null);
-  useEffect(() => setSheet(null), [pathname]);
+  const [sheet, setSheet] = useState<'create' | 'profile' | null>(null);
+  /** Handy: Seitenmenü (dieselbe Seitenleiste wie am Computer) */
+  const [drawer, setDrawer] = useState(false);
+  useEffect(() => { setSheet(null); setDrawer(false); }, [pathname]);
+  useEffect(() => {
+    if (!drawer) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [drawer]);
   const invitePage = pathname.startsWith('/app/einladung');
   // Offene Einladung (z. B. nach Registrierung und E-Mail-Bestätigung) zuerst annehmen
   useEffect(() => {
@@ -53,6 +44,11 @@ function Shell({ children }: { children: React.ReactNode }) {
     const token = pendingInvite();
     if (token) router.replace(`/app/einladung?token=${token}`);
   }, [authenticated, auth.mode, invitePage, router]);
+
+  // Über „Passwort vergessen“ angemeldet: zuerst ein neues Passwort vergeben
+  useEffect(() => {
+    if (auth.recovery && !pathname.startsWith('/app/konto')) router.replace('/app/konto?passwort=neu');
+  }, [auth.recovery, pathname, router]);
 
   if (invitePage) return <>{children}</>;
 
@@ -65,33 +61,21 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   const company = data.company;
   const admin = isAdminRole(role);
-  const nav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => admin || !ADMIN_PATHS.includes(i.href)) })).filter((g) => g.items.length);
   const blocked = !admin && ADMIN_PATHS.some((p) => isActive(pathname, p));
   const pageFeature = featureForPath(pathname);
   const featureLocked = pageFeature && !can(pageFeature) ? pageFeature : null;
-  /** Gesperrte Funktion: Link bleibt sichtbar, Klick öffnet „Jetzt upgraden“. */
-  const lockedFor = (href: string) => { const f = featureForPath(href); return f && !can(f) ? f : null; };
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <Brand href="/app" />
-        <nav>
-          {nav.map((g) => (
-            <div key={g.group || 'main'} className="nav-group">
-              {g.group ? <span className="nav-group-label">{g.group}</span> : null}
-              {g.items.map((item) => (
-                <Link key={item.href} href={item.href} className={`nav-link${isActive(pathname, item.href) ? ' active' : ''}`}
-                  onClick={(e) => { const f = lockedFor(item.href); if (f) { e.preventDefault(); requireFeature(f); } }}>
-                  <item.icon size={17} strokeWidth={1.8} />{item.label}
-                  {lockedFor(item.href) ? <Lock size={13} className="nav-lock" aria-label="Nicht im Tarif" /> : null}
-                </Link>
-              ))}
-            </div>
-          ))}
-        </nav>
+    <div className={`app${drawer ? ' drawer-open' : ''}`}>
+      {drawer ? <div className="drawer-backdrop" onClick={() => setDrawer(false)} aria-hidden="true" /> : null}
+      <aside className="sidebar" aria-label="Navigation">
+        <div className="sidebar-head">
+          <Brand href="/app" />
+          <button className="icon-btn sidebar-close" onClick={() => setDrawer(false)} aria-label="Menü schließen"><X size={20} /></button>
+        </div>
+        <SideNav />
         <div className="sidebar-foot">
-          <ProfileButton />
+          <ProfileButton onMobile={() => { setDrawer(false); setSheet('profile'); }} />
           <div className="sidebar-meta">
             <SyncStatus />
             <LogoutButton className="logout-btn" />
@@ -100,7 +84,9 @@ function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="app-main">
+        <DeskBar />
         <header className="topbar">
+          <button className="topbar-menu" onClick={() => setDrawer(true)} aria-label="Menü öffnen" aria-expanded={drawer}><Menu size={22} /></button>
           <Brand href="/app" />
           <button className="topbar-company" onClick={() => setSheet('profile')} aria-label={`Profil & Einstellungen – ${company.name}`}>
             <span>{company.name}</span>
@@ -133,7 +119,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : featureLocked ? <FeatureLocked feature={featureLocked} /> : children}</main>
       </div>
       <UpgradeDialog />
-      <MobileNav nav={nav} open={sheet} onOpen={setSheet} />
+      <MobileNav open={sheet} onOpen={setSheet} onMenu={() => setDrawer(true)} menuOpen={drawer} />
     </div>
   );
 }
@@ -174,7 +160,7 @@ function LoadError({ message }: { message: string | null }) {
       <div className="empty">
         <h3>{offline ? 'Keine Verbindung' : 'Daten konnten nicht geladen werden'}</h3>
         <p>{offline
-          ? 'Diese Firma wurde auf diesem Gerät noch nicht geöffnet. Öffnen Sie VYSN One einmal mit Internet – danach steht sie auch offline zur Verfügung.'
+          ? 'Diese Firma wurde auf diesem Gerät noch nicht geöffnet. Öffnen Sie VYSNER One einmal mit Internet – danach steht sie auch offline zur Verfügung.'
           : message || 'Bitte prüfen Sie Ihre Internetverbindung.'}</p>
         <div className="secondary-actions">
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Erneut versuchen</button>

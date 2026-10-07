@@ -2,7 +2,7 @@
   "name": "vysn",
   "version": "1.0.0",
   "private": true,
-  "description": "VYSN One – Angebote, Rechnungen, Material und GuV für kleine Unternehmen",
+  "description": "VYSNER One – Angebote, Rechnungen, Material und GuV für kleine Unternehmen",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

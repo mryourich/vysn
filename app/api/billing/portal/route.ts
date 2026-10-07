@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { billingConfigured, siteOrigin, stripe } from '../../../../lib/server/billing';
+import { billingConfigured, portalConfiguration, siteOrigin, stripe } from '../../../../lib/server/billing';
 import { adminDb, memberRole, userFromRequest } from '../../../../lib/server/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** Stripe-Kundenportal: Zahlungsmethode, Rechnungen, Tarifwechsel, Kündigung. */
+/** Stripe-Kundenportal: Zahlungsmethode, Rechnungen, Kündigung (Tarifwechsel über /api/billing/change). */
 export async function POST(req: Request) {
   if (!billingConfigured()) return NextResponse.json({ error: 'Die Online-Zahlung ist noch nicht eingerichtet.' }, { status: 503 });
   const user = await userFromRequest(req);
@@ -15,6 +15,7 @@ export async function POST(req: Request) {
   if (role !== 'owner' && role !== 'admin') return NextResponse.json({ error: 'Nur Inhaber oder Admins können die Abrechnung verwalten.' }, { status: 403 });
   const { data } = await adminDb().from('companies').select('stripe_customer_id').eq('id', companyId).single();
   if (!data?.stripe_customer_id) return NextResponse.json({ error: 'Für diese Firma gibt es noch kein Abo.' }, { status: 400 });
-  const portal = await stripe().billingPortal.sessions.create({ customer: data.stripe_customer_id as string, return_url: `${siteOrigin(req)}/app/tarif`, locale: 'de' });
+  const configuration = await portalConfiguration();
+  const portal = await stripe().billingPortal.sessions.create({ customer: data.stripe_customer_id as string, return_url: `${siteOrigin(req)}/app/tarif`, locale: 'de', ...(configuration ? { configuration } : {}) });
   return NextResponse.json({ url: portal.url });
 }

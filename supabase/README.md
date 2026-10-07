@@ -1,6 +1,6 @@
 # Supabase einrichten
 
-VYSN One läuft ohne Konfiguration im **lokalen Modus** (Daten im Browser). Sobald die
+VYSNER One läuft ohne Konfiguration im **lokalen Modus** (Daten im Browser). Sobald die
 Supabase-Variablen gesetzt sind, schaltet die App automatisch auf **Login + Datenbank** um –
 die Oberfläche bleibt gleich.
 

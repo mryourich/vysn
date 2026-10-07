@@ -7,18 +7,19 @@ import { SiteFooter } from '../components/site/site-footer';
 import { Pricing } from '../components/site/pricing';
 import { DesignShowcase } from '../components/site/design-showcase';
 import { Motion } from '../components/site/motion';
+import { VysnMark, VysnWordmark } from '../components/app/brand';
 import './site.css';
 
 const FAQ = [
   ['Brauche ich Buchhaltungskenntnisse?', 'Nein. Sie schreiben Angebote und Rechnungen und erfassen Ihre Ausgaben. Die GuV, Umsatzsteuer und Auswertungen entstehen daraus automatisch.'],
   ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten die Pflichtangaben für Deutschland (§ 14 UStG), Österreich (§ 11 UStG) und die Schweiz (Art. 26 MWSTG): Anschriften, Steuer- bzw. UID-Nummer, fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der passende Hinweis gesetzt.'],
-  ['Funktioniert VYSN One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
+  ['Funktioniert VYSNER One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
-  ['Funktioniert VYSN One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
+  ['Funktioniert VYSNER One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
   ['Wo werden meine Daten gespeichert?', process.env.NEXT_PUBLIC_SUPABASE_URL
     ? 'In einer gesicherten Datenbank, auf die nur Sie und Ihr Team Zugriff haben. So sind Ihre Daten auf allen Geräten verfügbar. Über „Datensicherung“ laden Sie zusätzlich jederzeit eine vollständige Sicherung herunter.'
     : 'In der aktuellen Version bleiben alle Daten lokal in Ihrem Browser auf Ihrem Gerät. Über „Datensicherung“ laden Sie jederzeit eine vollständige Sicherung herunter und können sie auf einem anderen Gerät einspielen.'],
-  ['Ersetzt VYSN One meine Steuerberatung?', 'Nein. VYSN One gibt Ihnen jederzeit einen klaren Überblick über Ihre Zahlen. Den Jahresabschluss und die Steuererklärung übernimmt weiterhin Ihre Steuerberatung – die Exporte erleichtern die Zusammenarbeit.'],
+  ['Ersetzt VYSNER One meine Steuerberatung?', 'Nein. VYSNER One gibt Ihnen jederzeit einen klaren Überblick über Ihre Zahlen. Den Jahresabschluss und die Steuererklärung übernimmt weiterhin Ihre Steuerberatung – die Exporte erleichtern die Zusammenarbeit.'],
 ];
 
 export default function Home() {
@@ -32,6 +33,10 @@ export default function Home() {
         <div className="hero-grid-bg" aria-hidden="true" />
         <div className="hero-glow" aria-hidden="true" />
         <div className="shell hero-inner">
+          <div className="hero-logo" aria-label="VYSNER One">
+            <VysnMark height={88} animated />
+            <span className="hero-logo-word"><VysnWordmark height={20} /><em>One</em></span>
+          </div>
           <a href="#rechnungsdesign" className="hero-pill"><span>Neu</span> Rechnungsdesigner mit Live-Vorschau <ArrowRight size={14} /></a>
           <h1><span className="hero-line">Ihr Betrieb.</span><span className="hero-line gradient-text">Klar gesteuert.</span></h1>
           <p className="lead">Angebote, Rechnungen, Material und Zahlen in einer Software, die so präzise arbeitet wie Sie. Für kleine und mittlere Unternehmen, Handwerk und Dienstleister.</p>
@@ -94,7 +99,7 @@ export default function Home() {
             <span className="tile-icon"><Palette size={18} /></span>
             <h3>Eigenes Rechnungsdesign</h3>
             <p>Logo, Farbe, Schrift und Layout – als druckfertiges PDF.</p>
-            <div className="swatch-row">{['#0069e6', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
+            <div className="swatch-row">{['#13873e', '#0f766e', '#0b1220', '#9f1239', '#6d28d9'].map((c) => <i key={c} style={{ background: c }} />)}</div>
           </article>
           <article className="tile" data-reveal style={{ ['--d' as string]: '180ms' }}>
             <span className="tile-icon"><Boxes size={18} /></span>
@@ -108,7 +113,7 @@ export default function Home() {
           <article className="tile" data-reveal style={{ ['--d' as string]: '0ms' }}>
             <span className="tile-icon"><Wallet size={18} /></span>
             <h3>Ausgaben</h3>
-            <p>Belege nach Kategorie erfassen – brutto oder netto, die Steuer rechnet VYSN One.</p>
+            <p>Belege nach Kategorie erfassen – brutto oder netto, die Steuer rechnet VYSNER One.</p>
           </article>
           <article className="tile" data-reveal style={{ ['--d' as string]: '90ms' }}>
             <span className="tile-icon"><BarChart3 size={18} /></span>
@@ -138,7 +143,7 @@ export default function Home() {
           <div className="section-head" data-reveal>
             <span className="kicker">Rechnungsdesign</span>
             <h2>Dokumente, die nach Ihrem Unternehmen aussehen.</h2>
-            <p>Probieren Sie es direkt hier aus. In VYSN One kommt Ihr eigenes Logo dazu – der Export ist ein echtes, druckfertiges PDF.</p>
+            <p>Probieren Sie es direkt hier aus. In VYSNER One kommt Ihr eigenes Logo dazu – der Export ist ein echtes, druckfertiges PDF.</p>
           </div>
           <div data-reveal="scale"><DesignShowcase /></div>
         </div>
@@ -163,7 +168,7 @@ export default function Home() {
           <div className="section-head center" data-reveal>
             <span className="kicker">Preise</span>
             <h2>Transparent. Fair. Jederzeit kündbar.</h2>
-            <p>Starten Sie kostenlos und wechseln Sie erst, wenn VYSN One Ihnen im Alltag Zeit spart.</p>
+            <p>Starten Sie kostenlos und wechseln Sie erst, wenn VYSNER One Ihnen im Alltag Zeit spart.</p>
           </div>
           <div data-reveal><Pricing /></div>
           <p className="pricing-note"><ShieldCheck size={16} /> Alle Preise zzgl. gesetzlicher USt. Keine Einrichtungsgebühr, keine Mindestlaufzeit bei monatlicher Zahlung.</p>
@@ -224,8 +229,8 @@ function ProductMock() {
     <div className="stage" aria-hidden="true">
       <div className="app-mock">
         <div className="app-mock-side">
-          <div className="mock-brand"><i /><b /></div>
-          {['Dashboard', 'Angebote', 'Rechnungen', 'Kunden', 'Material & Lager', 'Ausgaben', 'GuV & Finanzen'].map((l) => (
+          <div className="mock-brand"><VysnMark height={16} /><VysnWordmark height={8} /></div>
+          {['Startseite', 'Angebote', 'Rechnungen', 'Kunden', 'Material & Lager', 'Buchführung', 'Berichte'].map((l) => (
             <span key={l} className={l === 'Rechnungen' ? 'on' : ''}>{l}</span>
           ))}
         </div>

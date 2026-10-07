@@ -40,6 +40,12 @@ export type Billing = {
   cancelAtPeriodEnd: boolean;
   hasCustomer: boolean;
   trialUsed: boolean;
+  /** Zahlungsrhythmus des laufenden Abos */
+  interval: 'monthly' | 'yearly' | '';
+  /** Vorgemerkter Wechsel zum Laufzeitende ('start' = gekündigt) */
+  pendingPlan: PlanId | '';
+  pendingInterval: 'monthly' | 'yearly' | '';
+  pendingAt: string;
 };
 
 export type Customer = {
@@ -100,9 +106,15 @@ export type LineItem = {
   unitPrice: number;
   vat: number;
   discount: number;
+  /** Angebot: optionale Position bzw. Alternative – nicht in der Angebotssumme enthalten */
+  variant?: 'optional' | 'alternative';
+  /** Vom Kunden gewählt: wird beim Umwandeln (Auftragsbestätigung/Rechnung) als normale Position übernommen */
+  chosen?: boolean;
 };
 
-export type DocKind = 'offer' | 'invoice';
+/** Belegarten: Angebot, Auftragsbestätigung, Lieferschein, Rechnung, Bestellung (an Lieferanten). */
+export type DocKind = 'offer' | 'confirmation' | 'delivery' | 'invoice' | 'order';
+export const DOC_KIND_LIST: DocKind[] = ['offer', 'confirmation', 'delivery', 'invoice', 'order'];
 export type OfferStatus = 'draft' | 'sent' | 'accepted' | 'declined';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'cancelled';
 
@@ -189,6 +201,8 @@ export type InvoiceDesign = {
   invoiceOutro: string;
   offerIntro: string;
   offerOutro: string;
+  /** Standardtexte weiterer Belegarten (leer = Vorgabe aus lib/docs.ts) */
+  texts?: Partial<Record<DocKind, { intro: string; outro: string }>>;
 };
 
 export type DatevSettings = {
@@ -211,15 +225,20 @@ export type EmailSettings = {
   invoiceBody: string;
   offerSubject: string;
   offerBody: string;
+  /** Vorlagen der weiteren Belegarten (Auftragsbestätigung, Lieferschein, Bestellung) */
+  templates?: Partial<Record<DocKind, { subject: string; body: string }>>;
 };
 
-export type Settings = { datev: DatevSettings; email: EmailSettings };
+/** Nummernkreis-Präfixe weiterer Belegarten (Rechnung/Angebot stehen in den Firmendaten) */
+export type NumberSettings = { prefixes: Partial<Record<DocKind, string>> };
+
+export type Settings = { datev: DatevSettings; email: EmailSettings; numbers: NumberSettings };
 
 /** Kurzinfo einer Firma für den Firmenwechsler */
 export type CompanySummary = { id: string; name: string; logo: string; plan: PlanId; role?: string };
 
 /** Arten, die je Tarif pro Monat begrenzt sind. */
-export type UsageKind = 'invoice' | 'offer' | 'customer' | 'material' | 'booking';
+export type UsageKind = DocKind | 'customer' | 'material' | 'booking';
 /** Im laufenden Monat angelegte Elemente (gelöschte zählen mit). `month` = „YYYY-MM“. */
 export type Usage = { month: string; counts: Partial<Record<UsageKind, number>> };
 
@@ -233,7 +252,7 @@ export type Data = {
   locations: StorageLocation[];
   design: InvoiceDesign;
   settings: Settings;
-  counters: { invoice: Record<string, number>; offer: Record<string, number>; customer: number; material: number };
+  counters: Record<DocKind, Record<string, number>> & { customer: number; material: number };
   /** Monatsnutzung für Tariflimits – wird vom Server geführt, nicht vom Client gespeichert. */
   usage: Usage;
 };

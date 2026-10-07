@@ -46,10 +46,9 @@ export async function POST(req: Request) {
     await db.from('companies').update({ stripe_customer_id: customerId }).eq('id', companyId);
   }
 
-  // Bestehendes, laufendes Abo → Tarifwechsel/Kündigung im Stripe-Kundenportal
+  // Bestehendes, laufendes Abo → Tarifwechsel über /api/billing/change (kein zweites Abo)
   if (company.stripe_subscription_id && ['active', 'trialing', 'past_due'].includes(String(company.subscription_status))) {
-    const portal = await s.billingPortal.sessions.create({ customer: customerId, return_url: `${origin}/app/tarif`, locale: 'de' });
-    return NextResponse.json({ url: portal.url, portal: true });
+    return NextResponse.json({ error: 'Für diese Firma läuft bereits ein Abo – bitte den Tarif wechseln statt neu zu buchen.' }, { status: 409 });
   }
 
   const params: Stripe.Checkout.SessionCreateParams = {

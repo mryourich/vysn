@@ -1,7 +1,7 @@
 'use client';
 
 import { getSupabase, supabaseConfigured } from './db/supabase';
-import type { PaidPlan } from './types';
+import type { PaidPlan, PlanId } from './types';
 
 export type BillingInfo = { enabled: boolean; prices: Partial<Record<PaidPlan, { monthly: boolean; yearly: boolean }>> };
 
@@ -26,5 +26,8 @@ async function call(path: string, body: unknown): Promise<Record<string, string>
 }
 
 export const startCheckout = (companyId: string, plan: PaidPlan, interval: 'monthly' | 'yearly') => call('/api/billing/checkout', { companyId, plan, interval });
+export type ChangeResult = { mode: 'now' | 'scheduled' | 'unchanged'; plan: string; interval: string | null; at: string | null };
+export const changePlan = (companyId: string, plan: PlanId, interval: 'monthly' | 'yearly') =>
+  call('/api/billing/change', { companyId, plan, interval }) as unknown as Promise<ChangeResult>;
 export const openPortal = (companyId: string) => call('/api/billing/portal', { companyId });
 export const syncBilling = (companyId: string) => call('/api/billing/sync', { companyId });

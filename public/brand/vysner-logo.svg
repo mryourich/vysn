@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1536 1024" width="1536" height="1024">
+<rect width="1536" height="1024" fill="#ffffff"/>
+<defs>
+        <linearGradient id="ma" x1="330" y1="200" x2="760" y2="560" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#021a0c" />
+          <stop offset="0.45" stop-color="#075f30" />
+          <stop offset="1" stop-color="#03200f" />
+        </linearGradient>
+        <linearGradient id="mb" x1="400" y1="360" x2="900" y2="700" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#1fb43a" />
+          <stop offset="0.28" stop-color="#a8f03a" />
+          <stop offset="0.55" stop-color="#13a53a" />
+          <stop offset="0.8" stop-color="#052c14" />
+          <stop offset="1" stop-color="#5fe63a" />
+        </linearGradient>
+        <linearGradient id="mc" x1="790" y1="560" x2="1220" y2="200" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#0a6b3a" />
+          <stop offset="0.6" stop-color="#3ed43a" />
+          <stop offset="1" stop-color="#b6f53a" />
+        </linearGradient>
+        <linearGradient id="md" x1="1180" y1="230" x2="880" y2="620" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stop-color="#2fc23a" />
+          <stop offset="0.5" stop-color="#0b6b30" />
+          <stop offset="1" stop-color="#063d24" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#ma)" d="M315,197 H548 C585,197 612,214 630,244 L828,608 C846,644 872,690 910,703 C850,700 790,672 735,625 L378,315 Z" />
+      <path fill="url(#mb)" d="M378,315 L735,625 C790,672 850,700 910,703 H640 C603,703 574,686 557,656 Z" />
+      <path fill="url(#mc)" d="M975,197 H1225 C1150,238 1062,284 1022,345 L855,606 C836,588 800,520 765,453 L900,243 C921,212 946,197 975,197 Z" />
+      <path fill="url(#md)" d="M1225,197 L958,592 C941,615 918,625 896,625 C878,625 863,617 855,606 L1022,345 C1062,284 1150,238 1225,197 Z" />
+    
+<g transform="translate(256,0) scale(1.08) translate(-322,-60)"><g fill="none" stroke="#0d1117" stroke-width="25" stroke-miterlimit="1.6" stroke-linejoin="miter" stroke-linecap="butt">
+        <polyline points="335,753 399.5,850 464.5,753" />
+        <polyline points="501,753 562,808 623,753" />
+        <line x1="562" y1="808" x2="562" y2="856" />
+        <path d="M768,790 V772 Q768,758 754,758 H664 Q650,758 650,772 V791 Q650,805 664,805 H754 Q768,805 768,819 V838 Q768,852 754,852 H664 Q650,852 650,838 V822" />
+        <polyline points="808,858 808,756 928,852 928,752" />
+        <path d="M1087,758 H984 Q970,758 970,772 V838 Q970,852 984,852 H1087 M970,805 H1080" />
+        <path d="M1125,860 V758 H1236 Q1250,758 1250,772 V791 Q1250,805 1236,805 H1125 M1182,805 L1256,856" />
+      </g></g>
+<g fill="none" stroke="#139a32" stroke-width="13">
+  <rect x="610" y="896" width="72" height="42" rx="9"/>
+  <polyline points="742,944 742,896 800,940 800,892"/>
+  <path d="M922,896 H868 Q860,896 860,904 V930 Q860,938 868,938 H922 M860,917 H916"/>
+</g>
+</svg>

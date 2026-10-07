@@ -19,6 +19,8 @@ import type { Feature, UpgradeTopic } from './plans';
 import { taxProfile } from './tax';
 import type { Role } from './team';
 import type { Company, CompanySummary, Customer, Data, DocKind, Expense, InvoiceDesign, Material, SalesDoc, Settings, StorageLocation, UsageKind } from './types';
+import { DOC_KIND_LIST } from './types';
+import { docPrefix } from './docs';
 
 /**
  * idle    – alles gespeichert
@@ -45,6 +47,10 @@ export type Auth = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   resetPassword: (email: string) => Promise<void>;
+  /** Neues Passwort setzen (Konto-Seite bzw. nach „Passwort vergessen“) */
+  updatePassword: (password: string) => Promise<void>;
+  /** Über den Link aus „Passwort vergessen“ angemeldet – neues Passwort vergeben */
+  recovery: boolean;
   signOut: () => Promise<void>;
 };
 
@@ -89,7 +95,7 @@ type Store = {
   saveDoc: (doc: SalesDoc) => void;
   deleteDoc: (id: string) => void;
   setDocStatus: (id: string, status: SalesDoc['status'], paidDate?: string) => void;
-  offerToInvoice: (offerId: string) => Promise<SalesDoc | null>;
+  convertDoc: (sourceId: string, kind: DocKind) => Promise<SalesDoc | null>;
   duplicateDoc: (id: string) => Promise<SalesDoc | null>;
   /** Speichert eine Buchung; `false`, wenn eine neue Buchung das Monatslimit überschreiten würde. */
   saveExpense: (expense: Expense) => boolean;
@@ -130,6 +136,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState(!supabaseConfigured);
+  const [recovery, setRecovery] = useState(false);
   const [sync, setSync] = useState<SyncInfo>({ state: 'idle', error: null, pending: 0, notice: null });
   const [companies, setCompanies] = useState<CompanySummary[]>([]);
   const [activeCompanyId, setActiveCompanyId] = useState<string | null>(null);
@@ -187,6 +194,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     };
     const adopt = (s: Session | null, event?: string, retryable = false) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true);
       if (s) { offlineAuth.current = false; setSession(s); return; }
       if (event !== 'SIGNED_OUT' && (retryable || !navigator.onLine || offlineAuth.current)) {
         const fallback = stored();
@@ -358,7 +366,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
    */
   const assignNumbers = async (batch: Ops) => {
     if (!supa) return;
-    const company = dataRef.current.company;
     const found = new Map<string, string>();
     for (const table of ['customers', 'materials', 'documents'] as const) {
       for (const row of batch.upserts[table] || []) {
@@ -367,10 +374,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         let number = assigned.current.get(id);
         if (!number) {
           if (table === 'documents') {
-            const kind = row.kind === 'invoice' ? 'invoice' : 'offer';
+            const kind = (DOC_KIND_LIST as string[]).includes(String(row.kind)) ? (row.kind as DocKind) : 'invoice';
             const year = String(row.date).slice(0, 4);
             const n = await supa.allocate(`${kind}:${year}`, 0);
-            const prefix = (kind === 'invoice' ? company?.invoicePrefix : company?.offerPrefix) || (kind === 'invoice' ? 'RE' : 'AN');
+            const prefix = docPrefix(dataRef.current, kind);
             number = `${prefix}-${year}-${String(n).padStart(4, '0')}`;
           } else {
             const n = await supa.allocate(table === 'customers' ? 'customer' : 'material', 0);
@@ -667,6 +674,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const { error } = await getSupabase().auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/app` });
       if (error) throw error;
     },
+    updatePassword: async (password) => {
+      const { error } = await getSupabase().auth.updateUser({ password });
+      if (error) throw error;
+      setRecovery(false);
+    },
+    recovery,
     signOut: async () => {
       if (!supabaseConfigured) return;
       const uid = session?.user.id;
@@ -675,7 +688,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       // Datenkopie vom Gerät entfernen; nicht übertragene Änderungen bleiben für die nächste Anmeldung erhalten
       if (uid) await clearUserCache(uid);
     },
-  }), [session]);
+  }), [session, recovery]);
 
   const update = useCallback((fn: (d: Data) => Data) => setData((d) => fn(d)), []);
 
@@ -746,7 +759,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const year = date.slice(0, 4);
     const n = await allocateNumber(`${kind}:${year}`, (dataRef.current.counters[kind][year] || 0) + 1);
     const d = dataRef.current;
-    const prefix = (kind === 'invoice' ? d.company?.invoicePrefix : d.company?.offerPrefix) || (kind === 'invoice' ? 'RE' : 'AN');
+    const prefix = docPrefix(d, kind);
     const id = uid();
     const number = n === null ? provisionalNumber(id) : `${prefix}-${year}-${String(n).padStart(4, '0')}`;
     const customer = d.customers.find((c) => c.id === customerId);
@@ -762,7 +775,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         : { name: '', contactPerson: '', street: '', zip: '', city: '', country: 'Deutschland', vatId: '' },
       subject: '',
       date,
-      dueDate: addDays(date, kind === 'invoice' ? company?.paymentTermDays ?? 14 : company?.offerValidityDays ?? 30),
+      dueDate: addDays(date, kind === 'invoice' ? company?.paymentTermDays ?? 14 : kind === 'offer' ? company?.offerValidityDays ?? 30 : kind === 'delivery' ? 0 : kind === 'order' ? 7 : 14),
       serviceDate: kind === 'invoice' ? date.split('-').reverse().join('.') : '',
       intro: '',
       outro: '',
@@ -787,7 +800,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const deleteDoc = useCallback((id: string) => update((d) => {
     const doc = d.documents.find((x) => x.id === id);
     // Bereits gebuchter Materialverbrauch wird beim Löschen zurückgebucht.
-    const materials = doc && doc.stockBooked ? applyStock(d, doc, 1, `${doc.number} gelöscht`) : d.materials;
+    const materials = doc && doc.stockBooked ? applyStock(d, doc, doc.kind === 'order' ? -1 : 1, `${doc.number} gelöscht`) : d.materials;
     return { ...d, materials, documents: d.documents.filter((x) => x.id !== id) };
   }), [update]);
 
@@ -806,27 +819,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         materials = applyStock(d, doc, 1, `Storno ${doc.number}`);
         stockBooked = false;
       }
+    } else if (doc.kind === 'order') {
+      // Wareneingang: „Erhalten“ bucht die bestellten Artikel ein, Zurücknehmen bucht sie wieder aus
+      if (!stockBooked && status === 'accepted') {
+        materials = applyStock(d, doc, 1, `Wareneingang ${doc.number}`);
+        stockBooked = true;
+      } else if (stockBooked && status !== 'accepted') {
+        materials = applyStock(d, doc, -1, `Wareneingang ${doc.number} zurückgenommen`);
+        stockBooked = false;
+      }
     }
     const next: SalesDoc = { ...doc, status, stockBooked, paidDate: status === 'paid' ? paidDate || doc.paidDate || today() : '' };
     return { ...d, materials, documents: d.documents.map((x) => (x.id === id ? next : x)) };
   }), [update]);
 
-  const offerToInvoice = useCallback(async (offerId: string) => {
-    const offer = dataRef.current.documents.find((x) => x.id === offerId);
-    if (!offer) return null;
-    const invoice = await createDoc('invoice', '');
-    if (!invoice) return null;
+  /** Folgebeleg erzeugen (Angebot → Auftragsbestätigung/Rechnung, Auftragsbestätigung → Lieferschein …). */
+  const convertDoc = useCallback(async (sourceId: string, kind: DocKind) => {
+    const src = dataRef.current.documents.find((x) => x.id === sourceId);
+    if (!src) return null;
+    const target = await createDoc(kind, '');
+    if (!target) return null;
     const full: SalesDoc = {
-      ...invoice,
-      customerId: offer.customerId,
-      recipient: { ...offer.recipient },
-      subject: offer.subject,
-      items: offer.items.map((i) => ({ ...i, id: uid() })),
-      sourceId: offer.id,
+      ...target,
+      customerId: src.customerId,
+      recipient: { ...src.recipient },
+      subject: src.subject,
+      // Optionale/Alternativpositionen nur übernehmen, wenn der Kunde sie gewählt hat
+      items: src.items.filter((i) => !i.variant || i.chosen).map(({ variant: _v, chosen: _c, ...i }) => ({ ...i, id: uid() })),
+      sourceId: src.id,
     };
     update((d) => ({
       ...d,
-      documents: d.documents.map((x) => (x.id === invoice.id ? full : x.id === offer.id && x.status !== 'accepted' ? { ...x, status: 'accepted' } : x)),
+      documents: d.documents.map((x) => (x.id === target.id ? full
+        // Angenommenes Angebot bzw. erledigte Auftragsbestätigung vermerken
+        : x.id === src.id && src.kind === 'offer' && x.status !== 'accepted' ? { ...x, status: 'accepted' }
+        : x.id === src.id && src.kind === 'confirmation' && kind === 'invoice' && x.status !== 'accepted' ? { ...x, status: 'accepted' }
+        : x)),
     }));
     return full;
   }, [createDoc, update]);
@@ -875,7 +903,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const markSent = useCallback((id: string, to: string) => update((d) => ({
     ...d,
     documents: d.documents.map((x) => (x.id === id
-      ? { ...x, sentAt: new Date().toISOString(), sentTo: to, status: x.kind === 'offer' && x.status === 'draft' ? 'sent' : x.status }
+      ? { ...x, sentAt: new Date().toISOString(), sentTo: to, status: x.kind !== 'invoice' && x.status === 'draft' ? 'sent' : x.status }
       : x)),
   })), [update]);
   const replaceAll = useCallback((raw: unknown) => setData(migrate(raw)), []);
@@ -885,10 +913,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Store>(() => ({
     data, ready, auth, authenticated, sync, dismissSyncNotice, companies, canAddCompany: mayAddCompany, can, requireFeature, design, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
-    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
+    setDocStatus, convertDoc, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset,
   }), [data, ready, auth, authenticated, sync, dismissSyncNotice, companies, mayAddCompany, can, requireFeature, design, activeCompanyId, role, creatingCompany, switchCompany, startNewCompany, cancelNewCompany,
     upgradeNotice, dismissUpgrade, saveCompany, saveCustomer, deleteCustomer, saveMaterial, deleteMaterial, bookStock, createDoc, saveDoc, deleteDoc,
-    setDocStatus, offerToInvoice, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
+    setDocStatus, convertDoc, duplicateDoc, saveExpense, deleteExpense, saveDesign, saveSettings, saveLocation, deleteLocation, markSent, replaceAll, loadDemo, reset]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

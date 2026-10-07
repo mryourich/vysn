@@ -1,4 +1,5 @@
-import type { CompanySummary, Data } from '../types';
+import { DOC_KIND_LIST } from '../types';
+import type { CompanySummary, Data, DocKind } from '../types';
 
 /**
  * Persistence layer used by the store. The UI always works on an in-memory
@@ -34,7 +35,7 @@ export interface StorageAdapter {
 /** Flattens the counters of a snapshot to "invoice:2026" → 12 etc. */
 export function counterMap(data: Data): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const kind of ['invoice', 'offer'] as const) {
+  for (const kind of DOC_KIND_LIST) {
     for (const [year, n] of Object.entries(data.counters[kind] || {})) out[`${kind}:${year}`] = n;
   }
   if (data.counters.customer) out.customer = data.counters.customer;
@@ -44,10 +45,10 @@ export function counterMap(data: Data): Record<string, number> {
 
 /** Inverse of counterMap. */
 export function countersFromMap(map: Record<string, number>): Data['counters'] {
-  const counters: Data['counters'] = { invoice: {}, offer: {}, customer: 0, material: 0 };
+  const counters: Data['counters'] = { offer: {}, confirmation: {}, delivery: {}, invoice: {}, order: {}, customer: 0, material: 0 };
   for (const [key, n] of Object.entries(map)) {
     const [kind, year] = key.split(':');
-    if ((kind === 'invoice' || kind === 'offer') && year) counters[kind][year] = n;
+    if ((DOC_KIND_LIST as string[]).includes(kind) && year) counters[kind as DocKind][year] = n;
     else if (kind === 'customer' || kind === 'material') counters[kind] = n;
   }
   return counters;

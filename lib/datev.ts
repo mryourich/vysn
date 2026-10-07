@@ -157,9 +157,9 @@ export function datevCsv(data: Data, period: Period, bookings = datevBookings(da
   const year = period.from.slice(0, 4);
   const [fyMonth, fyDay] = (s.fiscalYearStart || '01-01').split('-');
   const header = [
-    q('EXTF'), '700', '21', q('Buchungsstapel'), '13', stamp, '', q('RE'), q('VYSN One'), q(''),
+    q('EXTF'), '700', '21', q('Buchungsstapel'), '13', stamp, '', q('RE'), q('VYSNER One'), q(''),
     s.advisorNumber || '', s.clientNumber || '', `${year}${fyMonth}${fyDay}`, String(s.accountLength || 4),
-    ymd(period.from), ymd(period.to), q(`VYSN ${period.label}`.slice(0, 30)), q(''), '1', '0', '0', q('EUR'),
+    ymd(period.from), ymd(period.to), q(`VYSNER ${period.label}`.slice(0, 30)), q(''), '1', '0', '0', q('EUR'),
     '', q(''), '', '', q(s.chart === 'SKR04' ? '04' : '03'), '', '', '', q(''),
   ].join(';');
   const columns = [

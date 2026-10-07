@@ -2,14 +2,14 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'VYSN One',
-    short_name: 'VYSN',
+    name: 'VYSNER One',
+    short_name: 'VYSNER',
     description: 'Angebote, Rechnungen, Lager und Zahlen für kleine Unternehmen.',
     start_url: '/app',
     scope: '/',
     display: 'standalone',
-    background_color: '#070b16',
-    theme_color: '#070b16',
+    background_color: '#06100b',
+    theme_color: '#06100b',
     lang: 'de',
     icons: [
       { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },

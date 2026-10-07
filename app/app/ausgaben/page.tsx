@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowDownLeft, Plus, Search, Trash2, Wallet } from 'lucide-react';
 import { MONTHS_LONG, currencySymbol, expenseGross, formatDate, money, round2, today } from '../../../lib/calc';
 import { formatRate, taxProfile } from '../../../lib/tax';
@@ -17,6 +18,10 @@ const blank = (vat: number, kind: Expense['kind'] = 'expense'): Expense => ({
 type Filter = 'all' | 'expense' | 'income';
 
 export default function ExpensesPage() {
+  return <Suspense fallback={null}><Expenses /></Suspense>;
+}
+
+function Expenses() {
   const { data } = useStore();
   const [editing, setEditing] = useState<Expense | null>(null);
   const years = useMemo(() => {
@@ -25,7 +30,10 @@ export default function ExpensesPage() {
     return [...s].sort().reverse();
   }, [data.expenses]);
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  // Menü „Buchführung“: ?art=einnahmen bzw. ?art=ausgaben
+  const art = useSearchParams()?.get('art');
   const [filter, setFilter] = useState<Filter>('all');
+  useEffect(() => { setFilter(art === 'einnahmen' ? 'income' : art === 'ausgaben' ? 'expense' : 'all'); setCategory(''); }, [art]);
   const [category, setCategory] = useState('');
   const [q, setQ] = useState('');
   const small = !!data.company?.smallBusiness;
@@ -71,7 +79,7 @@ export default function ExpensesPage() {
         {data.expenses.length ? (
           <>
             <div className="toolbar">
-              <Segmented value={filter} options={[['all', 'Alle'], ['expense', 'Ausgaben'], ['income', 'Einnahmen']]} onChange={(f) => { setFilter(f); setCategory(''); }} />
+              <Segmented value={filter} options={[['all', 'Alle'], ['expense', 'Ausgaben'], ['income', 'Einnahmen']]} onChange={(f) => { setFilter(f); setCategory(''); window.history.replaceState(window.history.state, '', f === 'all' ? '/app/ausgaben' : `/app/ausgaben?art=${f === 'income' ? 'einnahmen' : 'ausgaben'}`); }} />
               <Segmented value={year} options={years.slice(0, 4).map((y) => [y, y] as [string, string])} onChange={setYear} />
               <select className="select-inline" value={category} onChange={(e) => setCategory(e.target.value)}>
                 <option value="">Alle Kategorien</option>

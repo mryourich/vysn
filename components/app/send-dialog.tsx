@@ -7,6 +7,7 @@ import type { MailStatus } from '../../lib/mail';
 import { useStore } from '../../lib/store';
 import type { SalesDoc } from '../../lib/types';
 import { DocumentTemplate } from '../pdf/document-template';
+import { DOC_KINDS, docMail } from '../../lib/docs';
 import { downloadBlob, renderPdf, safeFileName } from '../pdf/export';
 import { Field, Modal } from './ui';
 
@@ -30,11 +31,12 @@ export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: (
   const company = data.company!;
   const tpl = data.settings.email;
   const isInvoice = doc.kind === 'invoice';
+  const mail = docMail(tpl, doc.kind);
   const customer = data.customers.find((c) => c.id === doc.customerId);
   const [to, setTo] = useState(customer?.email || '');
   const [cc, setCc] = useState('');
-  const [subject, setSubject] = useState(fillMail(isInvoice ? tpl.invoiceSubject : tpl.offerSubject, doc, company));
-  const [text, setText] = useState(fillMail(isInvoice ? tpl.invoiceBody : tpl.offerBody, doc, company));
+  const [subject, setSubject] = useState(fillMail(mail.subject, doc, company));
+  const [text, setText] = useState(fillMail(mail.body, doc, company));
   const [status, setStatus] = useState<MailStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -80,7 +82,7 @@ export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: (
   };
 
   return (
-    <Modal title={`${isInvoice ? 'Rechnung' : 'Angebot'} ${doc.number} senden`} onClose={onClose} wide
+    <Modal title={`${DOC_KINDS[doc.kind].one} ${doc.number} senden`} onClose={onClose} wide
       footer={<>
         <button className="btn btn-quiet mr-auto" onClick={onClose}>Abbrechen</button>
         <button className="btn" onClick={viaDevice} disabled={busy}><Share2 size={16} /> Über Gerät teilen</button>
@@ -88,7 +90,7 @@ export function SendDialog({ doc, onClose, onSent }: { doc: SalesDoc; onClose: (
       </>}>
       {isInvoice && doc.status === 'draft' ? <div className="notice"><Mail size={16} /><span>Die Rechnung wird beim Versand festgeschrieben und ist danach nicht mehr änderbar.</span></div> : null}
       {status && !status.enabled ? (
-        <div className="notice notice-warn"><Mail size={16} /><span>{status.smtp ? 'Direkter Versand ist nur mit Anmeldung (Supabase) möglich.' : 'Für den direkten Versand ist noch kein Mailserver eingerichtet (siehe „E-Mail & Versand“).'} Sie können das PDF stattdessen über Ihr Gerät teilen bzw. mit Ihrem E-Mail-Programm senden.</span></div>
+        <div className="notice notice-warn"><Mail size={16} /><span>{status.smtp ? 'Direkter Versand ist nur mit Anmeldung (Supabase) möglich.' : 'Für den direkten Versand ist noch kein Mailserver eingerichtet (siehe Einstellungen › E-Mail-Versand).'} Sie können das PDF stattdessen über Ihr Gerät teilen bzw. mit Ihrem E-Mail-Programm senden.</span></div>
       ) : null}
       <div className="form-grid">
         <Field label="An *" span={2}><input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="kunde@beispiel.de" autoFocus={!to} /></Field>

@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   const text = [
     'Guten Tag,',
     '',
-    `${user.email} lädt Sie ein, bei „${company}“ in VYSN One mitzuarbeiten (Rolle: ${ROLE_LABEL[invite.role as string] || invite.role}).`,
+    `${user.email} lädt Sie ein, bei „${company}“ in VYSNER One mitzuarbeiten (Rolle: ${ROLE_LABEL[invite.role as string] || invite.role}).`,
     '',
     'Einladung annehmen:',
     link,
@@ -43,15 +43,15 @@ export async function POST(req: Request) {
     `Melden Sie sich dazu mit dieser E-Mail-Adresse (${invite.email}) an oder registrieren Sie sich kostenlos. Der Link ist bis zum ${until} gültig.`,
     '',
     'Viele Grüße',
-    'VYSN One',
+    'VYSNER One',
   ].join('\n');
 
   try {
     await smtpTransport().sendMail({
-      from: mailFrom(`${company.replace(/["<>\r\n]/g, '').slice(0, 60)} über VYSN One`),
+      from: mailFrom(`${company.replace(/["<>\r\n]/g, '').slice(0, 60)} über VYSNER One`),
       to: invite.email as string,
       replyTo: user.email || undefined,
-      subject: `Einladung zu ${company} – VYSN One`.replace(/[\r\n]+/g, ' '),
+      subject: `Einladung zu ${company} – VYSNER One`.replace(/[\r\n]+/g, ' '),
       text,
     });
     return NextResponse.json({ ok: true });

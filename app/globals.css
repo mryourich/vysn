@@ -7,13 +7,13 @@
   --ink: #0b1220;
   --ink-2: #344054;
   --muted: #667085;
-  --primary: #0069e6;
-  --primary-hover: #0052c6;
-  --primary-soft: #e8f2ff;
-  --accent-2: #00d8d8;
-  --gradient: linear-gradient(120deg, #0050c4 0%, #007cfb 50%, #00d8d8 100%);
-  --night: #070b16;
-  --night-2: #0d1426;
+  --primary: #13873e;
+  --primary-hover: #0b6b31;
+  --primary-soft: #e8f6ec;
+  --accent-2: #8fe03a;
+  --gradient: linear-gradient(120deg, #0b6b31 0%, #22b43c 55%, #8fe03a 100%);
+  --night: #06100b;
+  --night-2: #0c1b13;
   --night-line: rgba(255, 255, 255, 0.08);
   --success: #067647;
   --success-soft: #e7f6ee;
@@ -21,8 +21,8 @@
   --warning-soft: #fdf3e1;
   --danger: #c01f14;
   --danger-soft: #fdecea;
-  --info: #0069e6;
-  --info-soft: #e8f2ff;
+  --info: #1d5fc4;
+  --info-soft: #eaf1fd;
   --radius: 10px;
   --radius-lg: 16px;
   --shadow: 0 1px 2px rgba(11, 18, 32, 0.05);
@@ -31,7 +31,7 @@
   --font: var(--font-sans), system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: var(--font-display-face), var(--font-sans), system-ui, sans-serif;
   --chart-grid: #e9edf3;
-  --chart-hover: rgba(0, 105, 230, 0.06);
+  --chart-hover: rgba(19, 135, 62, 0.06);
 }
 
 * { box-sizing: border-box; }
@@ -56,7 +56,7 @@ body.no-scroll { overflow: hidden; }
 .brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); line-height: 1; }
 .brand svg { display: block; flex: none; }
 .brand-word { margin-left: 2px; }
-.brand em { font-style: normal; font-family: var(--font-display); font-weight: 400; font-size: 14px; letter-spacing: 0.02em; color: var(--muted); margin-left: -2px; }
+.brand em { font-style: normal; font-family: var(--font-display); font-weight: 600; font-size: 12.5px; letter-spacing: 0.22em; text-transform: uppercase; color: #139a32; margin-left: -1px; }
 
 /* Buttons (shared by site and app) */
 .btn {
@@ -78,3 +78,8 @@ body.no-scroll { overflow: hidden; }
 
 /* Scaled A4 document preview (app + website) */
 .a4-preview { position: relative; width: 100%; min-width: 0; overflow: hidden; border-radius: 4px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 10px 30px rgba(23, 32, 42, 0.1); background: #fff; }
+
+/* Logo-Zeichen auf dunklen Flächen: dunkle Verlaufstöne aufhellen (siehe components/app/brand.tsx) */
+.sidebar, .topbar, .site-header, .site-footer, .hero, .tile-dark, .plan-featured, .cta, .app-mock-side, .onboarding-side, .login-side {
+  --vm-a0: #0d5f2e; --vm-a1: #16903f; --vm-a2: #0b5229; --vm-b3: #0f7434; --vm-d2: #0f6d37; --vm-d1: #1ca23f;
+}

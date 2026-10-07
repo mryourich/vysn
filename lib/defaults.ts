@@ -56,6 +56,7 @@ export const defaultSettings = (): Settings => ({
     offerSubject: 'Angebot {nummer} von {firma}',
     offerBody: 'Guten Tag,\n\nanbei erhalten Sie unser Angebot {nummer} über {betrag}. Es ist gültig bis zum {gueltig}.\n\nWir freuen uns auf Ihre Rückmeldung.\n\nMit freundlichen Grüßen\n{firma}',
   },
+  numbers: { prefixes: {} },
 });
 
 export const emptyData = (): Data => ({
@@ -68,7 +69,7 @@ export const emptyData = (): Data => ({
   locations: [],
   design: defaultDesign(),
   settings: defaultSettings(),
-  counters: { invoice: {}, offer: {}, customer: 0, material: 0 },
+  counters: { offer: {}, confirmation: {}, delivery: {}, invoice: {}, order: {}, customer: 0, material: 0 },
   usage: { month: '', counts: {} },
 });
 

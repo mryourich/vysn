@@ -10,13 +10,16 @@ import { A4Preview } from './a4-preview';
 import { DocumentTemplate } from '../pdf/document-template';
 import { downloadPdf } from '../pdf/export';
 import { Field, Segmented } from './ui';
+import { DocKindSelect } from './doc-texts';
+import { DOC_KINDS } from '../../lib/docs';
+import type { DocKind } from '../../lib/types';
 
-const COLORS = ['#0057d8', '#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
+const COLORS = ['#13873e', '#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
 
-function sampleDoc(kind: 'invoice' | 'offer'): SalesDoc {
+function sampleDoc(kind: DocKind): SalesDoc {
   const date = today();
   return {
-    id: 'sample', kind, number: kind === 'invoice' ? 'RE-2026-0042' : 'AN-2026-0017', status: 'draft', customerId: '',
+    id: 'sample', kind, number: `${DOC_KINDS[kind].prefix}-2026-0042`, status: 'draft', customerId: '',
     recipient: { name: 'Musterkunde GmbH', contactPerson: 'Frau Erika Beispiel', street: 'Hauptstraße 5', zip: '10115', city: 'Berlin', country: 'Deutschland', vatId: '' },
     subject: 'Umbau Empfangsbereich', date, dueDate: addDays(date, 14), serviceDate: date.split('-').reverse().join('.'), intro: '', outro: '',
     items: [
@@ -28,13 +31,13 @@ function sampleDoc(kind: 'invoice' | 'offer'): SalesDoc {
   };
 }
 
-/** Rechnungsdesign bearbeiten (Tab „Rechnungsdesign“ unter Unternehmen). */
+/** Dokumentenlayout bearbeiten (Einstellungen › Dokumentenlayout). */
 export function DesignEditor({ onEditCompany }: { onEditCompany?: () => void }) {
   const { data, saveDesign } = useStore();
   const company = data.company!;
   const d = data.design;
   const set = <K extends keyof InvoiceDesign>(key: K, value: InvoiceDesign[K]) => saveDesign({ ...d, [key]: value });
-  const [kind, setKind] = useState<'invoice' | 'offer'>('invoice');
+  const [kind, setKind] = useState<DocKind>('invoice');
   const doc = useMemo(() => sampleDoc(kind), [kind]);
   const toggle = (key: 'showSenderLine' | 'showPositions' | 'showFooter' | 'showPageNumbers', label: string) => (
     <label className="check"><input type="checkbox" checked={d[key]} onChange={(e) => set(key, e.target.checked)} /><span>{label}</span></label>
@@ -43,7 +46,7 @@ export function DesignEditor({ onEditCompany }: { onEditCompany?: () => void }) 
   return (
     <>
       <div className="tab-toolbar">
-        <p className="muted">Gestalten Sie Ihre Angebote und Rechnungen. Änderungen gelten sofort für alle PDFs.</p>
+        <p className="muted">Gestalten Sie Ihre Belege – vom Angebot bis zur Bestellung. Änderungen gelten sofort für alle PDFs.</p>
         <div className="page-actions">
           <button className="btn btn-quiet" onClick={() => confirm('Design auf Standard zurücksetzen?') && saveDesign(defaultDesign())}><RotateCcw size={16} /> Zurücksetzen</button>
           <button className="btn" onClick={() => downloadPdf(<DocumentTemplate company={company} doc={doc} design={d} customerNumber="KD-0001" />, `Musterdokument.pdf`)}><Download size={16} /> Muster-PDF</button>
@@ -98,21 +101,12 @@ export function DesignEditor({ onEditCompany }: { onEditCompany?: () => void }) 
             </div>
           </section>
 
-          <section className="card">
-            <div className="card-head"><div><h2>Standardtexte</h2><p>Platzhalter: {'{nummer} {datum} {faellig} {gueltig} {kunde} {betrag}'}</p></div></div>
-            <div className="form-grid">
-              <Field label="Rechnung – Einleitung" span={3}><textarea rows={2} value={d.invoiceIntro} onChange={(e) => set('invoiceIntro', e.target.value)} /></Field>
-              <Field label="Rechnung – Schlusstext" span={3}><textarea rows={3} value={d.invoiceOutro} onChange={(e) => set('invoiceOutro', e.target.value)} /></Field>
-              <Field label="Angebot – Einleitung" span={3}><textarea rows={2} value={d.offerIntro} onChange={(e) => set('offerIntro', e.target.value)} /></Field>
-              <Field label="Angebot – Schlusstext" span={3}><textarea rows={3} value={d.offerOutro} onChange={(e) => set('offerOutro', e.target.value)} /></Field>
-            </div>
-          </section>
         </div>
 
         <div className="editor-preview">
           <div className="preview-head">
             <span>Live-Vorschau</span>
-            <Segmented value={kind} onChange={setKind} options={[['invoice', 'Rechnung'], ['offer', 'Angebot']]} />
+            <DocKindSelect value={kind} onChange={setKind} />
           </div>
           <A4Preview><DocumentTemplate company={company} doc={doc} design={d} customerNumber="KD-0001" /></A4Preview>
         </div>
