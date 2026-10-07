@@ -93,7 +93,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     yearly: 7.9,
     text: 'Für Selbstständige mit regelmäßigen Aufträgen.',
     features: ['Je 50 Belege jeder Art, Kunden, Artikel und Buchungen pro Monat', 'Angebote, Auftragsbestätigungen, Lieferscheine, Rechnungen & Bestellungen als PDF', 'Kunden, Material & Lager', 'Eine Firma'],
-    cta: '30 Tage kostenlos testen',
+    cta: 'Solo buchen',
   },
   {
     id: 'business',
@@ -102,7 +102,7 @@ export const PLAN_OFFERS: PlanOffer[] = [
     yearly: 19.9,
     text: 'Für Betriebe, die ihre Zahlen im Griff haben wollen.',
     features: ['Unbegrenzt Belege, Kunden & Artikel', 'Mehrere Firmen unter einem Login', 'Eigenes Rechnungsdesign mit Logo', 'Logo-Hintergrund automatisch entfernen', 'GuV, Umsatzsteuer & DATEV-Export', 'E-Mail-Versand & Lager-Scanner', 'E-Mail-Support'],
-    cta: '30 Tage kostenlos testen',
+    cta: 'Business buchen',
     featured: true,
   },
   {
@@ -112,11 +112,10 @@ export const PLAN_OFFERS: PlanOffer[] = [
     yearly: 39.9,
     text: 'Für Teams mit Büro und mehreren Mitarbeitenden.',
     features: ['Alles aus Business', 'Bis zu 5 Benutzer je Firma', 'Rollen: Inhaber, Admin, Mitarbeiter', 'Persönliches Onboarding', 'Telefon-Support'],
-    cta: '30 Tage kostenlos testen',
+    cta: 'Team buchen',
   },
 ];
 
-export const TRIAL_DAYS = 30;
 
 export const PAID_PLANS: PaidPlan[] = ['solo', 'business', 'team'];
 
