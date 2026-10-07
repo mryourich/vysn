@@ -16,6 +16,7 @@ import { MobileNav } from './mobile-nav';
 import { SideNav } from './side-nav';
 import { DeskBar } from './account-menu';
 import { UpgradeDialog } from './upgrade-dialog';
+import { VoiceAssistant } from './voice-assistant';
 import { Login } from './login';
 import { Onboarding } from './onboarding';
 
@@ -119,6 +120,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         <main className="app-content">{blocked ? <NoAccess role={ROLE_LABEL[role]} /> : featureLocked ? <FeatureLocked feature={featureLocked} /> : children}</main>
       </div>
       <UpgradeDialog />
+      <VoiceAssistant />
       <MobileNav open={sheet} onOpen={setSheet} onMenu={() => setDrawer(true)} menuOpen={drawer} />
     </div>
   );

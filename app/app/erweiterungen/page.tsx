@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Code2, CreditCard, FileCode2, FileSpreadsheet, Lock, Mail, ScanLine } from 'lucide-react';
+import { Code2, CreditCard, Mic, FileCode2, FileSpreadsheet, Lock, Mail, ScanLine } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { Feature } from '../../../lib/plans';
 import { useStore } from '../../../lib/store';
@@ -13,6 +13,8 @@ type Extension = { name: string; by: string; text: string; icon: LucideIcon; col
 );
 
 const EXTENSIONS: Extension[] = [
+  { name: 'KI-Sprachassistent', by: 'Künstliche Intelligenz', icon: Mic, color: '#13873e', status: 'ready', href: '/app?ki=1', feature: 'ai', action: 'Öffnen',
+    text: 'Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.' },
   { name: 'DATEV-Export', by: 'Buchhaltung', icon: FileSpreadsheet, color: '#2b8a3e', status: 'ready', href: '/app/export', feature: 'datev', action: 'Exportieren',
     text: 'Rechnungen, Einnahmen und Ausgaben als DATEV-Buchungsstapel (CSV) für Ihre Steuerberatung.' },
   { name: 'E-Mail-Versand', by: 'Versand', icon: Mail, color: '#13873e', status: 'ready', href: '/app/einstellungen?bereich=email', feature: 'email', action: 'Einrichten',
