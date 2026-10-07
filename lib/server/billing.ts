@@ -100,7 +100,13 @@ export async function applySubscription(sub: Stripe.Subscription) {
     cancel_at_period_end: !!sub.cancel_at_period_end,
   };
   if (sub.trial_end) update.trial_used = true;
-  const { error } = await db.from('companies').update(update).eq('id', companyId);
+  let { error } = await db.from('companies').update(update).eq('id', companyId);
+  // Datenbank ohne Migration 20261014090000_plan_change: ohne die neuen Felder speichern,
+  // damit Tarif und Abo-Status trotzdem aktuell bleiben
+  if (error && (error.code === '42703' || error.code === 'PGRST204')) {
+    const { billing_interval: _i, pending_plan: _p, pending_interval: _pi, pending_change_at: _pa, ...base } = update;
+    ({ error } = await db.from('companies').update(base).eq('id', companyId));
+  }
   if (error) throw new Error(error.message);
   return { companyId, plan: update.plan as PlanId };
 }
