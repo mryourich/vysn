@@ -77,7 +77,7 @@ function Account() {
 
       <section className="card card-plain">
         <div className="secondary-actions">
-          <a className="btn" href="mailto:hallo@vysn.de?subject=Support%20VYSN%20One"><LifeBuoy size={16} /> Support kontaktieren</a>
+          <a className="btn" href="mailto:hallo@vysn.de?subject=Support%20VYSNER%20One"><LifeBuoy size={16} /> Support kontaktieren</a>
           <Link className="btn btn-quiet" href="/datenschutz">Datenschutz</Link>
           <LogoutButton className="btn btn-quiet" />
         </div>

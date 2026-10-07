@@ -84,7 +84,7 @@ export const DOC_KINDS: Record<DocKind, DocKindConfig> = {
     one: 'Bestellung', many: 'Bestellungen', article: 'eine', path: '/app/bestellungen', prefix: 'BE',
     numberLabel: 'Bestellnr.', dateLabel: 'Bestelldatum', dueLabel: 'Liefertermin', totalLabel: 'Bestellsumme', partner: 'Lieferant', prices: true,
     description: 'Material bei Lieferanten bestellen – beim Wareneingang wird der Bestand automatisch gebucht.',
-    emptyText: 'Bestellen Sie Material bei Ihrem Lieferanten. Beim Wareneingang bucht VYSN One den Bestand automatisch.',
+    emptyText: 'Bestellen Sie Material bei Ihrem Lieferanten. Beim Wareneingang bucht VYSNER One den Bestand automatisch.',
     intro: 'Hiermit bestellen wir verbindlich:',
     outro: 'Bitte bestätigen Sie den Liefertermin.\nMit freundlichen Grüßen',
     mailSubject: 'Bestellung {nummer} von {firma}',

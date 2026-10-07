@@ -28,7 +28,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="shell footer-bottom">
-        <span>© {new Date().getFullYear()} VYSN One</span>
+        <span>© {new Date().getFullYear()} VYSNER One</span>
         <span>Made in Germany · Für KMU, Handwerk und Dienstleister</span>
       </div>
     </footer>

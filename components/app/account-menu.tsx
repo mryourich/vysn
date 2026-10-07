@@ -17,8 +17,8 @@ export const ACCOUNT_ROWS: AccountRow[] = [
   { href: '/app/einstellungen', label: 'Einstellungen', hint: 'Firma, Steuern, Nummern, Layout, Texte, Versand', icon: Settings2, admin: true },
   { href: '/app/team', label: 'Team & Rechte', hint: 'Mitarbeitende einladen, Rollen', icon: UserPlus },
   { href: '/app/tarif', label: 'Abonnement', hint: 'Tarif wechseln, Kontingente', icon: CreditCard, admin: true },
-  { href: '/app/tarif#zahlungen', label: 'Zahlungen', hint: 'Zahlungsart und Rechnungen von VYSN', icon: Receipt, admin: true },
-  { href: 'mailto:hallo@vysn.de?subject=Support%20VYSN%20One', label: 'Support', hint: 'hallo@vysn.de', icon: LifeBuoy, external: true },
+  { href: '/app/tarif#zahlungen', label: 'Zahlungen', hint: 'Zahlungsart und Rechnungen von VYSNER', icon: Receipt, admin: true },
+  { href: 'mailto:hallo@vysn.de?subject=Support%20VYSNER%20One', label: 'Support', hint: 'hallo@vysn.de', icon: LifeBuoy, external: true },
 ];
 
 /** Klappmenü: schließt bei Klick daneben und mit Escape. */

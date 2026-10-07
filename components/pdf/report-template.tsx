@@ -60,7 +60,7 @@ export function ReportTemplate({ company, pl, periodLabel, basisLabel, accent }:
       )}
 
       <T style={{ marginTop: 22, fontSize: 7.5, color: MUTED }}>
-        Vereinfachte Auswertung auf Basis der in VYSN One erfassten Rechnungen und Ausgaben. Ersetzt keinen steuerlichen Jahresabschluss.
+        Vereinfachte Auswertung auf Basis der in VYSNER One erfassten Rechnungen und Ausgaben. Ersetzt keinen steuerlichen Jahresabschluss.
       </T>
       <V fixed style={{ position: 'absolute', bottom: 26, left: 50, right: 50, flexDirection: 'row', justifyContent: 'space-between' }}>
         <T style={{ fontSize: 7, color: MUTED }}>{company.name}</T>

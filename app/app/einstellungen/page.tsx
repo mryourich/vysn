@@ -234,7 +234,7 @@ function Backup() {
               if (!parsed || typeof parsed !== 'object' || !('documents' in parsed)) throw new Error();
               if (confirm('Alle aktuellen Daten durch die Sicherung ersetzen?')) replaceAll(parsed);
             } catch {
-              alert('Die Datei ist keine gültige VYSN-One-Sicherung.');
+              alert('Die Datei ist keine gültige VYSNER-One-Sicherung.');
             }
           }} />
           {role === 'owner' ? <button className="btn" onClick={() => fileRef.current?.click()}><Upload size={16} /> Sicherung einspielen</button> : null}

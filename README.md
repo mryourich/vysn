@@ -1,4 +1,4 @@
-# VYSN One
+# VYSNER One
 
 Schlanke Unternehmenssoftware für KMU: Angebote, Rechnungen (eigenes Design, PDF-Export), Kunden, Material & Lager, Ausgaben, GuV und Dashboard – inklusive Startseite mit Preisen. Optimiert für Desktop und Smartphone.
 
@@ -33,7 +33,7 @@ Einrichtung, Datenmodell und Sicherheitskonzept: [`supabase/README.md`](supabase
 
 **Firmen & Tarife:** Ein Nutzer kann mehrere Firmen anlegen und über die Seitenleiste wechseln. Der Tarif gilt je Firma; im Tarif *Start* sind 10 Rechnungen pro Monat enthalten (`lib/plans.ts`, in Supabase zusätzlich per Datenbank-Trigger abgesichert). Im lokalen Modus lässt sich der Tarif unter *Firmendaten → Tarif* zum Testen umschalten.
 
-**Lager & QR-Codes:** Unter *Material & Lager → Lagerplätze & QR* lassen sich Regale/Fächer anlegen und QR-Etiketten (A4-Bogen 3 × 8, 70 × 37 mm) drucken – für Lagerplätze und Artikel. Ein Scan mit der normalen Handykamera öffnet direkt die Ein-/Auslagerung (`/app/scan`); alternativ scannt der integrierte Scanner im Browser. Über „Zum Home-Bildschirm“ lässt sich VYSN One wie eine App installieren (Web-App-Manifest). Damit Handy und Büro dieselben Bestände sehen, ist Supabase nötig – im lokalen Modus hat jedes Gerät eigene Daten.
+**Lager & QR-Codes:** Unter *Material & Lager → Lagerplätze & QR* lassen sich Regale/Fächer anlegen und QR-Etiketten (A4-Bogen 3 × 8, 70 × 37 mm) drucken – für Lagerplätze und Artikel. Ein Scan mit der normalen Handykamera öffnet direkt die Ein-/Auslagerung (`/app/scan`); alternativ scannt der integrierte Scanner im Browser. Über „Zum Home-Bildschirm“ lässt sich VYSNER One wie eine App installieren (Web-App-Manifest). Damit Handy und Büro dieselben Bestände sehen, ist Supabase nötig – im lokalen Modus hat jedes Gerät eigene Daten.
 
 **E-Mail-Versand:** Angebote und Rechnungen werden mit PDF-Anhang versendet (`app/api/send`, SMTP-Variablen siehe `.env.example`). Optional gehen Rechnungen beim Festschreiben automatisch an den Kunden. Ohne Mailserver wird das PDF über das Gerät geteilt bzw. das E-Mail-Programm geöffnet.
 

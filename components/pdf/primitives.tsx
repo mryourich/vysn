@@ -113,7 +113,7 @@ export function PageFrame({ children, style, title }: { children: ReactNode; sty
   const lib = useLib();
   if (lib) {
     return (
-      <lib.Document title={title} creator="VYSN One" producer="VYSN One">
+      <lib.Document title={title} creator="VYSNER One" producer="VYSNER One">
         <lib.Page size="A4" style={pdfStyle(style || {}) as never}>{children}</lib.Page>
       </lib.Document>
     );

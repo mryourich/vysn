@@ -219,7 +219,7 @@ export async function changePlan(sub: Stripe.Subscription, plan: PlanId, interva
 }
 
 /**
- * Kundenportal ohne eigenen Tarifwechsel (der läuft über VYSN One mit obigen Regeln):
+ * Kundenportal ohne eigenen Tarifwechsel (der läuft über VYSNER One mit obigen Regeln):
  * Zahlungsart, Rechnungen, Rechnungsadresse und Kündigung zum Laufzeitende.
  */
 let portalConfig: string | null = null;
@@ -227,11 +227,11 @@ export async function portalConfiguration(s: Stripe = stripe()): Promise<string 
   if (portalConfig) return portalConfig;
   try {
     const list = await s.billingPortal.configurations.list({ active: true, limit: 100 });
-    const found = list.data.find((c) => c.metadata?.vysn === 'v1');
+    const found = list.data.find((c) => c.metadata?.vysn === 'v2');
     if (found) return (portalConfig = found.id);
     const created = await s.billingPortal.configurations.create({
-      metadata: { vysn: 'v1' },
-      business_profile: { headline: 'VYSN One – Zahlung & Rechnungen' },
+      metadata: { vysn: 'v2' },
+      business_profile: { headline: 'VYSNER One – Zahlung & Rechnungen' },
       features: {
         invoice_history: { enabled: true },
         payment_method_update: { enabled: true },

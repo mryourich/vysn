@@ -72,7 +72,7 @@ function Scan() {
           {notFound ? <p className="field-error">{notFound}</p> : null}
           <div className="scan-tip">
             <Smartphone size={18} />
-            <p><strong>Tipp:</strong> Die Etiketten lassen sich auch direkt mit der normalen Kamera-App scannen – der Link öffnet sofort die Buchung. Über „Zum Home-Bildschirm hinzufügen“ im Browser-Menü wird VYSN One wie eine App installiert.</p>
+            <p><strong>Tipp:</strong> Die Etiketten lassen sich auch direkt mit der normalen Kamera-App scannen – der Link öffnet sofort die Buchung. Über „Zum Home-Bildschirm hinzufügen“ im Browser-Menü wird VYSNER One wie eine App installiert.</p>
           </div>
         </>
       )}

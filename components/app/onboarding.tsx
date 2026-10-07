@@ -27,7 +27,7 @@ export function Onboarding() {
       <aside className="onboarding-side">
         <Brand />
         <div>
-          <h1>{canCancel ? 'Weitere Firma anlegen.' : 'Willkommen bei VYSN One.'}</h1>
+          <h1>{canCancel ? 'Weitere Firma anlegen.' : 'Willkommen bei VYSNER One.'}</h1>
           <p>{canCancel ? 'Jede Firma hat eigene Kunden, Nummernkreise, Material, Zahlen und ein eigenes Rechnungsdesign. Sie wechseln jederzeit oben rechts bzw. am Handy im Profil.' : 'In drei kurzen Schritten richten Sie Ihr Unternehmen ein. Danach erstellen Sie direkt Ihr erstes Angebot oder Ihre erste Rechnung.'}</p>
           <ol className="steps">
             {STEPS.map((s, i) => (

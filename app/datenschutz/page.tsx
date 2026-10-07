@@ -3,7 +3,7 @@ import { SiteFooter } from '../../components/site/site-footer';
 import { SiteHeader } from '../../components/site/site-header';
 import '../site.css';
 
-export const metadata: Metadata = { title: 'Datenschutz – VYSN One' };
+export const metadata: Metadata = { title: 'Datenschutz – VYSNER One' };
 
 export default function PrivacyPage() {
   return (

@@ -112,7 +112,7 @@ export function DocList({ kind }: { kind: DocKind }) {
         </div>
         {visible.length ? (
           <div className="table">
-            <div className="tr th">
+            <div className="tr th tr-5">
               <span>{cfg.one}</span>
               <span className="hide-sm">Datum</span>
               <span className="hide-sm">{isInvoice ? 'Fällig' : cfg.dueLabel}</span>

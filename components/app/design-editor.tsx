@@ -14,7 +14,7 @@ import { DocKindSelect } from './doc-texts';
 import { DOC_KINDS } from '../../lib/docs';
 import type { DocKind } from '../../lib/types';
 
-const COLORS = ['#0057d8', '#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
+const COLORS = ['#13873e', '#1f3a5f', '#0f5e56', '#2d2d2d', '#7a2e2e', '#4b3f8f', '#8a5a14', '#2860a8'];
 
 function sampleDoc(kind: DocKind): SalesDoc {
   const date = today();

@@ -7,16 +7,16 @@ const display = Sora({ subsets: ['latin'], variable: '--font-display-face', disp
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://springgreen-cormorant-809283.hostingersite.com'),
-  title: 'VYSN One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
+  title: 'VYSNER One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
   description: 'Angebote und Rechnungen im eigenen Design, Material und Lager, Ausgaben und GuV – übersichtlich in einer Software für KMU und Handwerk.',
   openGraph: {
-    title: 'VYSN One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
+    title: 'VYSNER One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
     description: 'Angebote, Rechnungen, Material, Ausgaben und GuV in einer übersichtlichen Software.',
     images: ['/og.png'],
   },
 };
 
-export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#070b16' };
+export const viewport: Viewport = { width: 'device-width', initialScale: 1, themeColor: '#06100b' };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -7,7 +7,7 @@ import { mailFrom, smtpConfigured, smtpTransport } from '../../../lib/server/smt
  *
  * Konfiguration (Umgebungsvariablen beim Hosting):
  *   SMTP_HOST, SMTP_PORT (587), SMTP_USER, SMTP_PASS, SMTP_SECURE ("true" bei Port 465)
- *   MAIL_FROM  z. B. "VYSN One <rechnung@ihre-domain.de>"
+ *   MAIL_FROM  z. B. "VYSNER One <rechnung@ihre-domain.de>"
  *
  * Schutz vor Missbrauch: Nur angemeldete Nutzer (Supabase-Token) dürfen senden.
  * Ohne Supabase ist der Versand gesperrt, außer MAIL_ALLOW_ANONYMOUS=true (nur zum Testen!).

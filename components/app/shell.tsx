@@ -160,7 +160,7 @@ function LoadError({ message }: { message: string | null }) {
       <div className="empty">
         <h3>{offline ? 'Keine Verbindung' : 'Daten konnten nicht geladen werden'}</h3>
         <p>{offline
-          ? 'Diese Firma wurde auf diesem Gerät noch nicht geöffnet. Öffnen Sie VYSN One einmal mit Internet – danach steht sie auch offline zur Verfügung.'
+          ? 'Diese Firma wurde auf diesem Gerät noch nicht geöffnet. Öffnen Sie VYSNER One einmal mit Internet – danach steht sie auch offline zur Verfügung.'
           : message || 'Bitte prüfen Sie Ihre Internetverbindung.'}</p>
         <div className="secondary-actions">
           <button className="btn btn-primary" onClick={() => window.location.reload()}>Erneut versuchen</button>

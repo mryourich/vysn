@@ -1,4 +1,4 @@
-/* VYSN One – Service Worker für den Offline-Modus
+/* VYSNER One – Service Worker für den Offline-Modus
  *
  * - Programmdateien (/_next/static, unveränderlich) bleiben auf dem Gerät (cache-first).
  * - Seiten des Arbeitsbereichs (/app/…): Netz zuerst, bei Funkloch der zuletzt geladene Stand.
@@ -83,7 +83,7 @@ async function pageResponse(request) {
     return res;
   } catch {
     return (await cache.match(url.pathname)) || (await cache.match('/app')) || new Response(
-      '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Offline</title><body style="font-family:system-ui;padding:32px;background:#070b16;color:#fff"><h1>Keine Verbindung</h1><p>VYSN One konnte diese Seite noch nicht auf dem Gerät speichern. Bitte einmal mit Internet öffnen.</p>',
+      '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Offline</title><body style="font-family:system-ui;padding:32px;background:#070b16;color:#fff"><h1>Keine Verbindung</h1><p>VYSNER One konnte diese Seite noch nicht auf dem Gerät speichern. Bitte einmal mit Internet öffnen.</p>',
       { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } },
     );
   }

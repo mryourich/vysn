@@ -6,7 +6,7 @@ import { currencySymbol, money } from '../../lib/calc';
 type Point = { label: string; revenue: number; expenses: number };
 
 export const SERIES = [
-  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#0069e6' },
+  { key: 'revenue' as const, label: 'Umsatz (netto)', color: '#13873e' },
   { key: 'expenses' as const, label: 'Ausgaben', color: '#b8762f' },
 ];
 
