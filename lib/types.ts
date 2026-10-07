@@ -100,6 +100,10 @@ export type LineItem = {
   unitPrice: number;
   vat: number;
   discount: number;
+  /** Angebot: optionale Position bzw. Alternative – nicht in der Angebotssumme enthalten */
+  variant?: 'optional' | 'alternative';
+  /** Vom Kunden gewählt: wird beim Umwandeln (Auftragsbestätigung/Rechnung) als normale Position übernommen */
+  chosen?: boolean;
 };
 
 /** Belegarten: Angebot, Auftragsbestätigung, Lieferschein, Rechnung, Bestellung (an Lieferanten). */

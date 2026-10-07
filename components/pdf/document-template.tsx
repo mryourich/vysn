@@ -149,6 +149,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
     }}>
       {cols.pos ? <T style={[cell(cols.pos, 'left'), { color: MUTED }]}>{i + 1}</T> : null}
       <V style={{ flex: 1, paddingHorizontal: 3 }}>
+        {item.variant ? <T style={[bold, { fontSize: 7, color: accent, letterSpacing: 0.5, marginBottom: 1 }]}>{item.variant === 'optional' ? 'OPTIONAL' : 'ALTERNATIVE'}</T> : null}
         <T style={bold}>{item.description || '—'}</T>
         {item.details ? <T style={{ fontSize: 8.2, color: MUTED, marginTop: 1 }}>{item.details}</T> : null}
       </V>
@@ -156,7 +157,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       {prices ? <T style={cell(cols.price)}>{money(item.unitPrice)}</T> : null}
       {cols.discount ? <T style={cell(cols.discount)}>{item.discount ? `${qty(item.discount)} %` : ''}</T> : null}
       {cols.vat ? <T style={cell(cols.vat)}>{formatRate(item.vat)}</T> : null}
-      {prices ? <T style={[cell(cols.total), bold]}>{money(lineNet(item))}</T> : null}
+      {prices ? <T style={item.variant ? [cell(cols.total), { color: MUTED }] : [cell(cols.total), bold]}>{item.variant ? `(${money(lineNet(item))})` : money(lineNet(item))}</T> : null}
     </V>
   ));
 
@@ -218,6 +219,9 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
         {rows.length ? rows : <T style={{ padding: 10, color: MUTED }}>Noch keine Positionen erfasst.</T>}
       </V>
       {prices ? totalsBlock : null}
+      {prices && doc.items.some((i) => i.variant) ? (
+        <T style={{ marginTop: 8, fontSize: 8.2, color: MUTED }}>Optionale Positionen und Alternativen (Beträge in Klammern) sind in der {cfg.totalLabel || 'Summe'} nicht enthalten.</T>
+      ) : null}
       {prices && company.smallBusiness ? <T style={{ marginTop: 10, fontSize: 8.5, color: MUTED }}>{tax.smallBusinessNote}</T> : null}
       {outro ? <T wrap={false} style={{ marginTop: 18 }}>{outro}</T> : null}
       {company.owner ? <T style={{ marginTop: 4 }}>{company.owner}</T> : null}

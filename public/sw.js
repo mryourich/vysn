@@ -17,7 +17,12 @@ const APP_PAGES = [
   '/app/material', '/app/scan', '/app/ausgaben', '/app/guv', '/app/export', '/app/firma', '/app/design',
   '/app/einstellungen', '/app/team', '/app/tarif', '/app/konto', '/app/erweiterungen',
 ];
-const ASSETS = ['/manifest.webmanifest', '/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png'];
+const ASSETS = [
+  '/manifest.webmanifest', '/icon.svg', '/icons/icon-192.png', '/icons/icon-512.png',
+  // PDF-Schriften, damit PDFs auch offline entstehen
+  '/fonts/pdf/LiberationSans-Regular.ttf', '/fonts/pdf/LiberationSans-Bold.ttf', '/fonts/pdf/LiberationSerif-Regular.ttf',
+  '/fonts/pdf/LiberationSerif-Bold.ttf', '/fonts/pdf/LiberationMono-Regular.ttf', '/fonts/pdf/LiberationMono-Bold.ttf',
+];
 const NETWORK_TIMEOUT = 4000;
 
 const rscKey = (path) => `${path}?__vysn_rsc=1`;

@@ -43,6 +43,10 @@ function toCss(style: Style = {}, base: CSSProperties = {}): CSSProperties {
   return css as CSSProperties;
 }
 
+/** Eingebettete PDF-Schriften (siehe export.tsx) statt nicht eingebetteter Standardschriften. */
+const PDF_FONTS: Record<string, string> = { Helvetica: 'VysnSans', 'Times-Roman': 'VysnSerif', Courier: 'VysnMono' };
+const pdfStyle = (s: Style): Style => (s.fontFamily && PDF_FONTS[String(s.fontFamily)] ? { ...s, fontFamily: PDF_FONTS[String(s.fontFamily)] } : s);
+
 const flatten = (style?: Style | (Style | undefined | false)[]): Style =>
   Array.isArray(style) ? Object.assign({}, ...style.filter(Boolean)) : style || {};
 
@@ -64,14 +68,29 @@ const BOX_BASE: CSSProperties = {
 export function V({ style, children, fixed, wrap }: BoxProps) {
   const lib = useLib();
   const s = flatten(style);
-  if (lib) return <lib.View style={s as never} fixed={fixed} wrap={wrap}>{children}</lib.View>;
+  if (lib) return <lib.View style={pdfStyle(s) as never} fixed={fixed} wrap={wrap}>{children}</lib.View>;
   return <div style={toCss(s, BOX_BASE)}>{children}</div>;
 }
 
-export function T({ style, children, wrap }: BoxProps) {
+/**
+ * Eingefügte Texte (z. B. aus Webseiten oder Word) enthalten oft Windows-Zeilenumbrüche (\r),
+ * Tabs oder unsichtbare Zeichen. Im PDF würden sie als eigene Zeichen ohne passende Schrift
+ * gesetzt und verschieben Zeilen – daher vorher vereinheitlichen.
+ */
+export const cleanText = (text: string) => text
+  .replace(/\r\n?/g, '\n')
+  .replace(/\t/g, ' ')
+  .replace(/[\u200b-\u200d\u2060\ufeff\u00ad]/g, '')
+  .replace(/[\u2028\u2029]/g, '\n');
+
+const clean = (children: ReactNode): ReactNode =>
+  typeof children === 'string' ? cleanText(children) : Array.isArray(children) ? children.map((c) => (typeof c === 'string' ? cleanText(c) : c)) : children;
+
+export function T({ style, children: raw, wrap }: BoxProps) {
   const lib = useLib();
   const s = flatten(style);
-  if (lib) return <lib.Text style={s as never} wrap={wrap}>{children}</lib.Text>;
+  const children = clean(raw);
+  if (lib) return <lib.Text style={pdfStyle(s) as never} wrap={wrap}>{children}</lib.Text>;
   return <div style={toCss(s, { whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', lineHeight: 1.2 })}>{children}</div>;
 }
 
@@ -79,7 +98,7 @@ export function T({ style, children, wrap }: BoxProps) {
 export function PageNumber({ style }: { style?: Style }) {
   const lib = useLib();
   if (!lib) return <div style={toCss(style)}>Seite 1</div>;
-  return <lib.Text style={style as never} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} fixed />;
+  return <lib.Text style={pdfStyle(style || {}) as never} render={({ pageNumber, totalPages }) => `Seite ${pageNumber} von ${totalPages}`} fixed />;
 }
 
 export function Img({ src, style }: { src: string; style?: Style }) {
@@ -95,7 +114,7 @@ export function PageFrame({ children, style, title }: { children: ReactNode; sty
   if (lib) {
     return (
       <lib.Document title={title} creator="VYSN One" producer="VYSN One">
-        <lib.Page size="A4" style={style as never}>{children}</lib.Page>
+        <lib.Page size="A4" style={pdfStyle(style || {}) as never}>{children}</lib.Page>
       </lib.Document>
     );
   }

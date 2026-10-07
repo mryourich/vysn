@@ -861,3 +861,11 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .ext-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .nav-link svg { flex: none; }
 .nav-link { min-width: 0; }
+/* Optionale und Alternativpositionen im Angebot */
+.item-variant { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.item-tag.tag-optional, .item-tag.tag-alternative { align-self: flex-start; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+.item-tag.tag-optional { background: #fff4e5; color: #9a5b00; }
+.item-tag.tag-alternative { background: #efe9ff; color: #5b3cc4; }
+.item-variant .check { font-size: 12.5px; }
+.item-total-muted strong { color: var(--muted); font-weight: 500; }
+.item-variant .check input { width: 16px; height: 16px; padding: 0; flex: none; box-shadow: none; }

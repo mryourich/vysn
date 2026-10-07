@@ -51,10 +51,13 @@ export const lineNet = (item: LineItem) => round2(item.quantity * item.unitPrice
 
 export type Totals = { net: number; vat: number; gross: number; vatGroups: { rate: number; net: number; vat: number }[] };
 
+/** Optionale und Alternativpositionen zählen nicht zur Summe. */
+export const inTotal = (item: LineItem) => !item.variant;
+
 export function docTotals(items: LineItem[], smallBusiness: boolean): Totals {
   const groups = new Map<number, number>();
   let net = 0;
-  for (const item of items) {
+  for (const item of items.filter(inTotal)) {
     const n = lineNet(item);
     net += n;
     const rate = smallBusiness ? 0 : item.vat;

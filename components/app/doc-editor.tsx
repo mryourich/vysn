@@ -46,6 +46,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
   const cfg = DOC_KINDS[doc.kind];
   const isInvoice = doc.kind === 'invoice';
   const isOrder = doc.kind === 'order';
+  const isOffer = doc.kind === 'offer';
   const base = cfg.path;
   // Festgeschriebene Rechnungen und eingebuchte Bestellungen sind nicht mehr änderbar
   const locked = (isInvoice && doc.status !== 'draft') || (isOrder && doc.status === 'accepted');
@@ -241,6 +242,12 @@ function Editor({ doc }: { doc: SalesDoc }) {
                       <input value={item.description} onChange={(e) => updateItem(item.id, { description: e.target.value })} placeholder="Bezeichnung der Leistung oder des Artikels" aria-label="Bezeichnung" />
                       <textarea value={item.details} onChange={(e) => updateItem(item.id, { details: e.target.value })} placeholder="Beschreibung (optional)" rows={item.details ? 2 : 1} aria-label="Beschreibung" />
                       {item.materialId ? <span className="item-tag"><Boxes size={12} /> aus Materialstamm</span> : null}
+                      {item.variant ? (
+                        <div className="item-variant">
+                          <span className={`item-tag tag-${item.variant}`}>{item.variant === 'optional' ? 'Optional' : 'Alternative'} · nicht in der Summe</span>
+                          <label className="check"><input type="checkbox" checked={!!item.chosen} onChange={(e) => updateItem(item.id, { chosen: e.target.checked })} /><span>Vom Kunden gewählt – wird beim Umwandeln übernommen</span></label>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="item-tools">
                       <button type="button" className="icon-btn" onClick={() => moveItem(index, -1)} disabled={index === 0} aria-label="Nach oben"><ArrowUp size={15} /></button>
@@ -262,7 +269,16 @@ function Editor({ doc }: { doc: SalesDoc }) {
                         <VatSelect value={item.vat} onChange={(v) => updateItem(item.id, { vat: v })} company={company} />
                       </Field>
                     ) : null}
-                    {cfg.prices ? <div className="item-total"><span>Gesamt netto</span><strong>{money(lineNet(item))}</strong></div> : null}
+                    {isOffer ? (
+                      <Field label="Art">
+                        <select value={item.variant || ''} onChange={(e) => updateItem(item.id, { variant: (e.target.value || undefined) as LineItem['variant'], chosen: false })}>
+                          <option value="">Normal</option>
+                          <option value="optional">Optional</option>
+                          <option value="alternative">Alternative</option>
+                        </select>
+                      </Field>
+                    ) : null}
+                    {cfg.prices ? <div className={`item-total${item.variant ? ' item-total-muted' : ''}`}><span>{item.variant ? 'nicht in Summe' : 'Gesamt netto'}</span><strong>{money(lineNet(item))}</strong></div> : null}
                   </div>
                 </div>
               ))}

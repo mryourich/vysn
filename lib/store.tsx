@@ -844,7 +844,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       customerId: src.customerId,
       recipient: { ...src.recipient },
       subject: src.subject,
-      items: src.items.map((i) => ({ ...i, id: uid() })),
+      // Optionale/Alternativpositionen nur übernehmen, wenn der Kunde sie gewählt hat
+      items: src.items.filter((i) => !i.variant || i.chosen).map(({ variant: _v, chosen: _c, ...i }) => ({ ...i, id: uid() })),
       sourceId: src.id,
     };
     update((d) => ({
