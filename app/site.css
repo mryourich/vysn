@@ -467,3 +467,14 @@
 @media (prefers-reduced-motion: reduce) {
   .vm-animated path, .hero-logo svg.vm-animated, .hero-logo-word { animation: none !important; }
 }
+
+/* ---------- Widerruf ---------- */
+.legal h3 { font-size: 17px; margin: 22px 0 8px; }
+.withdraw-box { margin: 28px 0 10px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.withdraw-box form { display: grid; gap: 12px; }
+.withdraw-box label { display: grid; gap: 5px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.withdraw-box input { font: inherit; font-weight: 400; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 10px; }
+.withdraw-box .hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.withdraw-box.ok { background: var(--primary-soft); border-color: transparent; color: #145a2c; }
+.withdraw-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.withdraw-error { color: var(--danger); font-size: 14px; }

@@ -25,6 +25,7 @@ export function SiteFooter() {
           <h4>Rechtliches</h4>
           <Link href="/impressum">Impressum</Link>
           <Link href="/datenschutz">Datenschutz</Link>
+          <Link href="/widerruf">Vertrag widerrufen</Link>
         </div>
       </div>
       <div className="shell footer-bottom">
