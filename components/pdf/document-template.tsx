@@ -1,6 +1,6 @@
 'use client';
 
-import { docTotals, formatDate, lineNet, money, qty } from '../../lib/calc';
+import { docTotals, formatDate, lineNet, money, positionLabels, qty } from '../../lib/calc';
 import { formatRate, taxProfile } from '../../lib/tax';
 import { DOC_KINDS, docTexts } from '../../lib/docs';
 import type { Company, InvoiceDesign, SalesDoc } from '../../lib/types';
@@ -96,7 +96,7 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       {design.showSenderLine && senderLine ? (
         <T style={{ fontSize: 6.8, color: MUTED, marginBottom: 7, textDecoration: minimal ? 'none' : 'underline' }}>{senderLine}</T>
       ) : null}
-      {[r.name, r.contactPerson && r.contactPerson !== r.name ? r.contactPerson : '', r.street, [r.zip, r.city].filter(Boolean).join(' '), r.country && r.country !== 'Deutschland' ? r.country : ''].filter(Boolean).map((l, i) => (
+      {[r.name, r.contactPerson && r.contactPerson !== r.name ? r.contactPerson : '', r.street, [r.zip, r.city].filter(Boolean).join(' '), r.country && r.country !== (company.country || 'Deutschland') ? r.country : ''].filter(Boolean).map((l, i) => (
         <T key={i} style={i === 0 ? [bold, { fontSize: 10 }] : { fontSize: 10 }}>{l}</T>
       ))}
       {r.vatId ? <T style={{ fontSize: 8, color: MUTED, marginTop: 3 }}>{tax.idLabel}: {r.vatId}</T> : null}
@@ -141,15 +141,16 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
     </V>
   );
 
+  const labels = positionLabels(doc.items);
   const rows = doc.items.map((item, i) => (
     <V key={item.id} wrap={false} style={{
       flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4,
       backgroundColor: design.tableStyle === 'striped' && i % 2 === 1 ? tint(accent, 0.95) : undefined,
       borderBottomWidth: design.tableStyle === 'striped' ? 0 : 0.5, borderBottomColor: LINE,
     }}>
-      {cols.pos ? <T style={[cell(cols.pos, 'left'), { color: MUTED }]}>{i + 1}</T> : null}
+      {cols.pos ? <T style={[cell(cols.pos, 'left'), { color: MUTED }]}>{labels[i]}</T> : null}
       <V style={{ flex: 1, paddingHorizontal: 3 }}>
-        {item.variant ? <T style={[bold, { fontSize: 7, color: accent, letterSpacing: 0.5, marginBottom: 1 }]}>{item.variant === 'optional' ? 'OPTIONAL' : 'ALTERNATIVE'}</T> : null}
+        {item.variant ? <T style={[bold, { fontSize: 7, color: accent, letterSpacing: 0.5, marginBottom: 1 }]}>{item.variant === 'optional' ? 'OPTIONAL' : item.parentId ? `ALTERNATIVE ZU POS. ${labels[doc.items.findIndex((x) => x.id === item.parentId)] ?? ''}` : 'ALTERNATIVE'}</T> : null}
         <T style={bold}>{item.description || '—'}</T>
         {item.details ? <T style={{ fontSize: 8.2, color: MUTED, marginTop: 1 }}>{item.details}</T> : null}
       </V>

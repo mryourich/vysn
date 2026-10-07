@@ -772,7 +772,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       customerId,
       recipient: customer
         ? { name: customer.name, contactPerson: customer.contactPerson, street: customer.street, zip: customer.zip, city: customer.city, country: customer.country, vatId: customer.vatId }
-        : { name: '', contactPerson: '', street: '', zip: '', city: '', country: 'Deutschland', vatId: '' },
+        : { name: '', contactPerson: '', street: '', zip: '', city: '', country: company?.country || 'Deutschland', vatId: '' },
       subject: '',
       date,
       dueDate: addDays(date, kind === 'invoice' ? company?.paymentTermDays ?? 14 : kind === 'offer' ? company?.offerValidityDays ?? 30 : kind === 'delivery' ? 0 : kind === 'order' ? 7 : 14),
@@ -845,7 +845,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       recipient: { ...src.recipient },
       subject: src.subject,
       // Optionale/Alternativpositionen nur übernehmen, wenn der Kunde sie gewählt hat
-      items: src.items.filter((i) => !i.variant || i.chosen).map(({ variant: _v, chosen: _c, ...i }) => ({ ...i, id: uid() })),
+      items: src.items
+        .filter((i) => (!i.variant || i.chosen) && !src.items.some((a) => a.parentId === i.id && a.chosen))
+        .map(({ variant: _v, chosen: _c, parentId: _p, ...i }) => ({ ...i, id: uid() })),
       sourceId: src.id,
     };
     update((d) => ({

@@ -103,12 +103,14 @@ export async function applySubscription(input: Stripe.Subscription) {
     current_period_end: iso(periodEnd),
     cancel_at_period_end: !!sub.cancel_at_period_end,
   };
+  // Eigenes aktives Abo: Firma ist nicht mehr an den Tarif einer anderen Firma gebunden
+  if (active) update.billing_parent = null;
   if (sub.trial_end) update.trial_used = true;
   let { error } = await db.from('companies').update(update).eq('id', companyId);
-  // Datenbank ohne Migration 20261014090000_plan_change: ohne die neuen Felder speichern,
+  // Datenbank ohne Migrationen plan_change / company_plan_inherit: ohne die neuen Felder speichern,
   // damit Tarif und Abo-Status trotzdem aktuell bleiben
   if (error && (error.code === '42703' || error.code === 'PGRST204')) {
-    const { billing_interval: _i, pending_plan: _p, pending_interval: _pi, pending_change_at: _pa, ...base } = update;
+    const { billing_interval: _i, pending_plan: _p, pending_interval: _pi, pending_change_at: _pa, billing_parent: _bp, ...base } = update;
     ({ error } = await db.from('companies').update(base).eq('id', companyId));
   }
   if (error) throw new Error(error.message);

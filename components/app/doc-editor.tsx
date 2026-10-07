@@ -4,16 +4,16 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowLeft, ArrowUp, Ban, CloudOff, PackageCheck, Undo2, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
+  ArrowDown, ArrowLeft, Check, ArrowUp, Ban, CloudOff, PackageCheck, Undo2, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
 } from 'lucide-react';
-import { displayStatus, docTotals, formatDate, lineNet, money, qty, today } from '../../lib/calc';
+import { displayStatus, docTotals, formatDate, lineNet, money, positionLabels, qty, today } from '../../lib/calc';
 import { UNITS, emptyItem } from '../../lib/defaults';
 import { useStore } from '../../lib/store';
 import type { LineItem, Material, SalesDoc } from '../../lib/types';
 import { DocumentTemplate } from '../pdf/document-template';
 import { downloadPdf } from '../pdf/export';
 import { isProvisional } from '../../lib/db/ops';
-import { DOC_KINDS, NEXT_KINDS, docEditPath, docTexts } from '../../lib/docs';
+import { DOC_KINDS, NEXT_KINDS, docEditPath, docMail, docTexts } from '../../lib/docs';
 import { A4Preview } from './a4-preview';
 import { CustomerModal } from './customer-form';
 import { currencySymbol } from '../../lib/calc';
@@ -71,13 +71,33 @@ function Editor({ doc }: { doc: SalesDoc }) {
     saveDoc({ ...doc, ...patch });
   };
   const updateItem = (itemId: string, patch: Partial<LineItem>) => update({ items: doc.items.map((i) => (i.id === itemId ? { ...i, ...patch } : i)) });
-  const moveItem = (index: number, dir: -1 | 1) => {
-    const items = [...doc.items];
-    const target = index + dir;
-    if (target < 0 || target >= items.length) return;
-    [items[index], items[target]] = [items[target], items[index]];
-    update({ items });
+  // Positionen als Blöcke: Hauptposition samt ihrer Alternativen (1, 1.1, 1.2 …)
+  const blocks = () => {
+    const out: LineItem[][] = [];
+    for (const item of doc.items) {
+      if (item.parentId && out.some((b) => b[0].id === item.parentId)) out.find((b) => b[0].id === item.parentId)!.push(item);
+      else out.push([item]);
+    }
+    return out;
   };
+  const moveItem = (itemId: string, dir: -1 | 1) => {
+    const list = blocks();
+    const index = list.findIndex((b) => b[0].id === itemId);
+    const target = index + dir;
+    if (index < 0 || target < 0 || target >= list.length) return;
+    [list[index], list[target]] = [list[target], list[index]];
+    update({ items: list.flat() });
+  };
+  const removeItem = (itemId: string) => update({ items: doc.items.filter((i) => i.id !== itemId && i.parentId !== itemId) });
+  const addAlternative = (parent: LineItem) => {
+    const list = blocks();
+    const block = list.find((b) => b[0].id === parent.id);
+    if (!block) return;
+    block.push({ ...emptyItem(parent.vat), unit: parent.unit, quantity: parent.quantity, variant: 'alternative', parentId: parent.id });
+    update({ items: list.flat() });
+  };
+  const labels = positionLabels(doc.items);
+  const mainIds = blocks().map((b) => b[0].id);
   const addMaterial = (m: Material) => {
     update({ items: [...doc.items, { ...emptyItem(m.vat), materialId: m.id, description: m.name, details: m.description, unit: m.unit, unitPrice: isOrder ? m.purchasePrice : m.salePrice }] });
     setPicker(false);
@@ -88,7 +108,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
       customerId,
       recipient: c
         ? { name: c.name, contactPerson: c.contactPerson, street: c.street, zip: c.zip, city: c.city, country: c.country, vatId: c.vatId }
-        : { name: '', contactPerson: '', street: '', zip: '', city: '', country: 'Deutschland', vatId: '' },
+        : { name: '', contactPerson: '', street: '', zip: '', city: '', country: company.country || 'Deutschland', vatId: '' },
     });
   };
 
@@ -111,19 +131,27 @@ function Editor({ doc }: { doc: SalesDoc }) {
   /** Mit „automatisch versenden“ geht die Rechnung ohne Dialog direkt an die Kunden-E-Mail. */
   const mailLock = !store.can('email');
   const openSend = () => { if (store.requireFeature('email')) setSendOpen(true); };
-  const finalizeAndSend = async () => {
-    if (!store.requireFeature('email')) return;
-    const email = customer?.email || '';
-    const auto = data.settings.email.autoSendInvoices && email && (await mailStatus()).enabled;
-    if (!auto) return setSendOpen(true);
-    if (!confirm(`Rechnung festschreiben und automatisch an ${email} senden?`)) return;
+  /** Festschreiben bzw. als versendet markieren – E-Mail-Versand optional (Häkchen im Dialog) */
+  const [finalizeOpen, setFinalizeOpen] = useState(false);
+  const finalize = async (mail: { to: string } | null) => {
+    if (!mail) { setDocStatus(doc.id, 'sent'); setFinalizeOpen(false); return; }
+    const status = await mailStatus();
+    if (!status.enabled) {
+      // Kein Mailserver: festschreiben und den Senden-Dialog (Teilen/E-Mail-Programm) öffnen
+      setDocStatus(doc.id, 'sent');
+      setFinalizeOpen(false);
+      setSendOpen(true);
+      return;
+    }
     setSending(true);
     try {
-      const tpl = data.settings.email;
-      await sendDocument(doc, { to: email, subject: fillMail(tpl.invoiceSubject, doc, company), text: fillMail(tpl.invoiceBody, doc, company) });
-      setFlash(`Rechnung wurde an ${email} gesendet.`);
+      const tpl = docMail(data.settings.email, doc.kind);
+      await sendDocument(doc, { to: mail.to, subject: fillMail(tpl.subject, doc, company), text: fillMail(tpl.body, doc, company) });
+      if (doc.status === 'draft') setDocStatus(doc.id, 'sent');
+      setFlash(`${cfg.one} wurde an ${mail.to} gesendet.`);
+      setFinalizeOpen(false);
     } catch (e) {
-      alert(`Automatischer Versand fehlgeschlagen: ${(e as Error).message}`);
+      alert(`Versand fehlgeschlagen: ${(e as Error).message}`);
     } finally {
       setSending(false);
     }
@@ -131,15 +159,14 @@ function Editor({ doc }: { doc: SalesDoc }) {
 
   const actions = (
     <>
-      {isInvoice && doc.status === 'draft' ? (
-        <button className="btn btn-primary" disabled={!mailLock && (!canSend || sending)} title={canSend || mailLock ? '' : 'Empfänger und mindestens eine Position erforderlich'} onClick={finalizeAndSend}>
-          {mailLock ? <Lock size={14} className="btn-lock" /> : <Send size={16} />} {sending ? 'Sende …' : 'Festschreiben & versenden'}
+      {doc.status === 'draft' ? (
+        <button className="btn btn-primary" disabled={!canSend || sending} title={canSend ? '' : 'Empfänger und mindestens eine Position erforderlich'} onClick={() => setFinalizeOpen(true)}>
+          {isInvoice ? <Lock size={16} /> : <Send size={16} />} {isInvoice ? 'Festschreiben' : `Als ${cfg.status.sent!.label.toLowerCase()} markieren`}
         </button>
       ) : null}
       {isInvoice && doc.status !== 'draft' && doc.status !== 'cancelled' ? <button className="btn" onClick={openSend}>{mailLock ? <Lock size={14} className="btn-lock" /> : <Mail size={16} />} {doc.sentAt ? 'Erneut senden' : 'Per E-Mail senden'}</button> : null}
-      {!isInvoice && doc.status !== 'cancelled' ? <button className="btn" disabled={!canSend && !mailLock} onClick={openSend}>{mailLock ? <Lock size={14} className="btn-lock" /> : <Mail size={16} />} Per E-Mail senden</button> : null}
+      {!isInvoice && doc.status !== 'cancelled' && doc.status !== 'draft' ? <button className="btn" disabled={!canSend && !mailLock} onClick={openSend}>{mailLock ? <Lock size={14} className="btn-lock" /> : <Mail size={16} />} Per E-Mail senden</button> : null}
       {isInvoice && doc.status === 'sent' ? <button className="btn btn-primary" onClick={() => setPayDate(today())}><CheckCircle2 size={16} /> Zahlung erfassen</button> : null}
-      {!isInvoice && doc.status === 'draft' ? <button className="btn" disabled={!canSend} onClick={() => setDocStatus(doc.id, 'sent')}><Send size={16} /> Als {cfg.status.sent!.label.toLowerCase()} markieren</button> : null}
       {isOrder && doc.status === 'sent' ? (
         <button className="btn btn-primary" disabled={!doc.items.length} onClick={() => confirm('Wareneingang buchen? Die bestellten Artikel aus dem Materialstamm werden dem Lager gutgeschrieben.') && setDocStatus(doc.id, 'accepted')}>
           <PackageCheck size={16} /> Wareneingang buchen
@@ -235,24 +262,26 @@ function Editor({ doc }: { doc: SalesDoc }) {
             </div>
             <div className="items">
               {doc.items.map((item, index) => (
-                <div key={item.id} className="item">
+                <div key={item.id} className={`item${item.parentId ? ' item-alt' : ''}`}>
                   <div className="item-top">
-                    <span className="item-pos">{index + 1}</span>
+                    <span className="item-pos">{labels[index]}</span>
                     <div className="item-desc">
                       <input value={item.description} onChange={(e) => updateItem(item.id, { description: e.target.value })} placeholder="Bezeichnung der Leistung oder des Artikels" aria-label="Bezeichnung" />
                       <textarea value={item.details} onChange={(e) => updateItem(item.id, { details: e.target.value })} placeholder="Beschreibung (optional)" rows={item.details ? 2 : 1} aria-label="Beschreibung" />
                       {item.materialId ? <span className="item-tag"><Boxes size={12} /> aus Materialstamm</span> : null}
                       {item.variant ? (
                         <div className="item-variant">
-                          <span className={`item-tag tag-${item.variant}`}>{item.variant === 'optional' ? 'Optional' : 'Alternative'} · nicht in der Summe</span>
-                          <label className="check"><input type="checkbox" checked={!!item.chosen} onChange={(e) => updateItem(item.id, { chosen: e.target.checked })} /><span>Vom Kunden gewählt – wird beim Umwandeln übernommen</span></label>
+                          <span className={`item-tag tag-${item.variant}`}>{item.variant === 'optional' ? 'Optional' : item.parentId ? `Alternative zu Pos. ${labels[doc.items.findIndex((x) => x.id === item.parentId)]}` : 'Alternative'} · nicht in der Summe</span>
+                          <label className="check"><input type="checkbox" checked={!!item.chosen} onChange={(e) => updateItem(item.id, { chosen: e.target.checked })} /><span>{item.parentId ? 'Vom Kunden gewählt – ersetzt beim Umwandeln die Hauptposition' : 'Vom Kunden gewählt – wird beim Umwandeln übernommen'}</span></label>
                         </div>
                       ) : null}
                     </div>
                     <div className="item-tools">
-                      <button type="button" className="icon-btn" onClick={() => moveItem(index, -1)} disabled={index === 0} aria-label="Nach oben"><ArrowUp size={15} /></button>
-                      <button type="button" className="icon-btn" onClick={() => moveItem(index, 1)} disabled={index === doc.items.length - 1} aria-label="Nach unten"><ArrowDown size={15} /></button>
-                      <button type="button" className="icon-btn danger" onClick={() => update({ items: doc.items.filter((i) => i.id !== item.id) })} aria-label="Position löschen"><Trash2 size={15} /></button>
+                      {!item.parentId ? <>
+                        <button type="button" className="icon-btn" onClick={() => moveItem(item.id, -1)} disabled={mainIds[0] === item.id} aria-label="Nach oben"><ArrowUp size={15} /></button>
+                        <button type="button" className="icon-btn" onClick={() => moveItem(item.id, 1)} disabled={mainIds[mainIds.length - 1] === item.id} aria-label="Nach unten"><ArrowDown size={15} /></button>
+                      </> : null}
+                      <button type="button" className="icon-btn danger" onClick={() => removeItem(item.id)} aria-label="Position löschen"><Trash2 size={15} /></button>
                     </div>
                   </div>
                   <div className="item-nums">
@@ -269,7 +298,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
                         <VatSelect value={item.vat} onChange={(v) => updateItem(item.id, { vat: v })} company={company} />
                       </Field>
                     ) : null}
-                    {isOffer ? (
+                    {isOffer && !item.parentId ? (
                       <Field label="Art">
                         <select value={item.variant || ''} onChange={(e) => updateItem(item.id, { variant: (e.target.value || undefined) as LineItem['variant'], chosen: false })}>
                           <option value="">Normal</option>
@@ -280,6 +309,9 @@ function Editor({ doc }: { doc: SalesDoc }) {
                     ) : null}
                     {cfg.prices ? <div className={`item-total${item.variant ? ' item-total-muted' : ''}`}><span>{item.variant ? 'nicht in Summe' : 'Gesamt netto'}</span><strong>{money(lineNet(item))}</strong></div> : null}
                   </div>
+                  {isOffer && !item.parentId && !item.variant ? (
+                    <button type="button" className="link item-alt-add" onClick={() => addAlternative(item)}><Plus size={14} /> Alternative zu Pos. {labels[index]} hinzufügen</button>
+                  ) : null}
                 </div>
               ))}
               {!doc.items.length ? <p className="muted pad-s">Fügen Sie eine freie Position hinzu oder übernehmen Sie Artikel aus dem Materialstamm.</p> : null}
@@ -306,11 +338,6 @@ function Editor({ doc }: { doc: SalesDoc }) {
 
           <div className="card card-plain">
             <div className="secondary-actions">
-              {isInvoice && doc.status === 'draft' ? (
-                <button className="btn btn-quiet" disabled={!canSend} onClick={() => confirm('Rechnung ohne E-Mail-Versand festschreiben? Danach ist sie nicht mehr änderbar und verbrauchtes Material wird vom Lager abgebucht.') && setDocStatus(doc.id, 'sent')}>
-                  <Lock size={16} /> Nur festschreiben
-                </button>
-              ) : null}
               {doc.kind === 'offer' && doc.status === 'sent' ? <button className="btn" onClick={() => setDocStatus(doc.id, 'accepted')}><CheckCircle2 size={16} /> Angenommen</button> : null}
               {doc.kind === 'offer' && (doc.status === 'sent' || doc.status === 'draft') ? <button className="btn" onClick={() => setDocStatus(doc.id, 'declined')}><XCircle size={16} /> Abgelehnt</button> : null}
               {doc.kind === 'confirmation' && doc.status === 'sent' ? <button className="btn" onClick={() => setDocStatus(doc.id, 'accepted')}><CheckCircle2 size={16} /> Als erledigt markieren</button> : null}
@@ -347,6 +374,12 @@ function Editor({ doc }: { doc: SalesDoc }) {
 
       {picker ? <MaterialPicker purchase={isOrder} onClose={() => setPicker(false)} onPick={addMaterial} /> : null}
       {newCustomer ? <CustomerModal onClose={() => setNewCustomer(false)} onSaved={(c) => update({ customerId: c.id, recipient: { name: c.name, contactPerson: c.contactPerson, street: c.street, zip: c.zip, city: c.city, country: c.country, vatId: c.vatId } })} /> : null}
+      {finalizeOpen ? (
+        <FinalizeDialog title={isInvoice ? `Rechnung ${doc.number} festschreiben` : `${cfg.one} ${doc.number} als ${cfg.status.sent!.label.toLowerCase()} markieren`}
+          note={isInvoice ? 'Festgeschriebene Rechnungen sind nicht mehr änderbar; verbrauchtes Material wird vom Lager abgebucht.' : ''}
+          email={customer?.email || ''} mailLock={mailLock} preselect={data.settings.email.autoSendInvoices}
+          busy={sending} onClose={() => setFinalizeOpen(false)} onConfirm={finalize} onUpgrade={() => store.requireFeature('email')} />
+      ) : null}
       {sendOpen ? <SendDialog doc={doc} onClose={() => setSendOpen(false)} onSent={(to) => setFlash(`${cfg.one} wurde an ${to} gesendet.`)} /> : null}
       {payDate !== null ? (
         <Modal title="Zahlungseingang erfassen" onClose={() => setPayDate(null)}
@@ -386,6 +419,29 @@ function MaterialPicker({ onClose, onPick, purchase }: { onClose: () => void; on
       ) : (
         <p className="muted pad">{data.materials.length ? 'Keine Treffer.' : 'Noch kein Material angelegt.'} <Link href="/app/material" className="link">Material verwalten</Link></p>
       )}
+    </Modal>
+  );
+}
+
+function FinalizeDialog({ title, note, email, mailLock, preselect, busy, onClose, onConfirm, onUpgrade }: {
+  title: string; note: string; email: string; mailLock: boolean; preselect: boolean; busy: boolean;
+  onClose: () => void; onConfirm: (mail: { to: string } | null) => void; onUpgrade: () => void;
+}) {
+  const [send, setSend] = useState(!mailLock && preselect && !!email);
+  const [to, setTo] = useState(email);
+  const valid = !send || /\S+@\S+\.\S+/.test(to);
+  return (
+    <Modal title={title} onClose={onClose}
+      footer={<><button className="btn btn-quiet" onClick={onClose}>Abbrechen</button>
+        <button className="btn btn-primary" disabled={busy || !valid} onClick={() => onConfirm(send ? { to: to.trim() } : null)}>
+          {busy ? 'Sende …' : send ? <><Send size={16} /> Bestätigen & senden</> : <><Check size={16} /> Bestätigen</>}
+        </button></>}>
+      {note ? <p className="muted">{note}</p> : null}
+      <label className="check mt">
+        <input type="checkbox" checked={send} onChange={(e) => { if (mailLock) { onUpgrade(); return; } setSend(e.target.checked); }} />
+        <span><strong>Per E-Mail senden</strong>{mailLock ? <> <Lock size={12} /> ab Business</> : null}<br />Mit PDF im Anhang an den Kunden – optional.</span>
+      </label>
+      {send ? <Field label="An"><input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="kunde@beispiel.de" autoFocus={!to} /></Field> : null}
     </Modal>
   );
 }

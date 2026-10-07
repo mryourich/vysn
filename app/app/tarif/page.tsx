@@ -31,7 +31,7 @@ type Interval = 'monthly' | 'yearly';
 const NOTICE_KEY = 'vysn-plan-notice';
 
 function Plan() {
-  const { data, auth, role, activeCompanyId, switchCompany } = useStore();
+  const { data, auth, role, activeCompanyId, switchCompany, companies } = useStore();
   const params = useSearchParams();
   const router = useRouter();
   const company = data.company!;
@@ -180,7 +180,7 @@ function Plan() {
 
   return (
     <div className="page">
-      <PageHeader title="Tarif & Abrechnung" description={`Der Tarif gilt für die Firma „${company.name}“. Jede Firma kann einen eigenen Tarif haben.`}
+      <PageHeader title="Tarif & Abrechnung" description={`Der Tarif gilt für die Firma „${company.name}“. Weitere Firmen übernehmen den Tarif Ihres Abos automatisch.`}
         actions={billing?.hasCustomer && canManage ? <button className="btn" disabled={!!busy || !info?.enabled} onClick={() => go('portal', () => openPortal(activeCompanyId!))}><CreditCard size={16} /> {busy === 'portal' ? 'Öffne …' : 'Zahlung & Rechnungen verwalten'}</button> : null} />
 
       {notice ? <div className="notice notice-ok" role="status"><Check size={16} /><span>{notice}</span></div> : null}
@@ -228,6 +228,14 @@ function Plan() {
         </Modal>
       ) : null}
 
+      {billing?.parentId ? (
+        <div className="notice" role="status"><Info size={16} /><span>
+          Diese Firma nutzt den Tarif <strong>{PLANS[company.plan].label}</strong> von <strong>„{companies.find((c) => c.id === billing.parentId)?.name || 'Ihrer Hauptfirma'}“</strong> – ohne eigenes Abo.
+          Tarifwechsel, Zahlung und Kündigung verwalten Sie dort; Änderungen gelten automatisch auch für diese Firma.
+        </span></div>
+      ) : null}
+
+      {billing?.parentId ? null : <>
       <div className="billing-switch">
         <div className="segmented" role="tablist">
           <button className={!yearly ? 'active' : ''} onClick={() => setYearly(false)}>Monatlich</button>
@@ -263,6 +271,7 @@ function Plan() {
           );
         })}
       </div>
+      </>}
       <p className="muted small"><ExternalLink size={13} className="inline-icon" /> Die Zahlung läuft sicher über Stripe (SEPA-Lastschrift, Karte, Apple/Google Pay). Rechnungen erhalten Sie automatisch per E-Mail.</p>
     </div>
   );

@@ -913,3 +913,17 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
   .assistant-fab { right: 14px; bottom: calc(84px + env(safe-area-inset-bottom)); height: 46px; padding: 0 14px; }
   .assistant { width: 100vw; }
 }
+/* Alternative zu einer Position (1.1, 1.2 …) */
+.item.item-alt { margin-left: 26px; border-left: 3px solid #b9a6f5; }
+.item-alt-add { display: inline-flex; align-items: center; gap: 5px; margin: 8px 0 0 34px; font-size: 13px; }
+@media (max-width: 860px) { .item.item-alt { margin-left: 12px; } .item-alt-add { margin-left: 0; } }
+/* Kundendokumente */
+.dropzone { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px; border: 2px dashed var(--line-strong); border-radius: 14px; color: var(--muted); cursor: pointer; text-align: center; }
+.dropzone strong { color: var(--ink); font-size: 14.5px; }
+.dropzone.over, .dropzone:hover { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+.file-list { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; }
+.file-list li { display: flex; align-items: center; gap: 10px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+.file-icon { width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); flex: none; }
+.file-name { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.file-name strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-name small { color: var(--muted); font-size: 12px; }

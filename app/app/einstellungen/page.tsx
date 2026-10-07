@@ -184,7 +184,7 @@ function MailSettings() {
         )}
         <label className="check mt">
           <input type="checkbox" checked={e.autoSendInvoices} onChange={(ev) => set({ autoSendInvoices: ev.target.checked })} />
-          <span><strong>Rechnungen automatisch versenden</strong><br />„Festschreiben & versenden“ schickt die Rechnung ohne weiteren Dialog an die E-Mail-Adresse des Kunden.{!status?.enabled ? ' (Wirksam, sobald der direkte Versand eingerichtet ist.)' : ''}</span>
+          <span><strong>„Per E-Mail senden“ vorauswählen</strong><br />Beim Festschreiben bzw. Markieren als versendet ist das Häkchen für den E-Mail-Versand an den Kunden schon gesetzt – abwählbar.</span>
         </label>
         <div className="form-grid mt">
           <Field label="Kopie jeder E-Mail an (BCC)" span={2} hint="z. B. Ihre Buchhaltung"><input type="email" value={e.bcc} onChange={(ev) => set({ bcc: ev.target.value })} placeholder="optional" /></Field>

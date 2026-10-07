@@ -51,6 +51,25 @@ export const lineNet = (item: LineItem) => round2(item.quantity * item.unitPrice
 
 export type Totals = { net: number; vat: number; gross: number; vatGroups: { rate: number; net: number; vat: number }[] };
 
+/**
+ * Positionsnummern: Hauptpositionen 1, 2, 3 …; Alternativen zu einer Position
+ * darunter als 1.1, 1.2 …
+ */
+export function positionLabels(items: LineItem[]): string[] {
+  const main = new Map<string, number>();
+  const sub = new Map<string, number>();
+  let n = 0;
+  return items.map((item) => {
+    if (item.parentId && main.has(item.parentId)) {
+      const k = (sub.get(item.parentId) || 0) + 1;
+      sub.set(item.parentId, k);
+      return `${main.get(item.parentId)}.${k}`;
+    }
+    main.set(item.id, ++n);
+    return String(n);
+  });
+}
+
 /** Optionale und Alternativpositionen zählen nicht zur Summe. */
 export const inTotal = (item: LineItem) => !item.variant;
 

@@ -2,19 +2,22 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FilePlus2, Mail, Pencil, Phone, Plus, ReceiptText, Search, Trash2, Users } from 'lucide-react';
+import { FilePlus2, Mail, Paperclip, Pencil, Phone, Plus, ReceiptText, Search, Trash2, Users } from 'lucide-react';
 import { docTotals, money } from '../../../lib/calc';
 import { useStore } from '../../../lib/store';
 import { docEditPath } from '../../../lib/docs';
 import type { Customer, DocKind } from '../../../lib/types';
 import { CustomerModal } from '../../../components/app/customer-form';
+import { CustomerFilesModal } from '../../../components/app/customer-files';
+import { deleteCustomerFile, listCustomerFiles } from '../../../lib/db/files';
 import { Empty, PageHeader, useCreateAction } from '../../../components/app/ui';
 import { QuotaBar } from '../../../components/app/quota';
 
 export default function CustomersPage() {
-  const { data, deleteCustomer, createDoc } = useStore();
+  const { data, deleteCustomer, createDoc, auth, activeCompanyId } = useStore();
   const router = useRouter();
   const [editing, setEditing] = useState<Customer | null | 'new'>(null);
+  const [filesFor, setFilesFor] = useState<Customer | null>(null);
   const [q, setQ] = useState('');
   useCreateAction(() => setEditing('new'));
   const small = !!data.company?.smallBusiness;
@@ -65,10 +68,16 @@ export default function CustomersPage() {
                     <span className="row-actions" onClick={(e) => e.stopPropagation()}>
                       <button className="icon-btn" title="Angebot erstellen" onClick={() => newDoc('offer', c.id)}><FilePlus2 size={16} /></button>
                       <button className="icon-btn" title="Rechnung erstellen" onClick={() => newDoc('invoice', c.id)}><ReceiptText size={16} /></button>
+                      <button className="icon-btn" title="Dokumente" onClick={() => setFilesFor(c)}><Paperclip size={16} /></button>
                       <button className="icon-btn hide-sm" title="Bearbeiten" onClick={() => setEditing(c)}><Pencil size={16} /></button>
                       <button className="icon-btn danger hide-sm" title="Löschen" onClick={() => {
                         if (s.count) return alert(`${c.name} hat ${s.count} Belege und kann nicht gelöscht werden.`);
-                        if (confirm(`${c.name} löschen?`)) deleteCustomer(c.id);
+                        if (!confirm(`${c.name} löschen? Gespeicherte Dokumente des Kunden werden ebenfalls gelöscht.`)) return;
+                        // Dateien im Speicher mitlöschen (die Einträge entfernt die Datenbank selbst)
+                        if (auth.mode === 'supabase' && activeCompanyId) {
+                          listCustomerFiles(activeCompanyId, c.id).then((files) => Promise.all(files.map((f) => deleteCustomerFile(activeCompanyId, f)))).catch(() => {});
+                        }
+                        deleteCustomer(c.id);
                       }}><Trash2 size={16} /></button>
                     </span>
                   </div>
@@ -82,6 +91,7 @@ export default function CustomersPage() {
         )}
       </section>
       {editing ? <CustomerModal initial={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} /> : null}
+      {filesFor ? <CustomerFilesModal customer={filesFor} onClose={() => setFilesFor(null)} /> : null}
     </div>
   );
 }

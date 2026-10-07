@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { emptyCustomer } from '../../lib/defaults';
+import { COUNTRY_OPTIONS } from '../../lib/tax';
 import { useStore } from '../../lib/store';
 import type { Customer } from '../../lib/types';
 import { Field, Modal } from './ui';
 
 export function CustomerModal({ initial, onClose, onSaved }: { initial?: Customer; onClose: () => void; onSaved?: (c: Customer) => void }) {
-  const { saveCustomer } = useStore();
-  const [c, setC] = useState<Customer>(initial || emptyCustomer());
+  const { saveCustomer, data } = useStore();
+  const [c, setC] = useState<Customer>(initial || emptyCustomer(data.company?.country || 'Deutschland'));
   const text = (key: keyof Customer) => ({ value: String(c[key] ?? ''), onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setC({ ...c, [key]: e.target.value }) });
   const valid = c.name.trim().length > 0;
   const [busy, setBusy] = useState(false);
@@ -36,7 +37,7 @@ export function CustomerModal({ initial, onClose, onSaved }: { initial?: Custome
         <Field label="Straße und Hausnummer" span={3}><input {...text('street')} /></Field>
         <Field label="PLZ"><input {...text('zip')} /></Field>
         <Field label="Ort"><input {...text('city')} /></Field>
-        <Field label="Land"><input {...text('country')} /></Field>
+        <Field label="Land"><input {...text('country')} list="country-options" /><datalist id="country-options">{COUNTRY_OPTIONS.map(([name]) => <option key={name} value={name} />)}</datalist></Field>
         <Field label="E-Mail"><input {...text('email')} type="email" /></Field>
         <Field label="Telefon"><input {...text('phone')} type="tel" /></Field>
         <span className="span-1 hide-sm" />
