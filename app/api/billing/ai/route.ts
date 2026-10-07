@@ -45,7 +45,11 @@ export async function POST(req: Request) {
           preferred_locales: ['de'],
         });
         customer = created.id;
-        await db.from('companies').update({ ai_customer_id: customer }).eq('id', companyId);
+        const { error } = await db.from('companies').update({ ai_customer_id: customer }).eq('id', companyId);
+        if (error) {
+          console.error('ai customer', error);
+          return NextResponse.json({ error: 'Die Buchung ist noch nicht eingerichtet (Datenbank-Update fehlt).' }, { status: 503 });
+        }
       }
       const params: Stripe.Checkout.SessionCreateParams = {
         mode: 'subscription',

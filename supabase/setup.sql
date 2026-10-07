@@ -1157,12 +1157,19 @@ grant execute on function public.paying_company() to authenticated;
 revoke all on function public.propagate_plan() from public, anon, authenticated;
 
 -- ====================================================================
--- 20261017090000_ai_daily_limit.sql
+-- 20261017090000_ai_addon.sql
 -- ====================================================================
--- KI-Sprachassistent: Tageslimit je Firma (Kostenschutz)
+-- KI-Sprachassistent als Zusatzbuchung (eigenes Stripe-Abo) mit Kostenschutz
 --
--- Jede Anfrage an den Assistenten zählt einen Tageszähler hoch (Tag nach deutscher Zeit).
--- Nur der Server (service_role) ruft ai_take() auf; Nutzer haben keinen Zugriff.
+-- ai_*        Zustand des KI-Abos je Firma; nur serverseitig beschreibbar (kein UPDATE-Grant für Nutzer)
+-- ai_usage    Anfragen je Firma und Tag (Tag nach deutscher Zeit)
+-- ai_take()   zählt eine Anfrage, sofern Tages- und Monatslimit nicht erreicht sind; nur für den Server
+
+alter table public.companies add column if not exists ai_customer_id        text;
+alter table public.companies add column if not exists ai_subscription_id    text;
+alter table public.companies add column if not exists ai_status             text;
+alter table public.companies add column if not exists ai_period_end         timestamptz;
+alter table public.companies add column if not exists ai_cancel_at_period_end boolean not null default false;
 
 create table if not exists public.ai_usage (
   company_id uuid not null references public.companies(id) on delete cascade,
@@ -1174,21 +1181,27 @@ create table if not exists public.ai_usage (
 alter table public.ai_usage enable row level security;
 revoke all on public.ai_usage from anon, authenticated;
 
--- Zählt eine Anfrage, sofern das Limit noch nicht erreicht ist.
--- Rückgabe: verbleibende Anfragen nach dieser (>= 0) oder -1, wenn das Limit erreicht ist.
-create or replace function public.ai_take(p_company uuid, p_limit integer) returns integer
+-- Rückgabe: verbleibende Anfragen heute nach dieser (>= 0), -1 = Tageslimit erreicht, -2 = Monatslimit erreicht
+drop function if exists public.ai_take(uuid, integer);
+create or replace function public.ai_take(p_company uuid, p_daily integer, p_monthly integer) returns integer
 language plpgsql security definer set search_path = public as $$
 declare
-  v_day  date := (now() at time zone 'Europe/Berlin')::date;
-  v_used integer;
+  v_day   date := (now() at time zone 'Europe/Berlin')::date;
+  v_month integer;
+  v_used  integer;
 begin
+  -- gleichzeitige Anfragen derselben Firma nacheinander zählen
+  perform pg_advisory_xact_lock(hashtext('ai_take:' || p_company::text));
+  select coalesce(sum(requests), 0) into v_month from public.ai_usage
+   where company_id = p_company and day >= date_trunc('month', v_day)::date;
+  if v_month >= p_monthly then return -2; end if;
   insert into public.ai_usage (company_id, day, requests) values (p_company, v_day, 1)
   on conflict (company_id, day) do update set requests = public.ai_usage.requests + 1
-    where public.ai_usage.requests < p_limit
+    where public.ai_usage.requests < p_daily
   returning requests into v_used;
   if v_used is null then return -1; end if;
-  return p_limit - v_used;
+  return least(p_daily - v_used, p_monthly - v_month - 1);
 end $$;
 
-revoke all on function public.ai_take(uuid, integer) from public, anon, authenticated;
-grant execute on function public.ai_take(uuid, integer) to service_role;
+revoke all on function public.ai_take(uuid, integer, integer) from public, anon, authenticated;
+grant execute on function public.ai_take(uuid, integer, integer) to service_role;
