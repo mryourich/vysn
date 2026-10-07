@@ -2,9 +2,9 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
-import { CalendarClock, Check, CreditCard, ExternalLink, Info, Sparkles, Undo2 } from 'lucide-react';
+import { CalendarClock, Check, CreditCard, ExternalLink, Info, RotateCcw, Sparkles, Undo2 } from 'lucide-react';
 import { formatDate } from '../../../lib/calc';
-import { billingInfo, changePlan, openPortal, startCheckout, syncBilling } from '../../../lib/billing';
+import { billingInfo, changePlan, openPortal, startCheckout, syncBilling, withdraw, withdrawalInfo } from '../../../lib/billing';
 import type { ChangeResult } from '../../../lib/billing';
 import type { BillingInfo } from '../../../lib/billing';
 import { PLAN_OFFERS, PLANS, formatPlanPrice, isUpgrade } from '../../../lib/plans';
@@ -12,7 +12,7 @@ import type { PaidPlan, PlanId } from '../../../lib/types';
 import { useStore } from '../../../lib/store';
 import { QuotaList } from '../../../components/app/quota';
 import { isAdminRole } from '../../../lib/team';
-import { Badge, PageHeader } from '../../../components/app/ui';
+import { Badge, Field, Modal, PageHeader } from '../../../components/app/ui';
 
 export default function PlanPage() {
   return <Suspense fallback={null}><Plan /></Suspense>;
@@ -49,6 +49,31 @@ function Plan() {
   };
 
   useEffect(() => { billingInfo().then(setInfo); }, []);
+
+  // Widerrufsrecht: 14 Tage ab Vertragsschluss (Widerrufsbutton, zweistufig)
+  const [withdrawal, setWithdrawal] = useState<{ eligible: boolean; until?: string } | null>(null);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawName, setWithdrawName] = useState('');
+  const subId = company.billing?.status;
+  useEffect(() => {
+    if (!activeCompanyId || auth.mode !== 'supabase' || !isAdminRole(role)) return;
+    withdrawalInfo(activeCompanyId).then(setWithdrawal);
+  }, [activeCompanyId, auth.mode, role, subId]);
+  const confirmWithdrawal = async () => {
+    setBusy('withdraw');
+    setError('');
+    try {
+      const r = await withdraw(activeCompanyId!, withdrawName.trim());
+      const amount = r.refunded ? (r.refunded / 100).toLocaleString('de-DE', { style: 'currency', currency: r.currency || 'EUR' }) : '';
+      setNotice(`Ihr Widerruf ist eingegangen und das Abo beendet. ${amount ? `${amount} werden vollständig auf Ihre Zahlungsart erstattet. ` : ''}${r.mailed ? 'Die Bestätigung haben wir Ihnen per E-Mail gesendet.' : ''}`, true);
+      setWithdrawOpen(false);
+      await switchCompany(activeCompanyId!);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+    }
+  };
 
   // Rückkehr aus Stripe: Status direkt abgleichen und Firma neu laden
   const checkout = params.get('checkout');
@@ -184,12 +209,31 @@ function Plan() {
         {info && !info.enabled ? <p className="muted small mt"><Info size={13} className="inline-icon" /> Die Online-Buchung wird gerade eingerichtet. Bei Fragen zum Tarif schreiben Sie uns an hallo@vysn.de.</p> : null}
       </section>
 
+      {withdrawal?.eligible && subscribed ? (
+        <section className="card withdraw-card" id="widerruf">
+          <div className="card-head">
+            <div><h2><RotateCcw size={18} /> Vertrag widerrufen</h2>
+              <p>Sie können diesen Vertrag noch bis <strong>{withdrawal.until ? formatDate(withdrawal.until.slice(0, 10)) : '–'}</strong> ohne Angabe von Gründen widerrufen. Das Abo endet sofort, der bezahlte Betrag wird vollständig erstattet. Ihre Daten bleiben erhalten.</p></div>
+            <button className="btn" disabled={!!busy} onClick={() => setWithdrawOpen(true)}>Vertrag widerrufen</button>
+          </div>
+        </section>
+      ) : null}
+      {withdrawOpen ? (
+        <Modal title="Widerruf bestätigen" onClose={() => setWithdrawOpen(false)}
+          footer={<><button className="btn btn-quiet" onClick={() => setWithdrawOpen(false)}>Abbrechen</button>
+            <button className="btn btn-primary" disabled={busy === 'withdraw'} onClick={confirmWithdrawal}>{busy === 'withdraw' ? 'Wird verarbeitet …' : 'Widerruf bestätigen'}</button></>}>
+          <p>Hiermit widerrufe ich den Vertrag über das Abonnement <strong>{PLANS[company.plan].label}</strong> für die Firma <strong>{company.name}</strong>.</p>
+          <Field label="Ihr Name"><input value={withdrawName} onChange={(e) => setWithdrawName(e.target.value)} placeholder="Vor- und Nachname" autoFocus /></Field>
+          <p className="muted small mt">Angemeldet als {auth.email}. Das Abo endet sofort, die Firma nutzt danach den kostenlosen Tarif Start. Bereits bezahlte Beträge werden vollständig erstattet. Sie erhalten eine Bestätigung per E-Mail.</p>
+        </Modal>
+      ) : null}
+
       <div className="billing-switch">
         <div className="segmented" role="tablist">
           <button className={!yearly ? 'active' : ''} onClick={() => setYearly(false)}>Monatlich</button>
           <button className={yearly ? 'active' : ''} onClick={() => setYearly(true)}>Jährlich <span className="text-success">–20 %</span></button>
         </div>
-        {!subscribed ? <span className="muted small">Zum Ausprobieren ist Start dauerhaft kostenlos. Bezahlte Tarife werden ab der Buchung abgerechnet.</span> : null}
+        {!subscribed ? <span className="muted small">Zum Ausprobieren ist Start dauerhaft kostenlos. Bezahlte Tarife werden ab der Buchung abgerechnet – 14 Tage Widerrufsrecht mit voller Erstattung.</span> : null}
       </div>
 
       <div className="plan-grid">
