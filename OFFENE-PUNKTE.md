@@ -25,3 +25,11 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - **Kosten je Firma (gedeckelt):** Modell Claude Sonnet 5.5, Aufwand „low“; etwa 1–3 Cent je Anfrage. Höchstens 30 Anfragen am Tag (`AI_DAILY_LIMIT`) und 500 im Monat (`AI_MONTHLY_LIMIT`) – damit bleiben die Kosten je Firma bei höchstens ca. 15 € im Monat. Zusätzlich auf der Plattform ein monatliches Ausgabenlimit setzen.
 - **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel- und Belegdaten an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen.
 - **Spracherkennung:** läuft im Browser (Web Speech API; Chrome, Edge, Safari). In Firefox nur Texteingabe.
+
+## App in Google Play und im App Store veröffentlichen
+- **Status:** offen – native App ist gebaut (Ordner `mobile/`, Anleitung `mobile/README.md`)
+- **Android:** Google-Play-Entwicklerkonto (25 $ einmalig), `app-release.aab` hochladen, Store-Eintrag und Datensicherheit ausfüllen, geschlossener Test (12 Tester, 14 Tage) bei neuen privaten Konten.
+- **iPhone:** Apple-Developer-Programm (99 $/Jahr); bauen und hochladen über EAS (Cloud, kein Mac nötig) oder mit Mac/Xcode.
+- **Upload-Schlüssel** `vysner-upload.jks` mit `keystore.properties` sicher aufbewahren – nie ins Repository.
+- **Für die Prüfung** ein Demo-Konto anlegen (Apple und Google verlangen Zugangsdaten).
+- **Noch nicht in der App:** Buchführung (Einnahmen/Ausgaben), GuV, DATEV, Design und Einstellungen – öffnen sich auf vysnone.com.
