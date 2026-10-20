@@ -8,20 +8,21 @@ import { DocumentTemplate } from '../pdf/document-template';
 
 const company = {
   ...emptyCompany(),
-  name: 'Berger Innenausbau GmbH', owner: 'Jonas Berger', street: 'Werkstraße 12', zip: '80339', city: 'München',
-  phone: '+49 89 123 456 0', email: 'info@berger-innenausbau.de', website: 'www.berger-innenausbau.de',
-  taxNumber: '143/123/45678', vatId: 'DE123456789', bankName: 'Stadtsparkasse München', iban: 'DE89 7015 0000 0012 3456 78', bic: 'SSKMDEMMXXX',
+  name: 'Elektro Berger GmbH', owner: 'Jonas Berger', street: 'Linzer Straße 12', zip: '4600', city: 'Wels',
+  phone: '+43 7242 123 456', email: 'office@elektro-berger.at', website: 'www.elektro-berger.at',
+  taxNumber: '54 123/4567', vatId: 'ATU12345678', registerCourt: 'Landesgericht Wels', registerNumber: 'FN 123456 a',
+  bankName: 'Raiffeisenbank Wels', iban: 'AT12 3400 0000 0123 4567', bic: 'RZOOAT2L',
 };
 
 const doc: SalesDoc = {
   id: 'demo', kind: 'invoice', number: 'RE-2026-0042', status: 'sent', customerId: '',
-  recipient: { name: 'Architekturbüro Weiß & Partner', contactPerson: 'Thomas Weiß', street: 'Sendlinger Str. 21', zip: '80331', city: 'München', country: 'Deutschland', vatId: '' },
-  subject: 'Trockenbau Büroräume 2. OG', date: '2026-09-18', dueDate: '2026-10-02', serviceDate: '01.–15.09.2026', intro: '', outro: '',
+  recipient: { name: 'Familie Leitner', contactPerson: 'Markus Leitner', street: 'Am Anger 4', zip: '4614', city: 'Marchtrenk', country: 'Österreich', vatId: '' },
+  subject: 'Elektroinstallation Zubau, Baustelle Marchtrenk', date: '2026-09-18', dueDate: '2026-10-02', serviceDate: '01.–15.09.2026', intro: '', outro: '',
   items: [
-    { id: '1', description: 'Montagearbeiten Facharbeiter', details: 'Ständerwerk, Beplankung und Spachtelung Q3', quantity: 32, unit: 'Std.', unitPrice: 58, vat: 19, discount: 0 },
-    { id: '2', description: 'Gipskartonplatte 12,5 mm', details: '', quantity: 48, unit: 'Platte', unitPrice: 13.5, vat: 19, discount: 0 },
-    { id: '3', description: 'CW-Profil 50 mm, 3 m', details: '', quantity: 36, unit: 'Stück', unitPrice: 5.9, vat: 19, discount: 0 },
-    { id: '4', description: 'Anfahrt und Entsorgung', details: '', quantity: 1, unit: 'Pauschal', unitPrice: 120, vat: 19, discount: 0 },
+    { id: '1', description: 'Regiestunden Elektrotechniker', details: 'Leitungen verlegt, Dosen gesetzt, Verteiler bestückt', quantity: 24, unit: 'Std.', unitPrice: 68, vat: 20, discount: 0 },
+    { id: '2', description: 'Mantelleitung NYM-J 3x1,5 mm²', details: '', quantity: 180, unit: 'm', unitPrice: 1.2, vat: 20, discount: 0 },
+    { id: '3', description: 'FI-Schutzschalter 40 A / 30 mA', details: '', quantity: 1, unit: 'Stück', unitPrice: 89, vat: 20, discount: 0 },
+    { id: '4', description: 'Anfahrt und Entsorgung', details: '', quantity: 1, unit: 'Pauschal', unitPrice: 85, vat: 20, discount: 0 },
   ],
   paidDate: '', sourceId: '', stockBooked: false, createdAt: '', sentAt: '', sentTo: '',
 };

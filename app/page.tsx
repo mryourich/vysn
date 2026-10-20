@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import {
-  ArrowRight, BarChart3, Boxes, Building2, Check, CheckCircle2, FileText, Mail, Palette, Phone, ReceiptText, ShieldCheck, Smartphone, Sparkles, TrendingUp, Wallet,
+  ArrowRight, BarChart3, Boxes, Building2, Camera, Check, CheckCircle2, Clock, FileText, HardHat, Mail, MapPin, Package, Palette, ReceiptText, ShieldCheck, Smartphone, Sparkles, TrendingUp, TriangleAlert, Wallet,
 } from 'lucide-react';
 import { SiteHeader } from '../components/site/site-header';
 import { SiteFooter } from '../components/site/site-footer';
@@ -11,11 +11,12 @@ import { VysnMark, VysnWordmark } from '../components/app/brand';
 import './site.css';
 
 const FAQ = [
+  ['Ist VYSNER One für österreichische Betriebe gemacht?', 'Ja – Österreich zuerst. 20/13/10 % USt., UID-Nummer, Firmenbuch, Kleinunternehmerregelung nach § 6 Abs. 1 Z 27 UStG und die Rechnungsmerkmale nach § 11 UStG sind voreingestellt. Deutschland und die Schweiz funktionieren genauso – das Firmenland stellt Steuersätze, Hinweise und Währung um.'],
+  ['Wie kommen Regiestunden und Material auf die Rechnung?', 'Auf der Baustelle tragen Sie oder Ihre Leute am Handy ein, wer wie lange was gemacht hat und welches Material verbaut wurde – dazu Fotos und Mängel. Im Büro klicken Sie auf „Rechnung erstellen“: Alle offenen Stunden und das Material landen als Positionen auf der Rechnung, das Lager wird beim Festschreiben abgebucht.'],
   ['Brauche ich Buchhaltungskenntnisse?', 'Nein. Sie schreiben Angebote und Rechnungen und erfassen Ihre Ausgaben. Die GuV, Umsatzsteuer und Auswertungen entstehen daraus automatisch.'],
   ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten die Pflichtangaben für Deutschland (§ 14 UStG), Österreich (§ 11 UStG) und die Schweiz (Art. 26 MWSTG): Anschriften, Steuer- bzw. UID-Nummer, fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der passende Hinweis gesetzt.'],
-  ['Funktioniert VYSNER One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
-  ['Funktioniert VYSNER One auf dem Smartphone?', 'Ja. Die Anwendung ist für Smartphone, Tablet und Desktop gestaltet – zum Beispiel, um direkt auf der Baustelle eine Ausgabe zu erfassen oder eine Rechnung zu prüfen.'],
+  ['Funktioniert VYSNER One auf dem Smartphone?', 'Ja – gerade dort. Regiestunden, Material, Baustellenfotos und Mängel erfassen Sie direkt vor Ort am Handy, Angebote und Rechnungen prüfen und versenden Sie unterwegs. Im Büro geht alles am großen Bildschirm weiter.'],
   ['Wo werden meine Daten gespeichert?', process.env.NEXT_PUBLIC_SUPABASE_URL
     ? 'In einer gesicherten Datenbank, auf die nur Sie und Ihr Team Zugriff haben. So sind Ihre Daten auf allen Geräten verfügbar. Über „Datensicherung“ laden Sie zusätzlich jederzeit eine vollständige Sicherung herunter.'
     : 'In der aktuellen Version bleiben alle Daten lokal in Ihrem Browser auf Ihrem Gerät. Über „Datensicherung“ laden Sie jederzeit eine vollständige Sicherung herunter und können sie auf einem anderen Gerät einspielen.'],
@@ -37,17 +38,17 @@ export default function Home() {
             <VysnMark height={88} animated />
             <span className="hero-logo-word"><VysnWordmark height={20} /><em>One</em></span>
           </div>
-          <a href="#rechnungsdesign" className="hero-pill"><span>Neu</span> Rechnungsdesigner mit Live-Vorschau <ArrowRight size={14} /></a>
-          <h1><span className="hero-line">Ihr Betrieb.</span><span className="hero-line gradient-text">Klar gesteuert.</span></h1>
-          <p className="lead">Angebote, Rechnungen, Material und Zahlen in einer Software, die so präzise arbeitet wie Sie. Für kleine und mittlere Unternehmen, Handwerk und Dienstleister.</p>
+          <a href="#baustelle" className="hero-pill"><span>Neu</span> Baustellen: Regiestunden, Fotos & Mängel <ArrowRight size={14} /></a>
+          <h1><span className="hero-line">Von der Baustelle</span><span className="hero-line gradient-text">direkt zur Rechnung.</span></h1>
+          <p className="lead">Die Software für Elektriker und Handwerksbetriebe in Österreich. Regiestunden, Material und Fotos am Handy erfassen – im Büro mit einem Klick abrechnen. Mit Lager, Angeboten und österreichischen Steuersätzen.</p>
           <div className="hero-actions">
             <Link href="/app" className="btn btn-glow btn-lg">Kostenlos starten <ArrowRight size={17} /></Link>
             <a href="#funktionen" className="btn btn-ghost-dark btn-lg">Funktionen entdecken</a>
           </div>
           <ul className="hero-points">
-            <li><Check size={15} /> In 3 Minuten eingerichtet</li>
-            <li><Check size={15} /> Keine Kreditkarte nötig</li>
-            <li><Check size={15} /> Für Deutschland, Österreich & Schweiz</li>
+            <li><Check size={15} /> Gemacht für Elektriker & Handwerk</li>
+            <li><Check size={15} /> Österreich zuerst – USt., UID & Firmenbuch</li>
+            <li><Check size={15} /> Start dauerhaft kostenlos</li>
           </ul>
         </div>
         <div className="shell hero-stage">
@@ -58,7 +59,7 @@ export default function Home() {
       {/* ---------- Kennzahlen ---------- */}
       <section className="metrics">
         <div className="shell metrics-grid">
-          {([[3, ' Min.', 'bis zur ersten Rechnung'], [1, ' Klick', 'vom Angebot zur Rechnung'], [3, ' Länder', 'DE · AT · CH mit passenden Steuersätzen'], [100, ' %', 'mobil nutzbar']] as const).map(([n, suffix, l], i) => (
+          {([[1, ' Klick', 'von der Baustelle zur Rechnung'], [20, ' %', 'USt. – österreichisch voreingestellt'], [3, ' Min.', 'bis zur ersten Rechnung'], [100, ' %', 'am Handy auf der Baustelle']] as const).map(([n, suffix, l], i) => (
             <div key={l} data-reveal style={{ ['--d' as string]: `${i * 90}ms` }}><strong data-count={n} data-suffix={suffix}>{`${n}${suffix}`}</strong><span>{l}</span></div>
           ))}
         </div>
@@ -68,24 +69,48 @@ export default function Home() {
         <div className="ticker-track">
           {[0, 1].map((k) => (
             <div key={k} className="ticker-group">
-              {['Angebote', 'Rechnungen', 'Rechnungsdesign', 'Material & Lager', 'Ausgaben', 'GuV', 'Umsatzsteuer & MWST', 'Mehrere Firmen', 'PDF-Export', 'Mobil'].map((t) => <span key={t}>{t}</span>)}
+              {['Baustellen', 'Regiestunden', 'Baustellenfotos', 'Mängel', 'Angebote', 'Rechnungen', 'Material & Lager', 'Lieferscheine', 'Lager-Scanner', 'GuV & USt.'].map((t) => <span key={t}>{t}</span>)}
             </div>
           ))}
         </div>
       </div>
 
+      {/* ---------- Von der Baustelle zur Rechnung ---------- */}
+      <section id="baustelle" className="section shell">
+        <div className="section-head" data-reveal>
+          <span className="kicker">Von der Baustelle zur Rechnung</span>
+          <h2>Was auf der Baustelle passiert,<br /><span className="muted-head">steht am Abend auf der Rechnung.</span></h2>
+          <p>Kein Zettel im Bus, keine Stunden aus dem Gedächtnis. Jede Baustelle sammelt Regiestunden, Material, Fotos und Mängel – und wird mit einem Klick zur Rechnung.</p>
+        </div>
+        <div className="site-steps">
+          {([
+            [Clock, 'Regiestunden', 'Wer, wie lange, was gemacht – direkt am Handy. Der Stundensatz der Baustelle ist schon eingetragen.'],
+            [Package, 'Material', 'Aus dem eigenen Lager wählen oder frei eintragen. Abgebucht wird beim Festschreiben der Rechnung.'],
+            [Camera, 'Fotos', 'Verteiler vor dem Verschließen, Leitungsführung, Vorher/Nachher – sauber bei der Baustelle abgelegt.'],
+            [TriangleAlert, 'Mängel', 'Offene Punkte festhalten und abhaken, wenn sie behoben sind. Nichts geht mehr verloren.'],
+            [ReceiptText, 'Rechnung', 'Alle offenen Stunden und das Material als Positionen – prüfen, festschreiben, senden.'],
+          ] as const).map(([Icon, title, text], i) => (
+            <article key={title} className="site-step" data-reveal style={{ ['--d' as string]: `${i * 80}ms` }}>
+              <span className="tile-icon"><Icon size={18} /></span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       {/* ---------- Bento-Funktionen ---------- */}
       <section id="funktionen" className="section shell">
         <div className="section-head" data-reveal>
           <span className="kicker">Funktionen</span>
-          <h2>Alles, was Ihr Büro braucht.<br /><span className="muted-head">Nichts, was Sie aufhält.</span></h2>
+          <h2>Gebaut fürs Handwerk.<br /><span className="muted-head">Nicht fürs Großraumbüro.</span></h2>
         </div>
         <div className="bento">
           <article className="tile tile-wide" data-reveal style={{ ['--d' as string]: '0ms' }}>
             <div className="tile-copy">
               <span className="tile-icon"><ReceiptText size={18} /></span>
-              <h3>Angebote & Rechnungen</h3>
-              <p>Positionen aus dem Materialstamm übernehmen, Angebot mit einem Klick in eine Rechnung umwandeln, Zahlungseingänge erfassen. Überfälliges sehen Sie sofort.</p>
+              <h3>Vom Angebot zur Rechnung</h3>
+              <p>Angebot, Auftragsbestätigung, Lieferschein und Rechnung – Positionen aus dem Lager übernehmen, mit einem Klick weiterführen, Zahlungen erfassen. Überfälliges sehen Sie sofort.</p>
             </div>
             <div className="tile-visual flow">
               <div className="flow-card"><FileText size={15} /><span>Angebot<br /><b>AN-2026-0017</b></span><em className="st st-ok">Angenommen</em></div>
@@ -104,10 +129,10 @@ export default function Home() {
           <article className="tile" data-reveal style={{ ['--d' as string]: '180ms' }}>
             <span className="tile-icon"><Boxes size={18} /></span>
             <h3>Material & Lager</h3>
-            <p>EK, VK, Aufschlag und Bestand. Rechnungen buchen Material automatisch ab.</p>
+            <p>EK, VK und Bestand – mit QR-Etiketten am Regal und Scanner am Handy. Rechnungen buchen das Material ab.</p>
             <div className="stock">
-              <div><span>Gipskartonplatte</span><b>64 Platten</b></div><i><s style={{ width: '78%' }} /></i>
-              <div><span>Mineralwolle</span><b className="warn">6 Rollen</b></div><i><s className="warn" style={{ width: '18%' }} /></i>
+              <div><span>NYM-J 3x1,5 mm²</span><b>420 m</b></div><i><s style={{ width: '78%' }} /></i>
+              <div><span>FI-Schalter 40 A</span><b className="warn">2 Stück</b></div><i><s className="warn" style={{ width: '18%' }} /></i>
             </div>
           </article>
           <article className="tile" data-reveal style={{ ['--d' as string]: '0ms' }}>
@@ -137,6 +162,42 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ---------- Österreich zuerst ---------- */}
+      <section id="oesterreich" className="section section-soft">
+        <div className="shell">
+          <div className="section-head" data-reveal>
+            <span className="kicker">Österreich zuerst</span>
+            <h2>Aus Österreich. Für Österreich.</h2>
+            <p>Die meisten großen Programme sind für Deutschland gedacht. VYSNER One rechnet so, wie man bei uns rechnet.</p>
+          </div>
+          <div className="site-steps site-steps-3">
+            {([
+              ['20 / 13 / 10 %', 'Österreichische USt.-Sätze voreingestellt – dazu UID-Nummer, Firmenbuch und die Rechnungsmerkmale nach § 11 UStG.'],
+              ['Kleinunternehmer', 'Hinweis nach § 6 Abs. 1 Z 27 UStG automatisch auf jeder Rechnung, wenn Sie die Regelung nutzen.'],
+              ['Für die Baustelle', 'Regiestunden, Material, Fotos und Mängel je Baustelle – so, wie im Handwerk gearbeitet wird.'],
+            ] as const).map(([title, text], i) => (
+              <article key={title} className="site-step" data-reveal style={{ ['--d' as string]: `${i * 80}ms` }}>
+                <h3>{title}</h3>
+                <p>{text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Persönlich ---------- */}
+      <section id="ueber-uns" className="section shell">
+        <div className="founder" data-reveal="scale">
+          <span className="founder-icon"><HardHat size={26} /></span>
+          <div>
+            <span className="kicker">Persönlich & lokal</span>
+            <h2>Von einem Elektriker aus Oberösterreich.</h2>
+            <p>VYSNER One baut jemand, der selbst Angebote schreibt, Regiestunden abrechnet und weiß, wie der Freitagnachmittag im Büro aussieht. Wenn Sie eine Frage haben, reden Sie mit dem, der die Software gebaut hat – nicht mit einer Warteschleife.</p>
+            <p className="founder-meta"><MapPin size={15} /> Oberösterreich · <Mail size={15} /> <a href="mailto:hallo@vysn.de">hallo@vysn.de</a></p>
+          </div>
+        </div>
+      </section>
+
       {/* ---------- Rechnungsdesign ---------- */}
       <section id="rechnungsdesign" className="section section-soft">
         <div className="shell">
@@ -157,8 +218,8 @@ export default function Home() {
         </div>
         <ol className="timeline" data-reveal>
           <li><span className="node"><Building2 size={18} /></span><small>Schritt 01</small><h3>Firma anlegen</h3><p>Firmendaten, Steuernummer, Bankverbindung und Logo – einmal eingeben, überall verfügbar.</p></li>
-          <li><span className="node"><FileText size={18} /></span><small>Schritt 02</small><h3>Angebot schreiben</h3><p>Kunde wählen, Positionen übernehmen, PDF senden. Angenommen? Ein Klick macht daraus die Rechnung.</p></li>
-          <li><span className="node"><BarChart3 size={18} /></span><small>Schritt 03</small><h3>Zahlen im Blick</h3><p>Zahlungen und Ausgaben erfassen – GuV, Umsatzsteuer und Lager sind immer aktuell.</p></li>
+          <li><span className="node"><HardHat size={18} /></span><small>Schritt 02</small><h3>Baustelle anlegen</h3><p>Kunde wählen, Stundensatz eintragen – Ihre Leute erfassen vor Ort Stunden, Material und Fotos.</p></li>
+          <li><span className="node"><ReceiptText size={18} /></span><small>Schritt 03</small><h3>Abrechnen</h3><p>Ein Klick macht daraus die Rechnung. Zahlungen, Lager, GuV und Umsatzsteuer sind immer aktuell.</p></li>
         </ol>
       </section>
 
@@ -199,14 +260,13 @@ export default function Home() {
           <div className="cta-glow" aria-hidden="true" />
           <div className="cta-content">
             <Sparkles size={22} className="cta-spark" />
-            <h2>Bereit für weniger Büro und mehr Überblick?</h2>
-            <p>Konto anlegen, Unternehmen einrichten und direkt die erste Rechnung schreiben – im Tarif Start dauerhaft kostenlos.</p>
+            <h2>Weniger Zettel. Mehr Feierabend.</h2>
+            <p>Konto anlegen, Betrieb einrichten und die erste Baustelle abrechnen – im Tarif Start dauerhaft kostenlos.</p>
             <div className="hero-actions">
               <Link href="/app" className="btn btn-glow btn-lg">Jetzt kostenlos starten <ArrowRight size={17} /></Link>
             </div>
             <div className="cta-contact">
               <a href="mailto:hallo@vysn.de"><Mail size={15} /> hallo@vysn.de</a>
-              <a href="tel:+498912345600"><Phone size={15} /> 089 123 456 00</a>
             </div>
           </div>
         </div>
@@ -219,18 +279,18 @@ export default function Home() {
 
 function ProductMock() {
   const rows: [string, string, string, string, string][] = [
-    ['RE-2026-0042', 'Architekturbüro Weiß & Partner', '18.09.2026', 'Offen', '3.418,35 €'],
-    ['RE-2026-0041', 'Café Morgenrot', '12.09.2026', 'Bezahlt', '1.922,41 €'],
-    ['RE-2026-0040', 'Praxis Dr. Yilmaz', '04.09.2026', 'Überfällig', '1.190,00 €'],
-    ['RE-2026-0039', 'Hausverwaltung Lindner KG', '28.08.2026', 'Bezahlt', '5.106,90 €'],
-    ['RE-2026-0038', 'Familie Schneider', '21.08.2026', 'Bezahlt', '2.137,95 €'],
+    ['RE-2026-0042', 'Familie Leitner · Zubau Marchtrenk', '18.09.2026', 'Offen', '2.483,40 €'],
+    ['RE-2026-0041', 'Café Morgenrot · Ried', '12.09.2026', 'Bezahlt', '1.922,41 €'],
+    ['RE-2026-0040', 'Ordination Dr. Yilmaz · Vöcklabruck', '04.09.2026', 'Überfällig', '1.190,00 €'],
+    ['RE-2026-0039', 'Hausverwaltung Lindner · Linz', '28.08.2026', 'Bezahlt', '5.106,90 €'],
+    ['RE-2026-0038', 'Baumeister Weiß · Wels', '21.08.2026', 'Bezahlt', '2.137,95 €'],
   ];
   return (
     <div className="stage" aria-hidden="true">
       <div className="app-mock">
         <div className="app-mock-side">
           <div className="mock-brand"><VysnMark height={16} /><VysnWordmark height={8} /></div>
-          {['Startseite', 'Angebote', 'Rechnungen', 'Kunden', 'Material & Lager', 'Buchführung', 'Berichte'].map((l) => (
+          {['Startseite', 'Baustellen', 'Angebote', 'Rechnungen', 'Kunden', 'Material & Lager', 'Berichte'].map((l) => (
             <span key={l} className={l === 'Rechnungen' ? 'on' : ''}>{l}</span>
           ))}
         </div>
@@ -253,7 +313,7 @@ function ProductMock() {
           </div>
         </div>
       </div>
-      <div className="float float-a"><CheckCircle2 size={18} /><span><small>Zahlung eingegangen</small><b>+ 1.922,41 €</b></span></div>
+      <div className="float float-a"><HardHat size={18} /><span><small>Baustelle Leitner · 6,5 Std. erfasst</small><b>Rechnung erstellen</b></span></div>
       <div className="float float-b"><span><small>Ergebnis 2026</small><b>41.870 €</b></span><div className="spark">{[30, 42, 38, 55, 49, 64, 70, 82].map((h, i) => <i key={i} style={{ height: `${h}%`, ['--i' as string]: i }} />)}</div></div>
     </div>
   );

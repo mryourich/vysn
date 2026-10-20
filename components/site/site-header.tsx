@@ -6,8 +6,9 @@ import { Menu, X } from 'lucide-react';
 import { Brand } from '../app/brand';
 
 const LINKS = [
+  ['#baustelle', 'Baustelle'],
   ['#funktionen', 'Funktionen'],
-  ['#rechnungsdesign', 'Rechnungsdesign'],
+  ['#oesterreich', 'Österreich'],
   ['#preise', 'Preise'],
   ['#faq', 'Fragen'],
 ];

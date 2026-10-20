@@ -8,7 +8,7 @@ export const emptyCompany = (): Company => ({
   street: '',
   zip: '',
   city: '',
-  country: 'Deutschland',
+  country: 'Österreich',
   email: '',
   phone: '',
   website: '',
@@ -22,7 +22,7 @@ export const emptyCompany = (): Company => ({
   logo: '',
   logoRatio: 1,
   smallBusiness: false,
-  defaultVat: 19,
+  defaultVat: 20,
   paymentTermDays: 14,
   offerValidityDays: 30,
   invoicePrefix: 'RE',
@@ -126,29 +126,29 @@ export function demoData(): Data {
   const year = now.getFullYear();
   data.company = {
     ...emptyCompany(),
-    name: 'Berger Innenausbau GmbH',
+    name: 'Elektro Berger GmbH',
     owner: 'Jonas Berger',
-    street: 'Werkstraße 12',
-    zip: '80339',
-    city: 'München',
-    email: 'info@berger-innenausbau.de',
-    phone: '+49 89 123 456 0',
-    website: 'www.berger-innenausbau.de',
-    taxNumber: '143/123/45678',
-    vatId: 'DE123456789',
-    registerCourt: 'Amtsgericht München',
-    registerNumber: 'HRB 234567',
-    bankName: 'Stadtsparkasse München',
-    iban: 'DE89 7015 0000 0012 3456 78',
-    bic: 'SSKMDEMMXXX',
+    street: 'Linzer Straße 12',
+    zip: '4600',
+    city: 'Wels',
+    email: 'office@elektro-berger.at',
+    phone: '+43 7242 123 456',
+    website: 'www.elektro-berger.at',
+    taxNumber: '54 123/4567',
+    vatId: 'ATU12345678',
+    registerCourt: 'Landesgericht Wels',
+    registerNumber: 'FN 123456 a',
+    bankName: 'Raiffeisenbank Wels',
+    iban: 'AT12 3400 0000 0123 4567',
+    bic: 'RZOOAT2L',
   };
 
   const customers: [string, string, string, string, string][] = [
-    ['Hausverwaltung Lindner KG', 'Sabine Lindner', 'Leopoldstraße 88', '80802', 'München'],
-    ['Architekturbüro Weiß & Partner', 'Thomas Weiß', 'Sendlinger Str. 21', '80331', 'München'],
-    ['Familie Schneider', 'Markus Schneider', 'Am Anger 4', '82061', 'Neuried'],
-    ['Café Morgenrot', 'Lea Hoffmann', 'Gärtnerplatz 3', '80469', 'München'],
-    ['Praxis Dr. Yilmaz', 'Dr. Aylin Yilmaz', 'Rosenheimer Str. 140', '81669', 'München'],
+    ['Hausverwaltung Lindner GmbH', 'Sabine Lindner', 'Landstraße 88', '4020', 'Linz'],
+    ['Baumeister Weiß GmbH', 'Thomas Weiß', 'Stadtplatz 21', '4600', 'Wels'],
+    ['Familie Leitner', 'Markus Leitner', 'Am Anger 4', '4614', 'Marchtrenk'],
+    ['Café Morgenrot', 'Lea Hofer', 'Hauptplatz 3', '4910', 'Ried im Innkreis'],
+    ['Ordination Dr. Yilmaz', 'Dr. Aylin Yilmaz', 'Bahnhofstraße 14', '4840', 'Vöcklabruck'],
   ];
   data.customers = customers.map(([name, contactPerson, street, zip, city], i) => ({
     ...emptyCustomer(),
@@ -175,7 +175,7 @@ export function demoData(): Data {
     ['Schnellbauschrauben 3,9×35 (1000)', 'Befestigung', 'Paket', 11.9, 19.5, 9, 5],
   ];
   data.materials = materials.map(([name, category, unit, purchasePrice, salePrice, stock, minStock], i) => ({
-    ...emptyMaterial(),
+    ...emptyMaterial(20),
     id: uid(),
     number: `ART-${String(i + 1).padStart(4, '0')}`,
     name,
@@ -196,10 +196,10 @@ export function demoData(): Data {
   const locationFor = ['A-01', 'A-01', 'B-01', 'A-01', 'B-01', 'B-01', 'C-01', 'C-01'];
   data.materials = data.materials.map((m, i) => ({ ...m, locationId: data.locations.find((l) => l.code === locationFor[i])!.id }));
 
-  const labour = (hours: number): LineItem => ({ id: uid(), description: 'Montagearbeiten Facharbeiter', details: '', quantity: hours, unit: 'Std.', unitPrice: 62, vat: 19, discount: 0 });
+  const labour = (hours: number): LineItem => ({ id: uid(), description: 'Montagearbeiten Facharbeiter (Regie)', details: '', quantity: hours, unit: 'Std.', unitPrice: 62, vat: 20, discount: 0 });
   const mat = (index: number, quantity: number): LineItem => {
     const m = data.materials[index];
-    return { id: uid(), materialId: m.id, description: m.name, details: '', quantity, unit: m.unit, unitPrice: m.salePrice, vat: 19, discount: 0 };
+    return { id: uid(), materialId: m.id, description: m.name, details: '', quantity, unit: m.unit, unitPrice: m.salePrice, vat: 20, discount: 0 };
   };
 
   const subjects = ['Trockenbau Büroräume', 'Parkett Wohnzimmer', 'Innentüren tauschen', 'Deckenabhängung Praxis', 'Dachgeschossausbau', 'Akustikdecke Gastraum', 'Renovierung Treppenhaus'];
@@ -224,7 +224,7 @@ export function demoData(): Data {
         number: `RE-${y}-${String(data.counters.invoice[y]).padStart(4, '0')}`,
         status,
         customerId: customer.id,
-        recipient: { name: customer.name, contactPerson: customer.contactPerson, street: customer.street, zip: customer.zip, city: customer.city, country: 'Deutschland', vatId: '' },
+        recipient: { name: customer.name, contactPerson: customer.contactPerson, street: customer.street, zip: customer.zip, city: customer.city, country: 'Österreich', vatId: '' },
         subject: subjects[(back + k) % subjects.length],
         date,
         dueDate,
@@ -252,7 +252,7 @@ export function demoData(): Data {
         number: `AN-${y}-${String(data.counters.offer[y]).padStart(4, '0')}`,
         status: back === 0 ? 'sent' : back === 1 ? 'draft' : 'accepted',
         customerId: customer.id,
-        recipient: { name: customer.name, contactPerson: customer.contactPerson, street: customer.street, zip: customer.zip, city: customer.city, country: 'Deutschland', vatId: '' },
+        recipient: { name: customer.name, contactPerson: customer.contactPerson, street: customer.street, zip: customer.zip, city: customer.city, country: 'Österreich', vatId: '' },
         subject: subjects[(back + 4) % subjects.length],
         date,
         dueDate: addDays(date, 30),
@@ -288,15 +288,15 @@ export function demoData(): Data {
     }
     const date = toISO(new Date(month.getFullYear(), month.getMonth(), 18));
     if (date <= toISO(now)) {
-      expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Baustoff Union', description: 'Materialeinkauf', category: 'Material & Waren', net: 1800 + ((back * 373) % 1400), vat: 19, receiptNo: `BU-${4400 + back}` });
-      if (back % 3 === 0) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Elektro Maier', description: 'Elektroinstallation (Subunternehmer)', category: 'Fremdleistungen', net: 1200 + back * 90, vat: 19, receiptNo: '' });
-      if (back % 4 === 1) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Druckerei Ost', description: 'Flyer & Fahrzeugbeschriftung', category: 'Marketing', net: 340, vat: 19, receiptNo: '' });
+      expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Baustoff Union', description: 'Materialeinkauf', category: 'Material & Waren', net: 1800 + ((back * 373) % 1400), vat: 20, receiptNo: `BU-${4400 + back}` });
+      if (back % 3 === 0) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Elektro Maier', description: 'Elektroinstallation (Subunternehmer)', category: 'Fremdleistungen', net: 1200 + back * 90, vat: 20, receiptNo: '' });
+      if (back % 4 === 1) expenses.push({ id: uid(), kind: 'expense', date, supplier: 'Druckerei Ost', description: 'Flyer & Fahrzeugbeschriftung', category: 'Marketing', net: 340, vat: 20, receiptNo: '' });
     }
   }
   // einige Einnahmen ohne Rechnung
   for (const back of [1, 4, 7]) {
     const date = toISO(new Date(year, now.getMonth() - back, 22));
-    expenses.push({ id: uid(), kind: 'income', date, supplier: 'Barverkauf Werkstatt', description: 'Restmaterial an Privatkunden', category: 'Barverkauf', net: 180 + back * 25, vat: 19, receiptNo: `KB-${100 + back}` });
+    expenses.push({ id: uid(), kind: 'income', date, supplier: 'Barverkauf Werkstatt', description: 'Restmaterial an Privatkunden', category: 'Barverkauf', net: 180 + back * 25, vat: 20, receiptNo: `KB-${100 + back}` });
   }
   expenses.sort((a, b) => a.date.localeCompare(b.date));
   data.expenses = expenses.reverse();

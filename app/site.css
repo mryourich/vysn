@@ -478,3 +478,23 @@
 .withdraw-box.ok { background: var(--primary-soft); border-color: transparent; color: #145a2c; }
 .withdraw-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
 .withdraw-error { color: var(--danger); font-size: 14px; }
+
+/* Von der Baustelle zur Rechnung / Österreich zuerst */
+.site-steps { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+.site-steps-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.site-step { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; gap: 8px; }
+.site-step h3 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+.site-step p { color: var(--ink-2); font-size: 14.5px; line-height: 1.6; }
+.site-steps:not(.site-steps-3) .site-step:not(:last-child)::after { content: ''; position: absolute; top: 42px; right: -11px; width: 8px; height: 8px; border-top: 2px solid var(--primary); border-right: 2px solid var(--primary); transform: rotate(45deg); z-index: 1; }
+.site-steps-3 .site-step h3 { font-size: 21px; color: var(--primary); }
+@media (max-width: 1080px) { .site-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } .site-steps .site-step::after { display: none; } }
+@media (max-width: 640px) { .site-steps, .site-steps-3 { grid-template-columns: 1fr; } }
+
+/* Persönlich & lokal */
+.founder { display: flex; gap: 24px; align-items: flex-start; background: var(--night, #06100b); color: #e8f2ec; border-radius: 24px; padding: 40px; }
+.founder h2 { color: #fff; margin-bottom: 12px; }
+.founder p { color: #b7c9be; font-size: 16px; line-height: 1.7; max-width: 720px; }
+.founder-icon { flex: none; width: 58px; height: 58px; border-radius: 16px; display: grid; place-items: center; color: #fff; background: var(--gradient); }
+.founder-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; font-size: 14.5px; }
+.founder-meta a { color: #7ee2a0; }
+@media (max-width: 640px) { .founder { flex-direction: column; padding: 28px 22px; } }

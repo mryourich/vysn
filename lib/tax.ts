@@ -63,7 +63,7 @@ export const TAX_PROFILES: Record<CountryCode | 'OTHER', TaxProfile> = {
   },
 };
 
-export const COUNTRY_OPTIONS: [string, CountryCode][] = [['Deutschland', 'DE'], ['Österreich', 'AT'], ['Schweiz', 'CH']];
+export const COUNTRY_OPTIONS: [string, CountryCode][] = [['Österreich', 'AT'], ['Deutschland', 'DE'], ['Schweiz', 'CH']];
 
 export function countryCode(country: string | undefined): CountryCode | null {
   const c = (country || '').trim().toLowerCase();
