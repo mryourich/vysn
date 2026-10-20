@@ -33,3 +33,15 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - **Upload-Schlüssel** `vysner-upload.jks` mit `keystore.properties` sicher aufbewahren – nie ins Repository.
 - **Für die Prüfung** ein Demo-Konto anlegen (Apple und Google verlangen Zugangsdaten).
 - **Noch nicht in der App:** Buchführung (Einnahmen/Ausgaben), GuV, DATEV, Design und Einstellungen – öffnen sich auf vysnone.com.
+
+## Startseite: persönliche Angaben ergänzen
+- **Status:** offen
+- Abschnitt „Von einem Elektriker aus Oberösterreich“: Name, Foto, Ort und Telefonnummer eintragen (`app/page.tsx`, `#ueber-uns`). Die frühere Platzhalter-Telefonnummer (München) wurde entfernt.
+- Kontakt-E-Mail ist noch `hallo@vysn.de` – ggf. auf eine `.at`-Adresse bzw. die Domain vysnone.com umstellen (Startseite, Impressum, Widerruf, E-Mails).
+- Rechtstexte (Impressum nach § 5 ECG / § 25 MedienG, Widerruf nach FAGG) für Österreich prüfen lassen.
+
+## Baustellen: nächste Ausbaustufen
+- **Regiebericht** als PDF mit Unterschrift des Kunden am Handy.
+- Fotos und Mängel im Regiebericht bzw. als Anhang zur Rechnung.
+- Offline-Erfassung in der App (Baustellen derzeit nur mit Verbindung).
+- Reverse Charge für Bauleistungen (§ 19 Abs. 1a UStG) am Kunden.
