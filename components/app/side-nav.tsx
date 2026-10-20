@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import {
   ArrowDownLeft, ArrowUpRight, BarChart3, BookOpen, Boxes, ChevronDown, ClipboardCheck, FileSpreadsheet, FileText, FolderOpen,
-  LayoutDashboard, Lock, PieChart, Puzzle, ReceiptText, ShoppingCart, Truck, Users,
+  HardHat, LayoutDashboard, Lock, PieChart, Puzzle, ReceiptText, ShoppingCart, Truck, Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { featureForPath } from '../../lib/plans';
@@ -25,6 +25,7 @@ export const NAV: NavEntry[] = [
     { href: '/app/rechnungen', label: 'Rechnungen', icon: ReceiptText },
     { href: '/app/bestellungen', label: 'Bestellungen', icon: ShoppingCart },
   ] },
+  { href: '/app/baustellen', label: 'Baustellen', icon: HardHat },
   { href: '/app/kunden', label: 'Kunden', icon: Users },
   { href: '/app/material', label: 'Material & Lager', icon: Boxes },
   { group: 'books', label: 'Buchführung', icon: BookOpen, items: [

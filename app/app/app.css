@@ -936,3 +936,24 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .ext-points svg { color: var(--primary); flex: none; }
 .ext-card p.small { flex: none; margin: 0; }
 .ext-withdraw .link-btn { display: inline-flex; gap: 4px; align-items: center; background: none; border: 0; padding: 0; color: var(--primary); font: inherit; cursor: pointer; text-decoration: underline; }
+
+/* Baustellen */
+.tr-proj { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1.4fr) 130px 140px; }
+.tr-entry { grid-template-columns: minmax(0, 2.4fr) 110px 150px 44px; }
+.block { display: block; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; margin-bottom: 8px; text-decoration: none; }
+.back-link:hover { color: var(--ink); }
+.entry-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; padding: 6px 4px 16px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.entry-form .field { flex: 1 1 140px; margin: 0; }
+.entry-form .btn { flex: none; }
+.btn-warn { background: var(--warning-soft); color: var(--warning); border-color: transparent; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; padding: 12px 4px 4px; }
+.photo-grid figure { margin: 0; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--surface-2); }
+.photo-grid img, .photo-missing { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.photo-missing { display: grid; place-items: center; color: var(--muted); }
+.photo-grid figcaption { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 6px 8px; font-size: 13px; color: var(--ink-2); }
+.photo-grid figcaption span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 760px) {
+  .tr-proj, .tr-entry { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .tr-entry .row-actions { grid-column: 3; }
+}

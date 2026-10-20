@@ -3,9 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import {
-  ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, ClipboardCheck, ShoppingCart, Truck, FileText, LayoutDashboard, Menu, Plus, ReceiptText, ScanLine, UserPlus, X,
-} from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Boxes, ChevronRight, ClipboardCheck, FileText, HardHat, LayoutDashboard, Menu, Plus, ReceiptText, ScanLine, ShoppingCart, Truck, UserPlus, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { DocKind } from '../../lib/types';
 import { useStore } from '../../lib/store';
@@ -101,6 +99,7 @@ function CreateSheet({ pathname, onClose, guard }: { pathname: string; onClose: 
     { key: 'confirmation', label: 'Auftrag', hint: 'Auftragsbestätigung', icon: ClipboardCheck, tone: 'blue', run: () => doc('confirmation') },
     { key: 'delivery', label: 'Lieferschein', hint: 'Ohne Preise', icon: Truck, tone: 'cyan', run: () => doc('delivery') },
     { key: 'order', label: 'Bestellung', hint: 'Beim Lieferanten', icon: ShoppingCart, tone: 'slate', run: () => doc('order') },
+    { key: 'project', label: 'Baustelle', hint: 'Stunden, Material, Fotos', icon: HardHat, tone: 'orange', run: () => open('/app/baustellen') },
     { key: 'customer', label: 'Kunde', hint: 'Kontakt anlegen', icon: UserPlus, tone: 'violet', run: () => open('/app/kunden') },
     { key: 'expense', label: 'Ausgabe', hint: 'Beleg erfassen', icon: ArrowUpRight, tone: 'orange', run: () => open('/app/ausgaben', 'ausgabe') },
     { key: 'income', label: 'Einnahme', hint: 'Barverkauf & Co.', icon: ArrowDownLeft, tone: 'green', run: () => open('/app/ausgaben', 'einnahme') },
