@@ -1,7 +1,7 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Building2, ExternalLink, FileText, Globe, LogOut, Mic, Repeat, ScanLine, Shield } from 'lucide-react-native';
+import { Boxes, Building2, ExternalLink, FileText, Globe, LogOut, Mic, Repeat, ScanLine, Shield } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 import { Badge, Card, H, Row, Screen, s } from '../../components/ui';
 import { SITE_URL } from '../../lib/supabase';
@@ -37,6 +37,7 @@ export default function More() {
 
       <H>Werkzeuge</H>
       <Card>
+        <Row icon={Boxes} title="Material & Lager" sub="Artikel, Bestand, Lagerbuchung" onPress={() => router.push('/material')} />
         <Row icon={ScanLine} title="Lager-Scanner" sub="QR-Etiketten scannen und buchen" onPress={() => router.push('/scanner')} />
         <Row icon={Mic} title="KI-Sprachassistent" sub={aiBooked ? 'Belege per Sprache, Fragen zu Ihren Zahlen' : 'Zusatzbuchung – nicht gebucht'} last onPress={() => router.push('/assistent')} />
       </Card>

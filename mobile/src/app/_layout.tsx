@@ -24,6 +24,8 @@ function Root() {
       <Stack.Screen name="beleg/[id]" options={{ title: 'Beleg' }} />
       <Stack.Screen name="kunde/[id]" options={{ title: 'Kunde' }} />
       <Stack.Screen name="artikel/[id]" options={{ title: 'Artikel' }} />
+      <Stack.Screen name="baustelle/[id]" options={{ title: 'Baustelle' }} />
+      <Stack.Screen name="baustelle/bearbeiten" options={{ title: 'Baustelle' }} />
       <Stack.Screen name="scanner" options={{ title: 'Lager-Scanner' }} />
       <Stack.Screen name="assistent" options={{ title: 'KI-Sprachassistent', presentation: 'modal' }} />
       <Stack.Screen name="firmen" options={{ title: 'Firma wechseln', presentation: 'modal' }} />

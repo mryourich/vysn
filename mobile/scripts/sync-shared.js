@@ -10,7 +10,7 @@ const root = path.resolve(__dirname, '..', '..', 'lib');
 const out = path.resolve(__dirname, '..', 'src', 'shared');
 const FILES = [
   'types.ts', 'calc.ts', 'docs.ts', 'defaults.ts', 'plans.ts', 'tax.ts',
-  'db/mappers.ts', 'db/ops.ts', 'db/adapter.ts', 'db/supabase.ts',
+  'db/mappers.ts', 'db/ops.ts', 'db/adapter.ts', 'db/supabase.ts', 'projects.ts',
 ];
 
 fs.rmSync(out, { recursive: true, force: true });

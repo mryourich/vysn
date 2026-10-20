@@ -52,9 +52,16 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "VYSNER One nutzt die Kamera, um QR-Etiketten im Lager zu scannen.",
+          "cameraPermission": "VYSNER One nutzt die Kamera für Baustellenfotos und zum Scannen von QR-Etiketten.",
           "microphonePermission": false,
           "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VYSNER One lädt auf Wunsch Fotos aus Ihrer Mediathek zu einer Baustelle hoch.",
+          "cameraPermission": "VYSNER One nutzt die Kamera für Baustellenfotos und zum Scannen von QR-Etiketten."
         }
       ],
       [
