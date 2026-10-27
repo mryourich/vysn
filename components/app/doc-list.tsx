@@ -43,7 +43,7 @@ export function DocList({ kind }: { kind: DocKind }) {
     return true;
   });
 
-  const sum = (list: SalesDoc[], field: 'net' | 'gross' = 'gross') => list.reduce((s, d) => s + docTotals(d.items, small, d.kind)[field], 0);
+  const sum = (list: SalesDoc[], field: 'net' | 'gross' = 'gross') => list.reduce((s, d) => s + docTotals(d.items, small)[field], 0);
   const count = (status: SalesDoc['status']) => docs.filter((d) => d.status === status);
   const create = async () => {
     const doc = await createDoc(kind);
@@ -127,7 +127,7 @@ export function DocList({ kind }: { kind: DocKind }) {
                   <span className="td-muted hide-sm">{formatDate(d.date)}</span>
                   <span className="td-muted hide-sm">{formatDate(d.dueDate)}</span>
                   <span><Badge tone={st.tone}>{st.label}</Badge></span>
-                  <span className="td-num">{cfg.prices ? money(docTotals(d.items, small, d.kind).gross) : d.items.length}</span>
+                  <span className="td-num">{cfg.prices ? money(docTotals(d.items, small).gross) : d.items.length}</span>
                 </Link>
               );
             })}

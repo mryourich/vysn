@@ -11,7 +11,7 @@ export default function Customers() {
   const small = !!data.company?.smallBusiness;
   const openBy = useMemo(() => {
     const m = new Map<string, number>();
-    for (const d of data.documents) if (d.kind === 'invoice' && d.status === 'sent') m.set(d.customerId, (m.get(d.customerId) || 0) + docTotals(d.items, small, d.kind).gross);
+    for (const d of data.documents) if (d.kind === 'invoice' && d.status === 'sent') m.set(d.customerId, (m.get(d.customerId) || 0) + docTotals(d.items, small).gross);
     return m;
   }, [data.documents, small]);
   const list = data.customers

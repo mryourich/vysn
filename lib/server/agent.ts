@@ -117,7 +117,7 @@ const TOOLS: Anthropic.Beta.BetaTool[] = [
   },
   {
     name: 'get_document',
-    description: 'Alle Details eines Belegs: Positionen, Summen (einmalig und monatlich), Daten, Status, Kunde mit Kontaktdaten. Vor dem Schreiben einer E-Mail zu einem Beleg verwenden.',
+    description: 'Alle Details eines Belegs: Positionen, Summe (inkl. erstem Monat) und was danach monatlich anfällt, Daten, Status, Kunde mit Kontaktdaten. Vor dem Schreiben einer E-Mail zu einem Beleg verwenden.',
     strict: true,
     input_schema: {
       type: 'object',
@@ -506,7 +506,7 @@ async function documentTool(name: string, input: Record<string, unknown>, db: Su
   const summary = (d: SalesDoc) => ({
     id: d.id, nummer: d.number, art: DOC_KINDS[d.kind]?.one || d.kind, status: d.status, kunde: d.recipient.name,
     kunde_email: (cust.get(d.customerId)?.email as string) || '', datum: d.date, faellig_bzw_gueltig_bis: d.dueDate,
-    betrag_brutto: DOC_KINDS[d.kind]?.prices ? round2(docTotals(d.items, small, d.kind).gross) : null,
+    betrag_brutto: DOC_KINDS[d.kind]?.prices ? round2(docTotals(d.items, small).gross) : null,
     ueberfaellig: isOverdue(d),
   });
   if (name === 'search_documents') {
@@ -528,8 +528,8 @@ async function documentTool(name: string, input: Record<string, unknown>, db: Su
     empfaenger: d.recipient,
     kunde_kontakt: c ? { name: c.name, ansprechpartner: c.contact_person, email: c.email, telefon: c.phone } : null,
     positionen: d.items.map((i) => ({ text: i.description, menge: i.quantity, einheit: i.unit, einzelpreis_netto: i.unitPrice, monatlich: i.interval === 'monthly', optional_oder_alternative: !!i.variant })),
-    summe_netto: round2(docTotals(d.items, small, d.kind).net),
-    monatlich_brutto: monthly ? round2(monthly.gross) : null,
+    summe_netto: round2(docTotals(d.items, small).net),
+    danach_monatlich_brutto: monthly ? round2(monthly.gross) : null,
   });
 }
 
@@ -565,7 +565,7 @@ function insights(data: Data) {
   const byCustomer = new Map<string, number>();
   for (const d of data.documents) {
     if (d.kind !== 'invoice' || d.status === 'draft' || d.status === 'cancelled' || !d.date.startsWith(String(year))) continue;
-    byCustomer.set(d.recipient.name, (byCustomer.get(d.recipient.name) || 0) + docTotals(d.items, small, d.kind).net);
+    byCustomer.set(d.recipient.name, (byCustomer.get(d.recipient.name) || 0) + docTotals(d.items, small).net);
   }
   const open = openItems(data);
   return {
@@ -597,8 +597,8 @@ function openItems(data: Data) {
       nummer: d.number, kunde: d.recipient.name, betrag_brutto: gross(d.items), rechnungsdatum: d.date, faellig: d.dueDate,
       ueberfaellig_tage: isOverdue(d) ? days(d.dueDate) : 0,
     })).sort((a, b) => b.ueberfaellig_tage - a.ueberfaellig_tage),
-    summe_offen: Math.round(open.reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0) * 100) / 100,
-    summe_ueberfaellig: Math.round(open.filter(isOverdue).reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0) * 100) / 100,
+    summe_offen: Math.round(open.reduce((s, d) => s + docTotals(d.items, small).gross, 0) * 100) / 100,
+    summe_ueberfaellig: Math.round(open.filter(isOverdue).reduce((s, d) => s + docTotals(d.items, small).gross, 0) * 100) / 100,
     offene_angebote: data.documents.filter((d) => d.kind === 'offer' && d.status === 'sent').map((d) => ({ nummer: d.number, kunde: d.recipient.name, betrag_brutto: gross(d.items), gueltig_bis: d.dueDate })),
     entwuerfe: data.documents.filter((d) => d.status === 'draft').length,
     unter_mindestbestand: (data.materials as unknown as { number: string; name: string; unit: string; stock: number; minStock: number }[])
