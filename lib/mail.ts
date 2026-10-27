@@ -18,7 +18,7 @@ export function mailStatus(): Promise<MailStatus> {
 }
 
 export function fillMail(template: string, doc: SalesDoc, company: Company) {
-  const gross = docTotals(doc.items, company.smallBusiness, doc.kind).gross;
+  const gross = docTotals(doc.items, company.smallBusiness).gross;
   return template
     .replace(/\{nummer\}/g, doc.number)
     .replace(/\{datum\}/g, formatDate(doc.date))
@@ -40,7 +40,7 @@ export async function sendMail(input: { to: string; cc?: string; bcc?: string; s
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   const res = await fetch('/api/send', {
     method: 'POST',

@@ -38,7 +38,7 @@ export default function Documents() {
             return (
               <Row key={d.id} title={d.number} sub={`${d.recipient.name || `Kein ${cfg.partner}`}${d.subject ? ` · ${d.subject}` : ''}`}
                 right={<Badge label={st.label} tone={st.tone} />}
-                rightSub={`${cfg.prices ? money(docTotals(d.items, small, d.kind).gross) + ' · ' : ''}${formatDate(d.date)}`}
+                rightSub={`${cfg.prices ? money(docTotals(d.items, small).gross) + ' · ' : ''}${formatDate(d.date)}`}
                 last={i === list.length - 1} onPress={() => router.push(`/beleg/${d.id}`)} />
             );
           }) : <Empty icon={FileText} title={`Keine ${cfg.many}`} text={q || filter !== 'all' ? 'Keine Treffer für diesen Filter.' : cfg.emptyText} />}

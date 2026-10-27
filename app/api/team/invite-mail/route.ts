@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { userFromRequest } from '../../../../lib/server/supabase-admin';
+import { requestToken, userFromRequest } from '../../../../lib/server/supabase-admin';
 import { mailFrom, smtpConfigured, smtpTransport } from '../../../../lib/server/smtp';
 import { siteOrigin } from '../../../../lib/server/billing';
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const { token } = await req.json().catch(() => ({ token: '' }));
   if (typeof token !== 'string' || !/^[0-9a-f]{32,128}$/.test(token)) return NextResponse.json({ error: 'Ungültige Einladung.' }, { status: 400 });
 
-  const jwt = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const jwt = requestToken(req);
   const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${jwt}` } },

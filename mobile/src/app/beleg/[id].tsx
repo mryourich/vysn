@@ -10,7 +10,7 @@ import { confirm } from '../../lib/confirm';
 import { printDoc, shareDocPdf } from '../../lib/pdf';
 import { useStore } from '../../lib/store';
 import { C } from '../../lib/theme';
-import { displayStatus, docTotals, formatDate, lineNet, money, monthlySeparate, monthlyTotals, positionLabels, qty, uid } from '../../shared/calc';
+import { displayStatus, docTotals, formatDate, lineNet, money, monthlyTotals, positionLabels, qty, uid } from '../../shared/calc';
 import { DOC_KINDS, NEXT_KINDS } from '../../shared/docs';
 import { emptyItem } from '../../shared/defaults';
 import { formatRate, taxProfile } from '../../shared/tax';
@@ -64,9 +64,8 @@ export default function DocumentScreen() {
   const company = data.company;
   const cfg = DOC_KINDS[doc.kind];
   const small = company.smallBusiness;
-  const totals = docTotals(doc.items, small, doc.kind);
+  const totals = docTotals(doc.items, small);
   const monthly = monthlyTotals(doc.items, small);
-  const separate = !!monthly && monthlySeparate(doc.kind);
   const st = displayStatus(doc);
   const locked = doc.kind === 'invoice' && doc.status !== 'draft';
   const labels = positionLabels(doc.items);
@@ -180,12 +179,8 @@ export default function DocumentScreen() {
           <Card style={{ padding: 14, gap: 6 }}>
             {!small ? <Line label="Netto" value={money(totals.net)} /> : null}
             {!small ? totals.vatGroups.map((g) => <Line key={g.rate} label={`${tax.label} ${formatRate(g.rate)}`} value={money(g.vat)} />) : null}
-            <Line label={separate ? `${cfg.totalLabel || 'Summe'} einmalig` : cfg.totalLabel || 'Summe'} value={money(totals.gross)} strong />
-            {separate && monthly ? <>
-              {!small ? <Line label="Netto pro Monat" value={money(monthly.net)} /> : null}
-              <Line label="Summe pro Monat" value={money(monthly.gross)} strong />
-            </> : null}
-            {monthly && !separate ? <Line label="davon monatlich" value={money(monthly.gross)} /> : null}
+            <Line label={monthly ? `${cfg.totalLabel || 'Summe'} (inkl. 1. Monat)` : cfg.totalLabel || 'Summe'} value={money(totals.gross)} strong />
+            {monthly ? <Line label="danach monatlich" value={money(monthly.gross)} strong /> : null}
             {small ? <Text style={s.mutedSmall}>{tax.smallBusinessNote}</Text> : null}
           </Card>
         ) : null}

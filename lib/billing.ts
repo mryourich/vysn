@@ -17,7 +17,7 @@ async function call(path: string, body: unknown): Promise<Record<string, string>
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   const res = await fetch(path, { method: 'POST', headers, body: JSON.stringify(body) });
   const json = await res.json().catch(() => ({}));
@@ -33,7 +33,7 @@ export async function withdrawalInfo(companyId: string): Promise<{ eligible: boo
   const headers: Record<string, string> = {};
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   try {
     const res = await fetch(`/api/billing/withdraw?companyId=${encodeURIComponent(companyId)}`, { headers, cache: 'no-store' });

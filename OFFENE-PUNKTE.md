@@ -23,13 +23,13 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 ## Assistent (KI-Zusatzbuchung): Einrichtung, Postfach und Datenschutz
 - **Status:** offen – bewusst ausgeschaltet, bis die ersten Kunden ihn buchen wollen
 - **Angebot:** 25 € / Monat (netto), eigenes Stripe-Abo, in jedem Tarif buchbar (auch Start), monatlich kündbar, 14 Tage Widerruf. Enthält **300 Aufgaben im Monat** (höchstens 40 am Tag) und den E-Mail-Versand – auch im Tarif Start.
-- **Kann:** E-Mails an Kunden entwerfen und nach Bestätigung senden (Zahlungserinnerungen, Mahnungen, Nachfassen, Antworten, mit PDF), Tagesbriefing, Posteingang lesen und zusammenfassen, Belege/Kunden anlegen, Zahlungseingänge buchen, Fragen zu Zahlen beantworten. Alles nur nach Bestätigung.
+- **Kann:** Belege, Kunden (auch automatisch neue), Zahlungseingänge, Ausgaben/Einnahmen und Umwandlungen **sofort speichern** (mit „Rückgängig“); E-Mails an Kunden entwerfen und nach Tippen auf „Senden“ verschicken (mit PDF); Tagesbriefing; Posteingang lesen; Tipps zu den Zahlen (z. B. Steuern sparen zum Jahresende); Gesprächsmodus (freihändig mit Sprachausgabe); Gespräche werden gespeichert (Verlauf).
 - **Solange nicht eingerichtet:** Ohne `ANTHROPIC_API_KEY` oder ohne `STRIPE_PRICE_AI_MONTHLY` ist der Assistent unsichtbar und verursacht keine Kosten.
 - **Einschalten:**
   1. In Stripe ein Produkt „Assistent“ mit Preis 25 € monatlich anlegen und die Preis-ID bei Hostinger als `STRIPE_PRICE_AI_MONTHLY` hinterlegen.
   2. Auf platform.claude.com ein Konto anlegen, Guthaben aufladen, **monatliches Ausgabenlimit** setzen, API-Schlüssel erstellen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat.
   3. Für das Firmenpostfach bei Hostinger `MAILBOX_SECRET` setzen: eine lange Zufallszeichenkette (mind. 32 Zeichen), z. B. aus einem Passwort-Generator. **Nie ändern oder verlieren** – sonst müssen alle Firmen ihr Postfach neu verbinden.
-  4. SQL-Update `supabase/migrations/20261027090000_assistant.sql` im Supabase SQL Editor ausführen, dann neu deployen.
+  4. SQL-Updates `supabase/migrations/20261027090000_assistant.sql` und `20261028090000_assistant_chats.sql` im Supabase SQL Editor ausführen, dann neu deployen.
 - **Kosten je Firma (gedeckelt):** Claude Sonnet 5.5, Aufwand „low“; etwa 3–5 Cent je Aufgabe, im Schnitt 3–6 € im Monat. Harte Grenze `AI_MONTHLY_COST_CAP` (Standard 11 US-Dollar ≈ 10 €) je Firma und Monat; danach pausiert der Assistent bis zum Monatsersten. Weitere Stellschrauben: `AI_MONTHLY_LIMIT` (300), `AI_DAILY_LIMIT` (40).
 - **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel-, Beleg- und – bei verbundenem Postfach – E-Mail-Inhalte an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen. Postfach-Passwörter werden verschlüsselt gespeichert.
 - **Spracherkennung:** läuft im Browser (Chrome, Edge, Safari) bzw. auf dem Handy; in Firefox nur Texteingabe.

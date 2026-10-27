@@ -8,3 +8,9 @@ export function confirm(title: string, message: string | undefined, ok: string, 
   }
   Alert.alert(title, message, [{ text: 'Abbrechen', style: 'cancel' }, { text: ok, style: destructive ? 'destructive' : 'default', onPress: onOk }]);
 }
+
+/** Kurzer Hinweis mit OK */
+export function notify(title: string, message?: string) {
+  if (Platform.OS === 'web') { window.alert([title, message].filter(Boolean).join('\n\n')); return; }
+  Alert.alert(title, message);
+}

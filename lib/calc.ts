@@ -1,4 +1,4 @@
-import type { Data, DocKind, Expense, LineItem, SalesDoc } from './types';
+import type { Data, Expense, LineItem, SalesDoc } from './types';
 import { DOC_KINDS } from './docs';
 
 const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 });
@@ -75,12 +75,6 @@ export const inTotal = (item: LineItem) => !item.variant;
 
 export const isMonthly = (item: LineItem) => item.interval === 'monthly';
 
-/**
- * Monatliche Positionen: in Angeboten, Auftragsbestätigungen usw. stehen sie getrennt von der Summe
- * (laufende Kosten); in Rechnungen werden sie für den Abrechnungszeitraum mitberechnet.
- */
-export const monthlySeparate = (kind?: DocKind) => !!kind && kind !== 'invoice';
-
 function sumItems(items: LineItem[], smallBusiness: boolean): Totals {
   const groups = new Map<number, number>();
   let net = 0;
@@ -98,10 +92,9 @@ function sumItems(items: LineItem[], smallBusiness: boolean): Totals {
   return { net, vat, gross: round2(net + vat), vatGroups };
 }
 
-/** Summe des Belegs; mit `kind` ohne die getrennt ausgewiesenen monatlichen Kosten (siehe monthlySeparate). */
-export function docTotals(items: LineItem[], smallBusiness: boolean, kind?: DocKind): Totals {
-  const sep = monthlySeparate(kind);
-  return sumItems(items.filter((i) => inTotal(i) && !(sep && isMonthly(i))), smallBusiness);
+/** Summe des Belegs – monatliche Positionen zählen mit dem ersten Monat; was danach monatlich anfällt, liefert monthlyTotals. */
+export function docTotals(items: LineItem[], smallBusiness: boolean): Totals {
+  return sumItems(items.filter(inTotal), smallBusiness);
 }
 
 /** Summe der monatlichen Positionen – null, wenn es keine gibt */

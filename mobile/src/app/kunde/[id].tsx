@@ -84,7 +84,7 @@ export default function CustomerScreen() {
                 {docs.length ? docs.slice(0, 30).map((d, i) => {
                   const st = displayStatus(d);
                   return <Row key={d.id} title={`${DOC_KINDS[d.kind].one} ${d.number}`} sub={formatDate(d.date)} right={<Badge label={st.label} tone={st.tone} />}
-                    rightSub={DOC_KINDS[d.kind].prices ? money(docTotals(d.items, small, d.kind).gross) : undefined} last={i === Math.min(docs.length, 30) - 1} onPress={() => router.push(`/beleg/${d.id}`)} />;
+                    rightSub={DOC_KINDS[d.kind].prices ? money(docTotals(d.items, small).gross) : undefined} last={i === Math.min(docs.length, 30) - 1} onPress={() => router.push(`/beleg/${d.id}`)} />;
                 }) : <Row title="Noch keine Belege" last />}
               </Card>
               <Button title="Kunde löschen" icon={Trash2} variant="danger" onPress={remove} />
