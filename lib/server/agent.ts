@@ -342,8 +342,17 @@ function costOf(u: Anthropic.Beta.BetaUsage) {
   return Math.round((u.input_tokens || 0) * 2 + (u.cache_creation_input_tokens || 0) * 2.5 + (u.cache_read_input_tokens || 0) * 0.2 + (u.output_tokens || 0) * 10);
 }
 
+/** Live-Ereignisse für die Anzeige: was der Assistent gerade tut, und der Antworttext Stück für Stück */
+export type AgentEvent = { type: 'status'; text: string } | { type: 'delta'; text: string } | { type: 'step' };
+
+const STATUS: Record<string, string> = {
+  search_customers: 'Suche Kunden …', search_materials: 'Suche Artikel …', search_documents: 'Suche Belege …', get_document: 'Lese Beleg …',
+  get_figures: 'Rechne Zahlen aus …', list_open_items: 'Prüfe offene Posten …', list_inbox: 'Öffne Posteingang …', read_email: 'Lese E-Mail …',
+  propose_email: 'Schreibe E-Mail …', propose_document: 'Bereite Beleg vor …', propose_customer: 'Bereite Kunden vor …', propose_payment: 'Bereite Zahlung vor …',
+};
+
 /** Ein Gesprächsschritt: Agent-Schleife bis zur Antwort, Rückfrage oder zu Vorschlägen. */
-export async function agentTurn(history: Anthropic.Beta.BetaMessageParam[], text: string, ctx: AgentContext, db: SupabaseClient, companyId: string): Promise<AgentTurn> {
+export async function agentTurn(history: Anthropic.Beta.BetaMessageParam[], text: string, ctx: AgentContext, db: SupabaseClient, companyId: string, onEvent?: (e: AgentEvent) => void): Promise<AgentTurn> {
   const client = new Anthropic();
   const messages: Anthropic.Beta.BetaMessageParam[] = [...history, { role: 'user', content: text }];
   let reply = '';
@@ -351,17 +360,27 @@ export async function agentTurn(history: Anthropic.Beta.BetaMessageParam[], text
   const actions: AgentAction[] = [];
 
   for (let step = 0; step < MAX_STEPS; step++) {
-    const response = await client.beta.messages.create({
+    if (step > 0) onEvent?.({ type: 'step' });
+    // Ohne erweitertes Nachdenken (between_tools) antwortet Sonnet 5.5 am schnellsten; Text wird live weitergereicht
+    const stream = client.beta.messages.stream({
       model: AGENT_MODEL,
       max_tokens: 8000,
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
+      thinking: { type: 'between_tools' },
       output_config: { effort: 'low' },
       cache_control: { type: 'ephemeral' },
       system: systemPrompt(ctx),
       tools: TOOLS,
       messages,
     });
+    if (onEvent) {
+      for await (const event of stream) {
+        if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') onEvent({ type: 'delta', text: event.delta.text });
+        else if (event.type === 'content_block_start' && event.content_block.type === 'tool_use') onEvent({ type: 'status', text: STATUS[event.content_block.name] || 'Arbeite …' });
+      }
+    }
+    const response = await stream.finalMessage();
     costMicros += costOf(response.usage);
     messages.push({ role: 'assistant', content: response.content });
     reply = response.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text').map((b) => b.text).join('\n').trim();

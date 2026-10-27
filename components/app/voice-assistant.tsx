@@ -52,6 +52,7 @@ export function VoiceAssistant() {
   const [history, setHistory] = useState<AgentHistory>([]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
+  const [live, setLive] = useState<{ status: string; text: string }>({ status: '', text: '' });
   const [listening, setListening] = useState(false);
   const [speak, setSpeak] = useState(true);
   const [enabled, setEnabled] = useState(false);
@@ -80,7 +81,7 @@ export function VoiceAssistant() {
       show();
     }
   }, [pathname, show]);
-  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [bubbles, busy]);
+  useEffect(() => { listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' }); }, [bubbles, busy, live]);
   useEffect(() => () => { recRef.current?.abort(); window.speechSynthesis?.cancel(); }, []);
 
   const say = (text: string) => {
@@ -98,7 +99,12 @@ export function VoiceAssistant() {
     setBubbles((b) => [...b, { role: 'user', text }]);
     setBusy(true);
     try {
-      const r = await askAgent(activeCompanyId, history, text);
+      setLive({ status: '', text: '' });
+      const r = await askAgent(activeCompanyId, history, text, (e) => {
+        if (e.type === 'status') setLive((l) => ({ ...l, status: e.text }));
+        else if (e.type === 'delta') setLive((l) => ({ status: '', text: l.text + e.text }));
+        else setLive((l) => ({ ...l, text: l.text ? `${l.text}\n` : '' }));
+      });
       setHistory(r.messages);
       if (typeof r.remaining === 'number') setRemaining(r.remaining);
       const actions = r.actions ?? (r.proposal ? [{ type: 'document' as const, ...r.proposal }] : []);
@@ -110,6 +116,7 @@ export function VoiceAssistant() {
       setBubbles((b) => [...b, { role: 'assistant', text: (e as Error).message }]);
     } finally {
       setBusy(false);
+      setLive({ status: '', text: '' });
     }
   };
 
@@ -213,7 +220,12 @@ export function VoiceAssistant() {
                   {(b.actions || []).map((a, k) => <ActionCard key={k} action={a} onDocument={acceptDocument} />)}
                 </div>
               ))}
-              {busy ? <div className="assistant-msg from-ai"><p className="assistant-typing"><Loader2 size={15} className="spin" /> Einen Moment …</p></div> : null}
+              {busy ? (
+                <div className="assistant-msg from-ai">
+                  {live.text ? <p>{live.text}</p> : null}
+                  {!live.text || live.status ? <p className="assistant-typing"><Loader2 size={15} className="spin" /> {live.status || 'Einen Moment …'}</p> : null}
+                </div>
+              ) : null}
             </div>
 
             <form className="assistant-input" onSubmit={(e) => { e.preventDefault(); send(input); }}>

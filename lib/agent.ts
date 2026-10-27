@@ -55,14 +55,37 @@ export class AgentError extends Error {
   constructor(message: string, readonly upgrade?: string) { super(message); }
 }
 
-export async function askAgent(companyId: string, history: AgentHistory, text: string): Promise<AgentResult> {
+export type AgentEvent = { type: 'status'; text: string } | { type: 'delta'; text: string } | { type: 'step' };
+
+/** Ein Gesprächsschritt; mit onEvent kommen Status und Antworttext live (Datenstrom). */
+export async function askAgent(companyId: string, history: AgentHistory, text: string, onEvent?: (e: AgentEvent) => void): Promise<AgentResult> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
     if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
-  const res = await fetch('/api/agent', { method: 'POST', headers, body: JSON.stringify({ companyId, history, text }) });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new AgentError(json.error || 'Der Assistent ist gerade nicht erreichbar.', json.upgrade);
-  return json as AgentResult;
+  const res = await fetch('/api/agent', { method: 'POST', headers, body: JSON.stringify({ companyId, history, text, stream: !!onEvent }) });
+  if (!res.ok || !onEvent || !res.body || !(res.headers.get('content-type') || '').includes('ndjson')) {
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new AgentError(json.error || 'Der Assistent ist gerade nicht erreichbar.', json.upgrade);
+    return json as AgentResult;
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (value) buf += decoder.decode(value, { stream: true });
+    let nl: number;
+    while ((nl = buf.indexOf('\n')) >= 0) {
+      const line = buf.slice(0, nl).trim();
+      buf = buf.slice(nl + 1);
+      if (!line) continue;
+      const msg = JSON.parse(line);
+      if (msg.type === 'done') return msg as AgentResult;
+      if (msg.type === 'error') throw new AgentError(msg.error || 'Der Assistent ist gerade nicht erreichbar.');
+      onEvent(msg as AgentEvent);
+    }
+    if (done) throw new AgentError('Die Verbindung wurde unterbrochen. Bitte erneut versuchen.');
+  }
 }
