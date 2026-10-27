@@ -8,7 +8,7 @@ export async function sendMail(input: {
   const { data } = await supabase.auth.getSession();
   const res = await fetch(`${SITE_URL}/api/send`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token || ''}` },
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token || ''}`, 'x-vysn-token': data.session?.access_token || '' },
     body: JSON.stringify({
       companyId: input.companyId, to: input.to, bcc: input.bcc, subject: input.subject, text: input.text, fromName: input.fromName,
       replyTo: input.replyTo, inReplyTo: input.inReplyTo || undefined,

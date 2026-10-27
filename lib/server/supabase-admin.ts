@@ -5,10 +5,17 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-/** Prüft das Supabase-Zugriffstoken aus dem Authorization-Header. */
+/**
+ * Zugriffstoken der Anfrage: Authorization-Header, ersatzweise X-Vysn-Token
+ * (manche Hosting-Proxys entfernen den Authorization-Header).
+ */
+export const requestToken = (req: Request) =>
+  (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim() || (req.headers.get('x-vysn-token') || '').trim();
+
+/** Prüft das Supabase-Zugriffstoken der Anfrage. */
 export async function userFromRequest(req: Request): Promise<{ id: string; email: string } | null> {
   if (!url || !anonKey) return null;
-  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const token = requestToken(req);
   if (!token) return null;
   const sb = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data, error } = await sb.auth.getUser(token);
@@ -35,7 +42,7 @@ export async function memberRole(companyId: string, userId: string): Promise<str
 
 /** Datenbankzugriff im Namen des angemeldeten Nutzers (Row Level Security bleibt aktiv). */
 export function userDb(req: Request): SupabaseClient {
-  const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const token = requestToken(req);
   return createClient(url, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false },
     global: { headers: { Authorization: `Bearer ${token}` } },

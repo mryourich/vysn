@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { agentTurn } from '../../../lib/server/agent';
 import { aiActive, aiBookable, aiCostCapMicros, aiDailyLimit, aiMonthlyLimit } from '../../../lib/server/ai-addon';
 import { getMailAccount } from '../../../lib/server/mailbox';
-import { adminDb, memberRole, userDb, userFromRequest } from '../../../lib/server/supabase-admin';
+import { adminDb, memberRole, requestToken, userDb, userFromRequest } from '../../../lib/server/supabase-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,15 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   if (!process.env.ANTHROPIC_API_KEY) return NextResponse.json({ error: 'Der Assistent ist noch nicht eingerichtet (ANTHROPIC_API_KEY fehlt).' }, { status: 503 });
   const user = await userFromRequest(req);
-  if (!user) return NextResponse.json({ error: 'Bitte melden Sie sich an.' }, { status: 401 });
+  if (!user) {
+    // Ursache unterscheiden – hilft bei der Fehlersuche (Proxy entfernt Header, Server falsch eingerichtet, Sitzung abgelaufen)
+    const reason = !process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      ? 'Der Server kennt die Datenbank nicht (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY fehlen). [A1]'
+      : !requestToken(req)
+        ? 'Ihre Anmeldung ist beim Server nicht angekommen. Bitte die Seite neu laden. [A2]'
+        : 'Ihre Anmeldung ist abgelaufen. Bitte die Seite neu laden oder neu anmelden. [A3]';
+    return NextResponse.json({ error: reason }, { status: 401 });
+  }
 
   const body = await req.json().catch(() => ({}));
   const companyId = String(body.companyId || '');

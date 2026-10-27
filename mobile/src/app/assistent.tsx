@@ -53,7 +53,7 @@ export default function Assistant() {
   useEffect(() => {
     (async () => {
       const { data: sess } = await supabase.auth.getSession();
-      const j = await fetch(`${SITE_URL}/api/agent${companyId ? `?companyId=${companyId}` : ''}`, { headers: { authorization: `Bearer ${sess.session?.access_token || ''}` } }).then((r) => r.json());
+      const j = await fetch(`${SITE_URL}/api/agent${companyId ? `?companyId=${companyId}` : ''}`, { headers: { authorization: `Bearer ${sess.session?.access_token || ''}`, 'x-vysn-token': sess.session?.access_token || '' } }).then((r) => r.json());
       setEnabled(!!j.enabled);
       if (j.monthlyLimit) setMonthly(j.monthlyLimit);
       if (typeof j.remaining === 'number') setRemaining(j.remaining);
@@ -86,7 +86,7 @@ export default function Assistant() {
       const { data: sess } = await supabase.auth.getSession();
       const res = await fetch(`${SITE_URL}/api/agent`, {
         method: 'POST',
-        headers: { 'content-type': 'application/json', authorization: `Bearer ${sess.session?.access_token || ''}` },
+        headers: { 'content-type': 'application/json', authorization: `Bearer ${sess.session?.access_token || ''}`, 'x-vysn-token': sess.session?.access_token || '' },
         body: JSON.stringify({ companyId, history, text }),
       });
       const json = await res.json().catch(() => ({}));

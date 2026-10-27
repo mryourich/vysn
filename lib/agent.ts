@@ -45,7 +45,7 @@ export async function agentRemaining(companyId: string): Promise<number | null> 
   const headers: Record<string, string> = {};
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   const json = await fetch(`/api/agent?companyId=${encodeURIComponent(companyId)}`, { headers }).then((r) => r.json()).catch(() => ({}));
   return typeof json.remaining === 'number' ? json.remaining : null;
@@ -59,7 +59,7 @@ export async function askAgent(companyId: string, history: AgentHistory, text: s
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   const res = await fetch('/api/agent', { method: 'POST', headers, body: JSON.stringify({ companyId, history, text }) });
   const json = await res.json().catch(() => ({}));

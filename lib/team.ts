@@ -76,7 +76,7 @@ export async function mailInvite(token: string) {
   const { data } = await getSupabase().auth.getSession();
   const res = await fetch('/api/team/invite-mail', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token || ''}` },
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${data.session?.access_token || ''}`, 'x-vysn-token': data.session?.access_token || '' },
     body: JSON.stringify({ token }),
   });
   const json = await res.json().catch(() => ({}));
