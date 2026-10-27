@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { billingConfigured, stripe } from '../../../../lib/server/billing';
 import { adminDb, memberRole, userFromRequest } from '../../../../lib/server/supabase-admin';
 import { canWithdraw, executeWithdrawal, sendWithdrawalMail, withdrawalDeadline } from '../../../../lib/server/withdrawal';
+import { CONTACT_EMAIL } from '../../../../lib/site';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -42,6 +43,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, ...result, mailed });
   } catch (e) {
     console.error('withdrawal', e);
-    return NextResponse.json({ error: 'Der Widerruf konnte nicht verarbeitet werden. Bitte schreiben Sie uns an hallo@vysn.de – Ihr Widerruf gilt mit Eingang Ihrer Nachricht.' }, { status: 500 });
+    return NextResponse.json({ error: `Der Widerruf konnte nicht verarbeitet werden. Bitte schreiben Sie uns an ${CONTACT_EMAIL} – Ihr Widerruf gilt mit Eingang Ihrer Nachricht.` }, { status: 500 });
   }
 }

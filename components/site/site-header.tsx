@@ -7,7 +7,8 @@ import { Brand } from '../app/brand';
 
 const LINKS = [
   ['#funktionen', 'Funktionen'],
-  ['#rechnungsdesign', 'Rechnungsdesign'],
+  ['#laufende-kosten', 'Monatliche Kosten'],
+  ['#app', 'App'],
   ['#preise', 'Preise'],
   ['#faq', 'Fragen'],
 ];

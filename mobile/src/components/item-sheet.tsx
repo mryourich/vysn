@@ -53,6 +53,13 @@ export function ItemSheet({ item, company, prices, offer, isChild, onSave, onDel
               </>
             ) : null}
             {prices ? <Field label="Rabatt in %" value={discount} onChangeText={setDiscount} keyboardType="decimal-pad" placeholder="0" /> : null}
+            {prices ? (
+              <>
+                <Text style={s.label}>Abrechnung</Text>
+                <Segmented value={draft.interval || 'once'} options={[['once', 'Einmalig'], ['monthly', 'Monatlich']]}
+                  onChange={(v) => set({ interval: v === 'monthly' ? 'monthly' : undefined })} />
+              </>
+            ) : null}
             {offer && !isChild ? (
               <>
                 <Text style={s.label}>Art der Position</Text>
@@ -63,7 +70,7 @@ export function ItemSheet({ item, company, prices, offer, isChild, onSave, onDel
             {offer && (draft.variant || isChild) ? (
               <Segmented value={draft.chosen ? 'yes' : 'no'} options={[['no', 'Nicht gewählt'], ['yes', 'Vom Kunden gewählt']]} onChange={(v) => set({ chosen: v === 'yes' })} />
             ) : null}
-            {prices ? <Text style={[s.h, { textAlign: 'right', marginVertical: 8 }]}>{draft.variant || isChild ? `(${money(lineNet(current))})` : money(lineNet(current))}</Text> : null}
+            {prices ? <Text style={[s.h, { textAlign: 'right', marginVertical: 8 }]}>{draft.variant || isChild ? `(${money(lineNet(current))})` : money(lineNet(current))}{draft.interval === 'monthly' ? ' / Monat' : ''}</Text> : null}
             <View style={{ gap: 10, marginTop: 6 }}>
               <Button title="Übernehmen" variant="primary" onPress={() => onSave(current)} disabled={!draft.description.trim()} />
               <Button title="Position löschen" variant="danger" icon={Trash2} onPress={onDelete} />

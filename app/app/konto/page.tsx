@@ -8,6 +8,7 @@ import { useStore } from '../../../lib/store';
 import { ROLE_LABEL } from '../../../lib/team';
 import { LogoutButton } from '../../../components/app/company-switcher';
 import { Field, PageHeader } from '../../../components/app/ui';
+import { CONTACT_EMAIL } from '../../../lib/site';
 
 export default function Page() {
   return <Suspense fallback={null}><Account /></Suspense>;
@@ -49,7 +50,7 @@ function Account() {
         <div className="kv-list">
           <div><span><Mail size={16} /> E-Mail-Adresse</span><strong>{auth.email || 'Lokaler Modus ohne Konto'}</strong></div>
         </div>
-        {cloud ? <p className="muted small mt">Die E-Mail-Adresse ändern wir auf Wunsch für Sie – schreiben Sie an <a className="link" href="mailto:hallo@vysn.de">hallo@vysn.de</a>.</p> : null}
+        {cloud ? <p className="muted small mt">Die E-Mail-Adresse ändern wir auf Wunsch für Sie – schreiben Sie an <a className="link" href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</p> : null}
       </section>
 
       {cloud ? (
@@ -77,7 +78,7 @@ function Account() {
 
       <section className="card card-plain">
         <div className="secondary-actions">
-          <a className="btn" href="mailto:hallo@vysn.de?subject=Support%20VYSNER%20One"><LifeBuoy size={16} /> Support kontaktieren</a>
+          <a className="btn" href={`mailto:${CONTACT_EMAIL}?subject=Support%20VYSNER%20One`}><LifeBuoy size={16} /> Support kontaktieren</a>
           <Link className="btn btn-quiet" href="/datenschutz">Datenschutz</Link>
           <LogoutButton className="btn btn-quiet" />
         </div>

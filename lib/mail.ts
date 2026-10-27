@@ -18,7 +18,7 @@ export function mailStatus(): Promise<MailStatus> {
 }
 
 export function fillMail(template: string, doc: SalesDoc, company: Company) {
-  const gross = docTotals(doc.items, company.smallBusiness).gross;
+  const gross = docTotals(doc.items, company.smallBusiness, doc.kind).gross;
   return template
     .replace(/\{nummer\}/g, doc.number)
     .replace(/\{datum\}/g, formatDate(doc.date))

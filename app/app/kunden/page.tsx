@@ -24,8 +24,8 @@ export default function CustomersPage() {
 
   const stats = (id: string) => {
     const docs = data.documents.filter((d) => d.customerId === id && d.kind === 'invoice');
-    const revenue = docs.filter((d) => d.status === 'sent' || d.status === 'paid').reduce((s, d) => s + docTotals(d.items, small).net, 0);
-    const open = docs.filter((d) => d.status === 'sent').reduce((s, d) => s + docTotals(d.items, small).gross, 0);
+    const revenue = docs.filter((d) => d.status === 'sent' || d.status === 'paid').reduce((s, d) => s + docTotals(d.items, small, d.kind).net, 0);
+    const open = docs.filter((d) => d.status === 'sent').reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0);
     return { revenue, open, count: data.documents.filter((d) => d.customerId === id).length };
   };
 

@@ -9,6 +9,7 @@ import { agentStatus } from '../../../lib/agent';
 import { AiAddonCard } from '../../../components/app/ai-addon';
 import { useStore } from '../../../lib/store';
 import { Badge, PageHeader } from '../../../components/app/ui';
+import { CONTACT_EMAIL } from '../../../lib/site';
 
 type Extension = { name: string; by: string; text: string; icon: LucideIcon; color: string } & (
   | { status: 'ready'; href: string; feature?: Feature; action: string }
@@ -47,7 +48,7 @@ export default function ExtensionsPage() {
               <Badge>Demnächst</Badge>
             </div>
             <p>Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.</p>
-            <div className="ext-actions"><a className="btn" href={`mailto:hallo@vysn.de?subject=${encodeURIComponent('Interesse: KI-Sprachassistent')}`}>Interesse melden</a></div>
+            <div className="ext-actions"><a className="btn" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Interesse: KI-Sprachassistent')}`}>Interesse melden</a></div>
           </article>
         )}
         {EXTENSIONS.map((x) => {
@@ -66,7 +67,7 @@ export default function ExtensionsPage() {
                     {locked ? <Lock size={14} /> : null} {locked ? 'Ab Business' : x.action}
                   </Link>
                 ) : (
-                  <a className="btn" href={`mailto:hallo@vysn.de?subject=${encodeURIComponent(`Interesse: ${x.name}`)}`}>Interesse melden</a>
+                  <a className="btn" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(`Interesse: ${x.name}`)}`}>Interesse melden</a>
                 )}
               </div>
             </article>

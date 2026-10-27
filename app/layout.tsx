@@ -1,17 +1,23 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Sora } from 'next/font/google';
 import './globals.css';
+import { SITE_URL } from '../lib/site';
 
 const sans = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
 const display = Sora({ subsets: ['latin'], variable: '--font-display-face', display: 'swap', weight: ['400', '500', '600', '700'] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://springgreen-cormorant-809283.hostingersite.com'),
+  metadataBase: new URL(SITE_URL),
   title: 'VYSNER One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
-  description: 'Angebote und Rechnungen im eigenen Design, Material und Lager, Ausgaben und GuV – übersichtlich in einer Software für KMU und Handwerk.',
+  description: 'Angebote und Rechnungen mit einmaligen und monatlichen Kosten, eigenes Design, Material und Lager, Ausgaben und GuV – im Browser und als App. Kostenlos starten.',
+  keywords: ['Rechnungsprogramm', 'Angebote schreiben', 'Rechnungen schreiben', 'Handwerkersoftware', 'Lagerverwaltung', 'Kleinunternehmer', 'Österreich', 'Schweiz', 'DATEV'],
+  alternates: { canonical: '/' },
   openGraph: {
+    type: 'website',
+    locale: 'de_DE',
+    siteName: 'VYSNER One',
     title: 'VYSNER One – Angebote, Rechnungen & Zahlen für kleine Unternehmen',
-    description: 'Angebote, Rechnungen, Material, Ausgaben und GuV in einer übersichtlichen Software.',
+    description: 'Angebote, Rechnungen mit monatlichen Kosten, Material, Ausgaben und GuV in einer Software – im Browser und als App.',
     images: ['/og.png'],
   },
 };

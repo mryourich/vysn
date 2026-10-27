@@ -13,6 +13,7 @@ import { useStore } from '../../../lib/store';
 import { QuotaList } from '../../../components/app/quota';
 import { isAdminRole } from '../../../lib/team';
 import { Badge, Field, Modal, PageHeader } from '../../../components/app/ui';
+import { CONTACT_EMAIL } from '../../../lib/site';
 
 export default function PlanPage() {
   return <Suspense fallback={null}><Plan /></Suspense>;
@@ -206,7 +207,7 @@ function Plan() {
           </div>
         </div>
         {!canManage ? <p className="muted small mt">Den Tarif können nur Inhaber oder Admins dieser Firma ändern.</p> : null}
-        {info && !info.enabled ? <p className="muted small mt"><Info size={13} className="inline-icon" /> Die Online-Buchung wird gerade eingerichtet. Bei Fragen zum Tarif schreiben Sie uns an hallo@vysn.de.</p> : null}
+        {info && !info.enabled ? <p className="muted small mt"><Info size={13} className="inline-icon" /> Die Online-Buchung wird gerade eingerichtet. Bei Fragen zum Tarif schreiben Sie uns an {CONTACT_EMAIL}.</p> : null}
       </section>
 
       {withdrawal?.eligible && subscribed ? (

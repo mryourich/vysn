@@ -866,6 +866,8 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .item-tag.tag-optional, .item-tag.tag-alternative { align-self: flex-start; padding: 2px 8px; border-radius: 999px; font-weight: 600; }
 .item-tag.tag-optional { background: #fff4e5; color: #9a5b00; }
 .item-tag.tag-alternative { background: #efe9ff; color: #5b3cc4; }
+.item-tag.tag-monthly { align-self: flex-start; padding: 2px 8px; border-radius: 999px; font-weight: 600; background: #e6f4ff; color: #0b5cad; }
+.sum .sum-sub { justify-content: flex-start; gap: 6px; align-items: center; margin-top: 14px; font-weight: 600; color: var(--ink); }
 .item-variant .check { font-size: 12.5px; }
 .item-total-muted strong { color: var(--muted); font-weight: 500; }
 .item-variant .check input { width: 16px; height: 16px; padding: 0; flex: none; box-shadow: none; }

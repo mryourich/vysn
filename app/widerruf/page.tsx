@@ -4,6 +4,7 @@ import { SiteFooter } from '../../components/site/site-footer';
 import { SiteHeader } from '../../components/site/site-header';
 import { WithdrawalForm } from '../../components/site/withdrawal-form';
 import '../site.css';
+import { CONTACT_EMAIL } from '../../lib/site';
 
 export const metadata: Metadata = { title: 'Widerruf – VYSNER One' };
 
@@ -23,7 +24,7 @@ export default function WiderrufPage() {
         <p className="placeholder">Bitte vor der Veröffentlichung Firmenname und Anschrift ergänzen und die Texte rechtlich prüfen lassen.</p>
         <h3>Widerrufsrecht</h3>
         <p>Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsabschlusses.</p>
-        <p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ([Firmenname], [Straße Hausnummer], [PLZ Ort], E-Mail: hallo@vysn.de) mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür die Widerrufsfunktion auf dieser Seite, die Funktion „Vertrag widerrufen“ in Ihrem Konto oder das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
+        <p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns ([Firmenname], [Straße Hausnummer], [PLZ Ort], E-Mail: {CONTACT_EMAIL}) mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür die Widerrufsfunktion auf dieser Seite, die Funktion „Vertrag widerrufen“ in Ihrem Konto oder das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
         <p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
         <h3>Folgen des Widerrufs</h3>
         <p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.</p>
@@ -38,7 +39,7 @@ export default function WiderrufPage() {
 
         <h2>Muster-Widerrufsformular</h2>
         <p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
-        <p>An [Firmenname], [Straße Hausnummer], [PLZ Ort], E-Mail: hallo@vysn.de<br />
+        <p>An [Firmenname], [Straße Hausnummer], [PLZ Ort], E-Mail: {CONTACT_EMAIL}<br />
           Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung: VYSNER One, Tarif ________<br />
           Bestellt am (*) ________<br />
           Name des/der Verbraucher(s) ________<br />
@@ -48,7 +49,7 @@ export default function WiderrufPage() {
           (*) Unzutreffendes streichen.</p>
 
         <h2>Kündigung nach Ablauf der Widerrufsfrist</h2>
-        <p>Nach Ablauf der 14 Tage können Sie jederzeit zum Ende der laufenden Laufzeit kündigen – angemeldet unter <Link href="/app/tarif" className="link">Abonnement</Link> („Zum Laufzeitende kündigen“) oder formlos per E-Mail an hallo@vysn.de.</p>
+        <p>Nach Ablauf der 14 Tage können Sie jederzeit zum Ende der laufenden Laufzeit kündigen – angemeldet unter <Link href="/app/tarif" className="link">Abonnement</Link> („Zum Laufzeitende kündigen“) oder formlos per E-Mail an {CONTACT_EMAIL}.</p>
       </main>
       <SiteFooter />
     </div>

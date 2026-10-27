@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ArrowDown, ArrowLeft, Check, ArrowUp, Ban, CloudOff, PackageCheck, Undo2, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Search, Send, Trash2, UserPlus, XCircle,
+  ArrowDown, ArrowLeft, Check, ArrowUp, Ban, CloudOff, PackageCheck, Undo2, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Repeat, Search, Send, Trash2, UserPlus, XCircle,
 } from 'lucide-react';
-import { displayStatus, docTotals, formatDate, lineNet, money, positionLabels, qty, today } from '../../lib/calc';
+import { displayStatus, docTotals, formatDate, lineNet, money, monthlySeparate, monthlyTotals, positionLabels, qty, today } from '../../lib/calc';
 import { UNITS, emptyItem } from '../../lib/defaults';
 import { useStore } from '../../lib/store';
 import type { LineItem, Material, SalesDoc } from '../../lib/types';
@@ -51,7 +51,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
   // Festgeschriebene Rechnungen und eingebuchte Bestellungen sind nicht mehr änderbar
   const locked = (isInvoice && doc.status !== 'draft') || (isOrder && doc.status === 'accepted');
   const texts = docTexts(store.design, doc.kind);
-  const totals = docTotals(doc.items, company.smallBusiness);
+  const totals = docTotals(doc.items, company.smallBusiness, doc.kind);
+  const monthly = monthlyTotals(doc.items, company.smallBusiness);
   const status = displayStatus(doc);
   const customer = data.customers.find((c) => c.id === doc.customerId);
   const tax = taxProfile(company);
@@ -269,6 +270,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
                       <input value={item.description} onChange={(e) => updateItem(item.id, { description: e.target.value })} placeholder="Bezeichnung der Leistung oder des Artikels" aria-label="Bezeichnung" />
                       <textarea value={item.details} onChange={(e) => updateItem(item.id, { details: e.target.value })} placeholder="Beschreibung (optional)" rows={item.details ? 2 : 1} aria-label="Beschreibung" />
                       {item.materialId ? <span className="item-tag"><Boxes size={12} /> aus Materialstamm</span> : null}
+                      {item.interval === 'monthly' && cfg.prices ? <span className="item-tag tag-monthly"><Repeat size={12} /> monatlich wiederkehrend</span> : null}
                       {item.variant ? (
                         <div className="item-variant">
                           <span className={`item-tag tag-${item.variant}`}>{item.variant === 'optional' ? 'Optional' : item.parentId ? `Alternative zu Pos. ${labels[doc.items.findIndex((x) => x.id === item.parentId)]}` : 'Alternative'} · nicht in der Summe</span>
@@ -298,6 +300,14 @@ function Editor({ doc }: { doc: SalesDoc }) {
                         <VatSelect value={item.vat} onChange={(v) => updateItem(item.id, { vat: v })} company={company} />
                       </Field>
                     ) : null}
+                    {cfg.prices ? (
+                      <Field label="Abrechnung">
+                        <select value={item.interval || ''} onChange={(e) => updateItem(item.id, { interval: (e.target.value || undefined) as LineItem['interval'] })}>
+                          <option value="">Einmalig</option>
+                          <option value="monthly">Monatlich</option>
+                        </select>
+                      </Field>
+                    ) : null}
                     {isOffer && !item.parentId ? (
                       <Field label="Art">
                         <select value={item.variant || ''} onChange={(e) => updateItem(item.id, { variant: (e.target.value || undefined) as LineItem['variant'], chosen: false })}>
@@ -307,7 +317,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
                         </select>
                       </Field>
                     ) : null}
-                    {cfg.prices ? <div className={`item-total${item.variant ? ' item-total-muted' : ''}`}><span>{item.variant ? 'nicht in Summe' : 'Gesamt netto'}</span><strong>{money(lineNet(item))}</strong></div> : null}
+                    {cfg.prices ? <div className={`item-total${item.variant ? ' item-total-muted' : ''}`}><span>{item.variant ? 'nicht in Summe' : item.interval === 'monthly' ? 'netto / Monat' : 'Gesamt netto'}</span><strong>{money(lineNet(item))}</strong></div> : null}
                   </div>
                   {isOffer && !item.parentId && !item.variant ? (
                     <button type="button" className="link item-alt-add" onClick={() => addAlternative(item)}><Plus size={14} /> Alternative zu Pos. {labels[index]} hinzufügen</button>
@@ -323,7 +333,14 @@ function Editor({ doc }: { doc: SalesDoc }) {
             {cfg.prices ? <div className="sum">
               {!company.smallBusiness ? <div><span>Netto</span><span>{money(totals.net)}</span></div> : null}
               {!company.smallBusiness ? totals.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {formatRate(g.rate)} {tax.label}</span><span>{money(g.vat)}</span></div>) : null}
-              <div className="sum-total"><span>{cfg.totalLabel}</span><span>{money(totals.gross)}</span></div>
+              <div className="sum-total"><span>{monthly && monthlySeparate(doc.kind) ? `${cfg.totalLabel} (einmalig)` : cfg.totalLabel}</span><span>{money(totals.gross)}</span></div>
+              {monthly && monthlySeparate(doc.kind) ? <>
+                <div className="sum-sub"><Repeat size={14} /> Monatlich wiederkehrend</div>
+                {!company.smallBusiness ? <div><span>Netto / Monat</span><span>{money(monthly.net)}</span></div> : null}
+                {!company.smallBusiness ? monthly.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {formatRate(g.rate)} {tax.label}</span><span>{money(g.vat)}</span></div>) : null}
+                <div className="sum-total"><span>Summe monatlich</span><span>{money(monthly.gross)}</span></div>
+              </> : null}
+              {monthly && !monthlySeparate(doc.kind) ? <small className="muted">Enthält monatliche Positionen über {money(monthly.gross)} für den Abrechnungszeitraum.</small> : null}
               {company.smallBusiness ? <small className="muted">{tax.smallBusinessNote}</small> : null}
             </div> : null}
           </fieldset>

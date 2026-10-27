@@ -1,4 +1,4 @@
-import type { Data, Expense, LineItem, SalesDoc } from './types';
+import type { Data, DocKind, Expense, LineItem, SalesDoc } from './types';
 import { DOC_KINDS } from './docs';
 
 const num = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 3 });
@@ -73,10 +73,18 @@ export function positionLabels(items: LineItem[]): string[] {
 /** Optionale und Alternativpositionen zählen nicht zur Summe. */
 export const inTotal = (item: LineItem) => !item.variant;
 
-export function docTotals(items: LineItem[], smallBusiness: boolean): Totals {
+export const isMonthly = (item: LineItem) => item.interval === 'monthly';
+
+/**
+ * Monatliche Positionen: in Angeboten, Auftragsbestätigungen usw. stehen sie getrennt von der Summe
+ * (laufende Kosten); in Rechnungen werden sie für den Abrechnungszeitraum mitberechnet.
+ */
+export const monthlySeparate = (kind?: DocKind) => !!kind && kind !== 'invoice';
+
+function sumItems(items: LineItem[], smallBusiness: boolean): Totals {
   const groups = new Map<number, number>();
   let net = 0;
-  for (const item of items.filter(inTotal)) {
+  for (const item of items) {
     const n = lineNet(item);
     net += n;
     const rate = smallBusiness ? 0 : item.vat;
@@ -88,6 +96,18 @@ export function docTotals(items: LineItem[], smallBusiness: boolean): Totals {
   const vat = round2(vatGroups.reduce((s, g) => s + g.vat, 0));
   net = round2(net);
   return { net, vat, gross: round2(net + vat), vatGroups };
+}
+
+/** Summe des Belegs; mit `kind` ohne die getrennt ausgewiesenen monatlichen Kosten (siehe monthlySeparate). */
+export function docTotals(items: LineItem[], smallBusiness: boolean, kind?: DocKind): Totals {
+  const sep = monthlySeparate(kind);
+  return sumItems(items.filter((i) => inTotal(i) && !(sep && isMonthly(i))), smallBusiness);
+}
+
+/** Summe der monatlichen Positionen – null, wenn es keine gibt */
+export function monthlyTotals(items: LineItem[], smallBusiness: boolean): Totals | null {
+  const list = items.filter((i) => inTotal(i) && isMonthly(i));
+  return list.length ? sumItems(list, smallBusiness) : null;
 }
 
 export const expenseGross = (e: Expense) => round2(e.net * (1 + e.vat / 100));
