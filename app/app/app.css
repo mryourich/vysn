@@ -910,6 +910,21 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .proposal-text { resize: vertical; line-height: 1.5; min-height: 140px; }
 .proposal small { display: inline-flex; gap: 5px; align-items: center; }
 .assistant-briefing { align-self: flex-start; margin-bottom: 6px; }
+.action-result { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 9px 12px; border-radius: 12px; background: var(--success-soft); color: var(--ink); font-size: 13.5px; border: 1px solid rgba(19, 135, 62, 0.25); }
+.action-result > svg { color: var(--success); flex: none; }
+.action-result > span { flex: 1; min-width: 160px; }
+.action-result .link { display: inline-flex; gap: 4px; align-items: center; font-size: 13px; background: none; border: 0; padding: 0; cursor: pointer; font-weight: 600; }
+.action-result.failed { background: var(--danger-soft); border-color: rgba(200, 40, 40, 0.25); }
+.action-result.failed > svg { color: var(--danger); }
+.action-result.undone { background: var(--surface); border-color: var(--line); color: var(--muted); }
+.action-result.undone > svg { color: var(--muted); }
+.assistant-head .icon-btn.active { background: var(--primary); color: #fff; }
+.assistant-history-title { font-weight: 600; margin: 0 0 4px; }
+.assistant-chat-row { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 4px 4px 4px 0; }
+.assistant-chat-row.on { border-color: var(--primary); }
+.assistant-chat-row > button:first-child { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 8px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font: inherit; }
+.assistant-chat-row strong { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.assistant-chat-row small { color: var(--muted); font-size: 12px; }
 .proposal-sum { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 6px; font-size: 14px; }
 .assistant-input { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); background: var(--surface); }
 .assistant-input textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; padding: 11px 12px; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: 15px; }

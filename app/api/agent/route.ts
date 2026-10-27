@@ -42,7 +42,10 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const companyId = String(body.companyId || '');
-  const text = String(body.text || '').trim().slice(0, 4000);
+  // Was die App seit der letzten Antwort gespeichert hat (z. B. „Rechnung RE-2026-0012 angelegt“) – für Folgeschritte
+  const done = Array.isArray(body.done) ? body.done.map((x: unknown) => String(x).slice(0, 200)).slice(0, 10) : [];
+  const said = String(body.text || '').trim().slice(0, 4000);
+  const text = said && done.length ? `${said}\n\n[App: ${done.join('; ')}]` : said;
   const history = Array.isArray(body.history) ? body.history : [];
   if (!companyId || !text) return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
   if (JSON.stringify(history).length > MAX_HISTORY_CHARS) return NextResponse.json({ error: 'Das Gespräch ist zu lang – bitte neu beginnen.' }, { status: 413 });
@@ -82,7 +85,9 @@ export async function POST(req: Request) {
     const { costMicros, ...rest } = result;
     const { error: costError } = await adminDb().rpc('ai_add_cost', { p_company: companyId, p_micros: costMicros });
     if (costError) console.error('ai_add_cost', costError);
-    return { ...rest, remaining };
+    // Ältere App-Versionen kennen nur Beleg, E-Mail, Kunde und Zahlung
+    const actions = body.v === 2 ? rest.actions : rest.actions.filter((x) => ['document', 'email', 'customer', 'payment'].includes(x.type));
+    return { ...rest, actions, remaining };
   };
 
   // Web: Antwort als Datenstrom (NDJSON) – Status und Text erscheinen sofort; App: eine JSON-Antwort
