@@ -20,17 +20,19 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - Telefonnummer erscheint nur, wenn `NEXT_PUBLIC_CONTACT_PHONE` gesetzt ist (z. B. `+43 660 1234567`).
 - Danach neu deployen (NEXT_PUBLIC_*-Werte werden beim Build eingesetzt).
 
-## KI-Sprachassistent: Zusatzbuchung, API-Schlüssel und Datenschutz
+## Assistent (KI-Zusatzbuchung): Einrichtung, Postfach und Datenschutz
 - **Status:** offen – bewusst ausgeschaltet, bis die ersten Kunden ihn buchen wollen
-- **Angebot:** Zusatzbuchung für 25 € / Monat (netto), eigenes Stripe-Abo, in jedem Tarif buchbar (auch Start), monatlich kündbar, 14 Tage Widerruf.
-- **Solange nicht eingerichtet:** Ohne `ANTHROPIC_API_KEY` oder ohne `STRIPE_PRICE_AI_MONTHLY` ist der Assistent unsichtbar (kein KI-Knopf, Erweiterung „Demnächst“) und verursacht keine Kosten.
+- **Angebot:** 25 € / Monat (netto), eigenes Stripe-Abo, in jedem Tarif buchbar (auch Start), monatlich kündbar, 14 Tage Widerruf. Enthält **300 Aufgaben im Monat** (höchstens 40 am Tag) und den E-Mail-Versand – auch im Tarif Start.
+- **Kann:** E-Mails an Kunden entwerfen und nach Bestätigung senden (Zahlungserinnerungen, Mahnungen, Nachfassen, Antworten, mit PDF), Tagesbriefing, Posteingang lesen und zusammenfassen, Belege/Kunden anlegen, Zahlungseingänge buchen, Fragen zu Zahlen beantworten. Alles nur nach Bestätigung.
+- **Solange nicht eingerichtet:** Ohne `ANTHROPIC_API_KEY` oder ohne `STRIPE_PRICE_AI_MONTHLY` ist der Assistent unsichtbar und verursacht keine Kosten.
 - **Einschalten:**
-  1. In Stripe ein Produkt „KI-Sprachassistent“ mit Preis 25 € monatlich (wiederkehrend) anlegen und die Preis-ID bei Hostinger als `STRIPE_PRICE_AI_MONTHLY` hinterlegen.
-  2. Auf platform.claude.com ein Konto anlegen, Guthaben aufladen, einen API-Schlüssel erstellen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat.
-  3. Neu deployen. Der Stripe-Webhook braucht keine Änderung.
-- **Kosten je Firma (gedeckelt):** Modell Claude Sonnet 5.5, Aufwand „low“; etwa 1–3 Cent je Anfrage. Höchstens 30 Anfragen am Tag (`AI_DAILY_LIMIT`) und 500 im Monat (`AI_MONTHLY_LIMIT`) – damit bleiben die Kosten je Firma bei höchstens ca. 15 € im Monat. Zusätzlich auf der Plattform ein monatliches Ausgabenlimit setzen.
-- **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel- und Belegdaten an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen.
-- **Spracherkennung:** läuft im Browser (Web Speech API; Chrome, Edge, Safari). In Firefox nur Texteingabe.
+  1. In Stripe ein Produkt „Assistent“ mit Preis 25 € monatlich anlegen und die Preis-ID bei Hostinger als `STRIPE_PRICE_AI_MONTHLY` hinterlegen.
+  2. Auf platform.claude.com ein Konto anlegen, Guthaben aufladen, **monatliches Ausgabenlimit** setzen, API-Schlüssel erstellen und bei Hostinger als `ANTHROPIC_API_KEY` hinterlegen – nie im Code oder im Chat.
+  3. Für das Firmenpostfach bei Hostinger `MAILBOX_SECRET` setzen: eine lange Zufallszeichenkette (mind. 32 Zeichen), z. B. aus einem Passwort-Generator. **Nie ändern oder verlieren** – sonst müssen alle Firmen ihr Postfach neu verbinden.
+  4. SQL-Update `supabase/migrations/20261027090000_assistant.sql` im Supabase SQL Editor ausführen, dann neu deployen.
+- **Kosten je Firma (gedeckelt):** Claude Sonnet 5.5, Aufwand „low“; etwa 3–5 Cent je Aufgabe, im Schnitt 3–6 € im Monat. Harte Grenze `AI_MONTHLY_COST_CAP` (Standard 11 US-Dollar ≈ 10 €) je Firma und Monat; danach pausiert der Assistent bis zum Monatsersten. Weitere Stellschrauben: `AI_MONTHLY_LIMIT` (300), `AI_DAILY_LIMIT` (40).
+- **Datenschutz:** Für Anfragen an den Assistenten werden Kunden-, Artikel-, Beleg- und – bei verbundenem Postfach – E-Mail-Inhalte an Anthropic (Auftragsverarbeiter) übermittelt. Datenschutzerklärung ergänzen und den Auftragsverarbeitungsvertrag (DPA) mit Anthropic abschließen. Postfach-Passwörter werden verschlüsselt gespeichert.
+- **Spracherkennung:** läuft im Browser (Chrome, Edge, Safari) bzw. auf dem Handy; in Firefox nur Texteingabe.
 
 ## App in Google Play und im App Store veröffentlichen
 - **Status:** offen – native App ist gebaut (Ordner `mobile/`, Anleitung `mobile/README.md`)

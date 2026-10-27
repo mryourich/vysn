@@ -44,11 +44,11 @@ export default function ExtensionsPage() {
           <article className="ext-card">
             <div className="ext-top">
               <span className="ext-logo" style={{ background: '#13873e' }}><Mic size={22} /></span>
-              <div><strong>KI-Sprachassistent</strong><small>Künstliche Intelligenz</small></div>
+              <div><strong>Assistent</strong><small>Künstliche Intelligenz</small></div>
               <Badge>Demnächst</Badge>
             </div>
-            <p>Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.</p>
-            <div className="ext-actions"><a className="btn" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Interesse: KI-Sprachassistent')}`}>Interesse melden</a></div>
+            <p>Ihre digitale Bürokraft: schreibt E-Mails an Kunden, erinnert an offene Rechnungen, liest Ihren Posteingang, legt Belege und Kunden an und sagt Ihnen jeden Morgen, was ansteht – per Sprache oder Text.</p>
+            <div className="ext-actions"><a className="btn" href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Interesse: Assistent')}`}>Interesse melden</a></div>
           </article>
         )}
         {EXTENSIONS.map((x) => {

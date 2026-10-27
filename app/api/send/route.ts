@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import MailComposer from 'nodemailer/lib/mail-composer';
 import { mailFrom, smtpConfigured, smtpTransport } from '../../../lib/server/smtp';
+import { aiActive } from '../../../lib/server/ai-addon';
+import { getMailAccount, mailboxConfigured, smtpTransportFor, storeSent } from '../../../lib/server/mailbox';
 
 /**
  * Versendet Angebote/Rechnungen per E-Mail über einen SMTP-Server.
@@ -46,14 +49,14 @@ const list = (v: unknown) => (Array.isArray(v) ? v : typeof v === 'string' && v 
 
 export async function GET() {
   return NextResponse.json({
-    enabled: smtpConfigured() && (Boolean(supabaseUrl && supabaseKey) || process.env.MAIL_ALLOW_ANONYMOUS === 'true'),
+    // mit eigenem Firmenpostfach geht der Versand auch ohne zentralen SMTP-Server
+    enabled: (smtpConfigured() || (mailboxConfigured() && Boolean(supabaseUrl && supabaseKey))) && (Boolean(supabaseUrl && supabaseKey) || process.env.MAIL_ALLOW_ANONYMOUS === 'true'),
     smtp: smtpConfigured(),
     requiresLogin: Boolean(supabaseUrl && supabaseKey),
   });
 }
 
 export async function POST(req: Request) {
-  if (!smtpConfigured()) return NextResponse.json({ error: 'E-Mail-Versand ist nicht eingerichtet (SMTP fehlt).' }, { status: 503 });
   const user = await authenticate(req);
   if (!user) return NextResponse.json({ error: 'Bitte melden Sie sich an, um E-Mails zu versenden.' }, { status: 401 });
   if (rateLimited(user)) return NextResponse.json({ error: 'Zu viele E-Mails in kurzer Zeit. Bitte später erneut versuchen.' }, { status: 429 });
@@ -64,17 +67,20 @@ export async function POST(req: Request) {
   } catch {
     return NextResponse.json({ error: 'Ungültige Anfrage.' }, { status: 400 });
   }
-  // E-Mail-Versand ist ab dem Tarif Business enthalten – Tarif der Firma prüfen (mit dem Token des Nutzers, RLS)
+  // E-Mail-Versand ist ab dem Tarif Business oder mit dem Assistenten enthalten – Firma prüfen (mit dem Token des Nutzers, RLS)
+  const companyId = typeof body.companyId === 'string' ? body.companyId : '';
   if (supabaseUrl && supabaseKey) {
-    const companyId = typeof body.companyId === 'string' ? body.companyId : '';
     const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
     const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
-    const { data: company } = companyId ? await sb.from('companies').select('plan').eq('id', companyId).maybeSingle() : { data: null };
+    const { data: company } = companyId ? await sb.from('companies').select('plan, ai_status').eq('id', companyId).maybeSingle() : { data: null };
     if (!company) return NextResponse.json({ error: 'Firma nicht gefunden.' }, { status: 403 });
-    if (company.plan !== 'business' && company.plan !== 'team') {
-      return NextResponse.json({ error: 'Der E-Mail-Versand ist ab dem Tarif Business enthalten.' }, { status: 402 });
+    if (company.plan !== 'business' && company.plan !== 'team' && !aiActive(company.ai_status)) {
+      return NextResponse.json({ error: 'Der E-Mail-Versand ist ab dem Tarif Business oder mit dem Assistenten enthalten.' }, { status: 402 });
     }
   }
+  // Eigenes Postfach der Firma (falls verbunden), sonst der zentrale SMTP-Server
+  const account = companyId && supabaseUrl && supabaseKey ? await getMailAccount(companyId).catch((e) => { console.error('mail account', e); return null; }) : null;
+  if (!account && !smtpConfigured()) return NextResponse.json({ error: 'E-Mail-Versand ist nicht eingerichtet (SMTP fehlt).' }, { status: 503 });
   const to = list(body.to);
   const cc = list(body.cc);
   const bcc = list(body.bcc);
@@ -96,13 +102,17 @@ export async function POST(req: Request) {
     attachments = [{ filename: String(att.filename || 'Dokument.pdf').replace(/[^\w\-. äöüÄÖÜß]/g, '_').slice(0, 120), content, contentType: 'application/pdf' }];
   }
 
-  const transport = smtpTransport();
+  const inReplyTo = typeof body.inReplyTo === 'string' && /^<[^<>\s]{3,300}>$/.test(body.inReplyTo) ? body.inReplyTo : undefined;
+  const mail = {
+    from: account ? { name: fromName || account.displayName || account.email, address: account.email } : mailFrom(fromName),
+    to, cc, bcc, replyTo: account ? undefined : replyTo, subject, text, attachments,
+    inReplyTo, references: inReplyTo,
+  };
   try {
-    const info = await transport.sendMail({
-      from: mailFrom(fromName),
-      to, cc, bcc, replyTo, subject, text, attachments,
-    });
-    return NextResponse.json({ ok: true, id: info.messageId });
+    const info = await (account ? smtpTransportFor(account) : smtpTransport()).sendMail(mail);
+    // Kopie im Ordner „Gesendet“ des eigenen Postfachs
+    if (account) await storeSent(account, await new MailComposer({ ...mail, bcc: undefined, messageId: info.messageId }).compile().build());
+    return NextResponse.json({ ok: true, id: info.messageId, via: account ? account.email : 'server' });
   } catch (e) {
     console.error('send mail failed', e);
     return NextResponse.json({ error: 'Die E-Mail konnte nicht versendet werden. Bitte SMTP-Einstellungen prüfen.' }, { status: 502 });

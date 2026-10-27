@@ -47,7 +47,7 @@ export const withdraw = (companyId: string, name: string) =>
 export const openPortal = (companyId: string) => call('/api/billing/portal', { companyId });
 export const syncBilling = (companyId: string) => call('/api/billing/sync', { companyId });
 
-/** KI-Sprachassistent (Zusatzbuchung, eigenes Abo) */
+/** Assistent (Zusatzbuchung, eigenes Abo) */
 export type AiAction = 'checkout' | 'portal' | 'cancel' | 'resume' | 'sync';
 export const aiBilling = (companyId: string, action: AiAction) => call('/api/billing/ai', { companyId, action });
 export const aiWithdrawalInfo = (companyId: string) =>

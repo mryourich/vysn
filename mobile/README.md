@@ -9,7 +9,7 @@ Belegarten, Tarife und den Datenbankzugriff aus `../lib` nach `src/shared/` (aut
 | | |
 |---|---|
 | App-ID (Android & iOS) | `com.vysnone.app` |
-| Version | 1.1.0 (Build 2) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
+| Version | 1.2.0 (Build 3) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
 
 ## Funktionen
 - **Anmelden** mit dem Konto von vysnone.com, **Firma wechseln**
@@ -20,7 +20,7 @@ Belegarten, Tarife und den Datenbankzugriff aus `../lib` nach `src/shared/` (aut
 - **Kunden:** anlegen, bearbeiten, anrufen, E-Mail, Karte, Belege des Kunden
 - **Material:** anlegen, bearbeiten, Lagerzugang/-entnahme, Bewegungen
 - **Lager-Scanner:** QR-Etiketten der Website mit der Kamera scannen
-- **KI-Sprachassistent** (Zusatzbuchung): Diktat mit der Spracherkennung des Geräts, Vorlesen
+- **Assistent** (Zusatzbuchung): E-Mails an Kunden (mit PDF), Tagesbriefing, Posteingang, Belege und Kunden anlegen, Zahlungen buchen – per Sprache oder Text
 - Buchführung, Berichte, Design und Einstellungen öffnet die App auf vysnone.com
 
 **Käufe:** Tarife und Zusatzbuchungen sind in der App nicht buchbar (Vorgabe von Apple/Google für digitale Abos);

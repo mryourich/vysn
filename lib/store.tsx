@@ -629,7 +629,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const mayAddCompany = !supabaseConfigured || canAddCompany(companies);
   // Lokaler Entwicklungsmodus: alle Funktionen frei
   const plan = data.company?.plan || 'start';
-  // KI-Sprachassistent ist eine Zusatzbuchung (eigenes Abo) – unabhängig vom Tarif
+  // Assistent ist eine Zusatzbuchung (eigenes Abo) – unabhängig vom Tarif
   const aiBooked = aiAddonActive(data.company?.billing?.ai);
   const can = useCallback((feature: Feature) => !supabaseConfigured || (feature === 'ai' ? aiBooked : hasFeature(plan, feature)), [plan, aiBooked]);
   const requireFeature = useCallback((feature: Feature) => {

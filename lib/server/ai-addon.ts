@@ -4,19 +4,22 @@ import { aiPrice, applySubscription, isAiSubscription, stripe } from './billing'
 import { adminDb } from './supabase-admin';
 
 /**
- * KI-Sprachassistent als Zusatzbuchung: eigenes Stripe-Abo (eigener Stripe-Kunde),
+ * Assistent als Zusatzbuchung: eigenes Stripe-Abo (eigener Stripe-Kunde),
  * unabhängig vom Tarif – buchbar in jedem Tarif, auch Start.
  *
  * Umgebungsvariablen:
  *   STRIPE_PRICE_AI_MONTHLY   price_… (25 € / Monat)
  *   ANTHROPIC_API_KEY         ohne Schlüssel ist die Erweiterung ausgeblendet
- *   AI_DAILY_LIMIT            Anfragen je Firma und Tag (Standard 30)
- *   AI_MONTHLY_LIMIT          Anfragen je Firma und Monat (Standard 500) – deckelt die Kosten
+ *   AI_DAILY_LIMIT            Aufgaben je Firma und Tag (Standard 40)
+ *   AI_MONTHLY_LIMIT          Aufgaben je Firma und Monat (Standard 300) – das „Guthaben“ der Kunden
+ *   AI_MONTHLY_COST_CAP       höchstens so viele US-Dollar API-Kosten je Firma und Monat (Standard 11 ≈ 10 €)
  */
 export const aiConfigured = () => Boolean(process.env.ANTHROPIC_API_KEY);
 export const aiBookable = () => aiConfigured() && Boolean(process.env.STRIPE_SECRET_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY && aiPrice());
-export const aiDailyLimit = () => Math.max(1, Number(process.env.AI_DAILY_LIMIT) || 30);
-export const aiMonthlyLimit = () => Math.max(1, Number(process.env.AI_MONTHLY_LIMIT) || 500);
+export const aiDailyLimit = () => Math.max(1, Number(process.env.AI_DAILY_LIMIT) || 40);
+export const aiMonthlyLimit = () => Math.max(1, Number(process.env.AI_MONTHLY_LIMIT) || 300);
+/** Kostendeckel je Firma und Monat in Millionstel US-Dollar */
+export const aiCostCapMicros = () => Math.round(Math.max(0.5, Number(process.env.AI_MONTHLY_COST_CAP) || 11) * 1_000_000);
 
 const ACTIVE = new Set(['active', 'trialing', 'past_due']);
 export const aiActive = (status: unknown) => ACTIVE.has(String(status || ''));
@@ -77,7 +80,7 @@ export async function aiPortalConfiguration(s: Stripe = stripe()): Promise<strin
     if (found) return (portalConfig = found.id);
     const created = await s.billingPortal.configurations.create({
       metadata: { vysn: 'ai-v1' },
-      business_profile: { headline: 'VYSNER One – KI-Sprachassistent' },
+      business_profile: { headline: 'VYSNER One – Assistent' },
       features: {
         invoice_history: { enabled: true },
         payment_method_update: { enabled: true },

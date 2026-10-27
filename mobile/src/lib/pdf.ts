@@ -151,5 +151,14 @@ export async function shareDocPdf(data: Data, doc: SalesDoc) {
   await Sharing.shareAsync(named.uri, { mimeType: 'application/pdf', UTI: 'com.adobe.pdf', dialogTitle: `${DOC_KINDS[doc.kind].one} ${doc.number}` });
 }
 
+/** PDF als Base64 (für den E-Mail-Versand über den Server) */
+export async function docPdfBase64(data: Data, doc: SalesDoc) {
+  const { uri } = await Print.printToFileAsync({ html: docHtml(data, doc), width: 595, height: 842, margins: { left: 40, right: 40, top: 40, bottom: 70 } });
+  const file = new File(uri);
+  const b64 = await file.base64();
+  file.delete();
+  return b64;
+}
+
 /** Direkt drucken (AirPrint / Android-Druckdienst) */
 export const printDoc = (data: Data, doc: SalesDoc) => Print.printAsync({ html: docHtml(data, doc) });
