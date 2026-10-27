@@ -140,13 +140,13 @@ export const FEATURES: Record<Feature, { label: string; plan: 'business' | 'team
   email: { label: 'E-Mail-Versand', plan: 'business', text: 'Angebote, Rechnungen und alle weiteren Belege direkt aus VYSNER One per E-Mail versenden – mit PDF im Anhang.' },
   scanner: { label: 'Lager-Scanner & QR-Etiketten', plan: 'business', text: 'Regale und Artikel mit QR-Codes versehen und per Handy ein- und auslagern.' },
   companies: { label: 'Mehrere Firmen', plan: 'business', text: 'Mehrere Firmen unter einem Login – jede mit eigenen Kunden, Nummern und eigenem Design.' },
-  ai: { label: 'KI-Sprachassistent', plan: 'business', text: 'Angebote und Rechnungen per Sprachmemo erstellen – die KI findet Kunden und Artikel, fragt bei Unklarheiten nach und legt den Entwurf nach Ihrer Bestätigung an.' },
+  ai: { label: 'Assistent', plan: 'business', text: 'Ihre digitale Bürokraft: schreibt E-Mails an Kunden, erinnert an offene Rechnungen, liest den Posteingang, legt Belege und Kunden an und beantwortet Fragen zu Ihren Zahlen – per Sprache oder Text, ausgeführt erst nach Ihrer Bestätigung. 300 Aufgaben im Monat.' },
   team: { label: 'Team & Rechte', plan: 'team', text: 'Bis zu 5 Personen je Firma einladen – mit Rollen für Inhaber, Admin und Mitarbeiter.' },
 };
 
 const PLAN_RANK: Record<PlanId, number> = { start: 0, solo: 1, business: 2, team: 3 };
 
-/** KI-Sprachassistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif buchbar (Preis netto je Monat). */
+/** Assistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif buchbar (Preis netto je Monat). */
 export const AI_ADDON = { monthly: 25 };
 export const aiAddonActive = (ai?: { status: string } | null) => ['active', 'trialing', 'past_due'].includes(ai?.status || '');
 

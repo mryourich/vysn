@@ -13,7 +13,7 @@ import { PAID_PLANS } from '../plans';
  *   STRIPE_PRICE_SOLO_MONTHLY,     STRIPE_PRICE_SOLO_YEARLY,
  *   STRIPE_PRICE_BUSINESS_MONTHLY, STRIPE_PRICE_BUSINESS_YEARLY,
  *   STRIPE_PRICE_TEAM_MONTHLY,     STRIPE_PRICE_TEAM_YEARLY      price_…
- *   STRIPE_PRICE_AI_MONTHLY      price_… (KI-Sprachassistent, eigenes Abo – siehe ai-addon.ts)
+ *   STRIPE_PRICE_AI_MONTHLY      price_… (Assistent, eigenes Abo – siehe ai-addon.ts)
  *   STRIPE_AUTOMATIC_TAX=true    (optional, wenn Stripe Tax eingerichtet ist)
  *   SUPABASE_SERVICE_ROLE_KEY    geheimer Supabase-Schlüssel (sb_secret_…)
  */

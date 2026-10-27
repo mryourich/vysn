@@ -13,7 +13,7 @@ import { Badge, Field, Modal } from './ui';
 
 const NOTICE_KEY = 'vysn-ai-notice';
 
-/** Erweiterung „KI-Sprachassistent“: Zusatzbuchung mit eigenem Abo – buchen, nutzen, verwalten, kündigen, widerrufen. */
+/** Erweiterung „Assistent“: Zusatzbuchung mit eigenem Abo – buchen, nutzen, verwalten, kündigen, widerrufen. */
 export function AiAddonCard() {
   return <Suspense fallback={null}><Card /></Suspense>;
 }
@@ -48,9 +48,9 @@ function Card() {
     if (!activeCompanyId || auth.mode !== 'supabase' || !ki || ki === '1') return;
     const done = () => { router.replace('/app/erweiterungen'); switchCompany(activeCompanyId); };
     if (ki === 'gebucht') {
-      setNotice('Vielen Dank! Der KI-Sprachassistent wird freigeschaltet …');
+      setNotice('Vielen Dank! Der Assistent wird freigeschaltet …');
       aiBilling(activeCompanyId, 'sync')
-        .then((r) => setNotice(r.active ? 'Der KI-Sprachassistent ist gebucht – tippen Sie unten rechts auf „KI“.' : 'Die Zahlung wird noch bestätigt – das kann einen Moment dauern.', true))
+        .then((r) => setNotice(r.active ? 'Der Assistent ist gebucht – tippen Sie unten rechts auf „Assistent“.' : 'Die Zahlung wird noch bestätigt – das kann einen Moment dauern.', true))
         .catch(() => setNotice('Die Zahlung wird noch bestätigt – das kann einen Moment dauern.', true))
         .finally(done);
     } else if (ki === 'gekuendigt') {
@@ -97,12 +97,14 @@ function Card() {
     <article className="ext-card ext-card-ai" id="ki">
       <div className="ext-top">
         <span className="ext-logo" style={{ background: '#13873e' }}><Mic size={22} /></span>
-        <div><strong>KI-Sprachassistent</strong><small>Zusatzbuchung · {price} / Monat</small></div>
+        <div><strong>Assistent</strong><small>Zusatzbuchung · {price} / Monat</small></div>
         {booked ? <Badge tone={ending ? 'warning' : 'success'}>{ending ? 'Gekündigt' : 'Gebucht'}</Badge> : <Badge tone="info">{price} / Monat</Badge>}
       </div>
-      <p>Belege per Sprachmemo erstellen, Fragen zu Umsatz und offenen Rechnungen stellen und Tipps erhalten – mit Rückfragen bei Unklarheiten.</p>
+      <p>Ihre digitale Bürokraft: schreibt E-Mails an Kunden, erinnert an offene Rechnungen, liest Ihren Posteingang, legt Belege und Kunden an und sagt Ihnen jeden Morgen, was ansteht – per Sprache oder Text.</p>
       {!booked ? (
         <ul className="ext-points">
+          <li><Check size={14} /> 300 Aufgaben im Monat inklusive</li>
+          <li><Check size={14} /> E-Mail-Versand inklusive – auch im Tarif Start</li>
           <li><Check size={14} /> In jedem Tarif buchbar, auch in Start</li>
           <li><Check size={14} /> {price} im Monat zzgl. USt., monatlich kündbar</li>
           <li><Check size={14} /> 14 Tage Widerrufsrecht mit voller Erstattung</li>
@@ -140,7 +142,7 @@ function Card() {
         <Modal title="Widerruf bestätigen" onClose={() => setWithdrawOpen(false)}
           footer={<><button className="btn btn-quiet" onClick={() => setWithdrawOpen(false)}>Abbrechen</button>
             <button className="btn btn-primary" disabled={busy === 'withdraw'} onClick={confirmWithdrawal}>{busy === 'withdraw' ? 'Wird verarbeitet …' : 'Widerruf bestätigen'}</button></>}>
-          <p>Hiermit widerrufe ich den Vertrag über den <strong>KI-Sprachassistenten</strong> für „{data.company?.name}“. Das KI-Abo endet sofort, der bezahlte Betrag wird vollständig erstattet. Ihr Tarif bleibt unverändert.</p>
+          <p>Hiermit widerrufe ich den Vertrag über den <strong>Assistenten</strong> für „{data.company?.name}“. Das KI-Abo endet sofort, der bezahlte Betrag wird vollständig erstattet. Ihr Tarif bleibt unverändert.</p>
           <Field label="Ihr Name"><input value={withdrawName} onChange={(e) => setWithdrawName(e.target.value)} placeholder="Vor- und Nachname" autoFocus /></Field>
           {error ? <div className="notice notice-warn" role="alert"><span>{error}</span></div> : null}
         </Modal>

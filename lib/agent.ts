@@ -11,12 +11,24 @@ export type AgentProposal = {
   customer_id: string;
   recipient_name: string;
   subject: string;
-  items: { material_id: string; description: string; details: string; quantity: number; unit: string; unit_price: number; vat: number }[];
+  items: { material_id: string; description: string; details: string; quantity: number; unit: string; unit_price: number; vat: number; monthly?: boolean }[];
 };
 
-export type AgentResult = { messages: AgentHistory; reply: string; proposal: AgentProposal | null; remaining?: number };
+export type EmailProposal = { to: string; customer_id: string; subject: string; text: string; document_id: string; in_reply_to: string; purpose: string };
+export type CustomerProposal = { customer_id: string; name: string; contact_person: string; email: string; phone: string; street: string; zip: string; city: string; notes: string };
+export type PaymentProposal = { document_id: string; paid_date: string };
 
-export type AgentStatus = { enabled: boolean; dailyLimit: number };
+/** Vorschläge des Assistenten – ausgeführt wird erst nach Bestätigung */
+export type AgentAction =
+  | ({ type: 'document' } & AgentProposal)
+  | ({ type: 'email' } & EmailProposal)
+  | ({ type: 'customer' } & CustomerProposal)
+  | ({ type: 'payment' } & PaymentProposal);
+
+/** remaining = übrige Aufgaben im laufenden Monat */
+export type AgentResult = { messages: AgentHistory; reply: string; actions?: AgentAction[]; proposal: AgentProposal | null; remaining?: number };
+
+export type AgentStatus = { enabled: boolean; dailyLimit: number; monthlyLimit?: number; remaining?: number };
 
 let statusPromise: Promise<AgentStatus> | null = null;
 
@@ -26,6 +38,17 @@ export function agentStatus(): Promise<AgentStatus> {
     .then((r) => (r.ok ? r.json() : { enabled: false, dailyLimit: 0 }))
     .catch(() => { statusPromise = null; return { enabled: false, dailyLimit: 0 }; });
   return statusPromise;
+}
+
+/** Übrige Aufgaben der Firma im laufenden Monat */
+export async function agentRemaining(companyId: string): Promise<number | null> {
+  const headers: Record<string, string> = {};
+  if (supabaseConfigured) {
+    const { data } = await getSupabase().auth.getSession();
+    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+  }
+  const json = await fetch(`/api/agent?companyId=${encodeURIComponent(companyId)}`, { headers }).then((r) => r.json()).catch(() => ({}));
+  return typeof json.remaining === 'number' ? json.remaining : null;
 }
 
 export class AgentError extends Error {

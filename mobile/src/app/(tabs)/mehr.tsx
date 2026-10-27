@@ -38,7 +38,7 @@ export default function More() {
       <H>Werkzeuge</H>
       <Card>
         <Row icon={ScanLine} title="Lager-Scanner" sub="QR-Etiketten scannen und buchen" onPress={() => router.push('/scanner')} />
-        <Row icon={Mic} title="KI-Sprachassistent" sub={aiBooked ? 'Belege per Sprache, Fragen zu Ihren Zahlen' : 'Zusatzbuchung – nicht gebucht'} last onPress={() => router.push('/assistent')} />
+        <Row icon={Mic} title="Assistent" sub={aiBooked ? 'E-Mails, Tagesbriefing, Belege per Sprache' : 'Zusatzbuchung – nicht gebucht'} last onPress={() => router.push('/assistent')} />
       </Card>
 
       <H>Weitere Bereiche</H>

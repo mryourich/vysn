@@ -2,18 +2,23 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, Loader2, Lock, Mic, MicOff, RotateCcw, Send, Sparkles, Volume2, VolumeX, X } from 'lucide-react';
-import { AgentError, agentStatus, askAgent } from '../../lib/agent';
-import type { AgentHistory, AgentProposal } from '../../lib/agent';
-import { docTotals, money, qty, uid } from '../../lib/calc';
+import { Check, CheckCircle2, Loader2, Lock, Mail, Mic, MicOff, Paperclip, RotateCcw, Send, Sparkles, Sun, UserPlus, Volume2, VolumeX, X } from 'lucide-react';
+import { AgentError, agentRemaining, agentStatus, askAgent } from '../../lib/agent';
+import type { AgentAction, AgentHistory, AgentProposal, CustomerProposal, EmailProposal, PaymentProposal } from '../../lib/agent';
+import { docTotals, formatDate, money, qty, today, uid } from '../../lib/calc';
+import { emptyCustomer } from '../../lib/defaults';
 import { DOC_KINDS, docEditPath } from '../../lib/docs';
+import { sendMail } from '../../lib/mail';
 import { useStore } from '../../lib/store';
 import type { LineItem } from '../../lib/types';
+import { DocumentTemplate } from '../pdf/document-template';
+import { renderPdf } from '../pdf/export';
+import { docFileName } from './send-dialog';
 
 /** Öffnet den Assistenten von überall (z. B. Seite „Erweiterungen“). */
 export const ASSISTANT_EVENT = 'vysn:assistant';
 
-type Bubble = { role: 'user' | 'assistant'; text: string; proposal?: AgentProposal | null; done?: boolean };
+type Bubble = { role: 'user' | 'assistant'; text: string; actions?: AgentAction[] };
 
 type Recognition = {
   lang: string; continuous: boolean; interimResults: boolean;
@@ -51,13 +56,15 @@ export function VoiceAssistant() {
   const [speak, setSpeak] = useState(true);
   const [enabled, setEnabled] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [monthly, setMonthly] = useState(300);
   const recRef = useRef<Recognition | null>(null);
   const finalRef = useRef('');
   const listRef = useRef<HTMLDivElement>(null);
   const supported = typeof window !== 'undefined' && !!createRecognition('de-DE');
 
   // Ohne API-Schlüssel auf dem Server bleibt der Assistent unsichtbar (keine Kosten)
-  useEffect(() => { agentStatus().then((s) => setEnabled(s.enabled)); }, []);
+  useEffect(() => { agentStatus().then((s) => { setEnabled(s.enabled); if (s.monthlyLimit) setMonthly(s.monthlyLimit); }); }, []);
+  useEffect(() => { if (open && allowed && activeCompanyId) agentRemaining(activeCompanyId).then((r) => { if (r !== null) setRemaining(r); }); }, [open, allowed, activeCompanyId]);
   const show = useCallback(() => { if (enabled && requireFeature('ai')) setOpen(true); }, [enabled, requireFeature]);
   useEffect(() => {
     const onOpen = () => show();
@@ -94,8 +101,9 @@ export function VoiceAssistant() {
       const r = await askAgent(activeCompanyId, history, text);
       setHistory(r.messages);
       if (typeof r.remaining === 'number') setRemaining(r.remaining);
-      const reply = r.reply || (r.proposal ? 'Hier ist mein Vorschlag. Passt das so?' : '');
-      setBubbles((b) => [...b, { role: 'assistant', text: reply, proposal: r.proposal }]);
+      const actions = r.actions ?? (r.proposal ? [{ type: 'document' as const, ...r.proposal }] : []);
+      const reply = r.reply || (actions.length ? 'Hier ist mein Vorschlag. Passt das so?' : '');
+      setBubbles((b) => [...b, { role: 'assistant', text: reply, actions }]);
       say(reply);
     } catch (e) {
       if (e instanceof AgentError && e.upgrade) { setOpen(false); requireFeature('ai'); return; }
@@ -143,7 +151,7 @@ export function VoiceAssistant() {
   };
 
   /** Bestätigter Vorschlag → Beleg als Entwurf anlegen und öffnen */
-  const accept = async (index: number, p: AgentProposal) => {
+  const acceptDocument = async (p: AgentProposal) => {
     const customer = data.customers.find((c) => c.id === p.customer_id);
     const doc = await createDoc(p.kind, customer?.id || '');
     if (!doc) return;
@@ -157,6 +165,7 @@ export function VoiceAssistant() {
       unitPrice: Number(i.unit_price) || 0,
       vat: company.smallBusiness ? 0 : Number(i.vat ?? company.defaultVat),
       discount: 0,
+      interval: i.monthly ? 'monthly' : undefined,
     }));
     saveDoc({
       ...doc,
@@ -164,7 +173,6 @@ export function VoiceAssistant() {
       items,
       recipient: customer ? doc.recipient : { ...doc.recipient, name: p.recipient_name },
     });
-    setBubbles((b) => b.map((x, i) => (i === index ? { ...x, done: true } : x)));
     setOpen(false);
     router.push(docEditPath(doc));
   };
@@ -173,16 +181,16 @@ export function VoiceAssistant() {
 
   return (
     <>
-      <button className={`assistant-fab${allowed ? '' : ' locked'}`} onClick={show} aria-label="KI-Sprachassistent öffnen" title="KI-Sprachassistent">
+      <button className={`assistant-fab${allowed ? '' : ' locked'}`} onClick={show} aria-label="Assistent öffnen" title="Assistent">
         {allowed ? <Mic size={22} /> : <Lock size={18} />}
-        <span>KI</span>
+        <span>Assistent</span>
       </button>
       {open ? (
         <div className="assistant-backdrop" onClick={() => setOpen(false)}>
-          <aside className="assistant" role="dialog" aria-label="KI-Sprachassistent" onClick={(e) => e.stopPropagation()}>
+          <aside className="assistant" role="dialog" aria-label="Assistent" onClick={(e) => e.stopPropagation()}>
             <header className="assistant-head">
               <span className="assistant-badge"><Sparkles size={16} /></span>
-              <div><strong>KI-Sprachassistent</strong><small>Diktieren, prüfen, übernehmen</small></div>
+              <div><strong>Assistent</strong><small>Ihre digitale Bürokraft</small></div>
               <button className="icon-btn" onClick={() => setSpeak(!speak)} title={speak ? 'Vorlesen aus' : 'Vorlesen an'} aria-label="Vorlesen umschalten">{speak ? <Volume2 size={17} /> : <VolumeX size={17} />}</button>
               <button className="icon-btn" onClick={reset} title="Neu beginnen" aria-label="Neu beginnen"><RotateCcw size={17} /></button>
               <button className="icon-btn" onClick={() => setOpen(false)} aria-label="Schließen"><X size={18} /></button>
@@ -191,17 +199,18 @@ export function VoiceAssistant() {
             <div className="assistant-list" ref={listRef}>
               {!bubbles.length ? (
                 <div className="assistant-intro">
-                  <p><strong>Sagen Sie einfach, was Sie brauchen.</strong> Zum Beispiel:</p>
-                  {['Neues Angebot für Herrn Müller: zwei Steckdosen von Gira und Arbeit pauschal 20 Euro', 'Wie viel Umsatz habe ich diesen Monat gemacht?', 'Welche Rechnungen sind noch offen?', 'Tipp: Wie gehe ich mit einem Kunden um, der nicht zahlt?'].map((t) => (
+                  <button className="btn btn-primary assistant-briefing" onClick={() => send('Was steht heute an? Bitte ein kurzes Tagesbriefing.')}><Sun size={17} /> Was steht heute an?</button>
+                  <p><strong>Sagen Sie einfach, was zu tun ist.</strong> Zum Beispiel:</p>
+                  {['Schreib allen mit überfälligen Rechnungen eine freundliche Zahlungserinnerung', 'Gibt es neue Anfragen im Posteingang?', 'Neues Angebot für Herrn Müller: zwei Steckdosen von Gira und Arbeit pauschal 20 Euro', 'Leg einen neuen Kunden an: Bäckerei Huber, Hauptstraße 5, 4020 Linz', 'Rechnung RE-2026-0042 ist heute bezahlt worden', 'Wie viel Umsatz habe ich diesen Monat gemacht?'].map((t) => (
                     <button key={t} className="assistant-example" onClick={() => send(t)}>„{t}“</button>
                   ))}
-                  <p className="muted small">Ich erstelle Belege, beantworte Fragen zu Ihren Zahlen und gebe Tipps. Kunden und Artikel suche ich selbst heraus, frage bei Unklarheiten nach und lege erst nach Ihrer Bestätigung etwas an.</p>
+                  <p className="muted small">Ich schreibe E-Mails an Ihre Kunden, erinnere an offene Rechnungen, lese Ihren Posteingang, lege Belege und Kunden an und beantworte Fragen zu Ihren Zahlen. Verschickt oder gespeichert wird erst, wenn Sie bestätigen.</p>
                 </div>
               ) : null}
               {bubbles.map((b, i) => (
                 <div key={i} className={`assistant-msg from-${b.role === 'user' ? 'user' : 'ai'}`}>
                   {b.text ? <p>{b.text}</p> : null}
-                  {b.proposal ? <ProposalCard p={b.proposal} done={!!b.done} onAccept={() => accept(i, b.proposal!)} /> : null}
+                  {(b.actions || []).map((a, k) => <ActionCard key={k} action={a} onDocument={acceptDocument} />)}
                 </div>
               ))}
               {busy ? <div className="assistant-msg from-ai"><p className="assistant-typing"><Loader2 size={15} className="spin" /> Einen Moment …</p></div> : null}
@@ -217,7 +226,7 @@ export function VoiceAssistant() {
                 onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }} />
               <button className="btn btn-primary assistant-send" disabled={busy || !input.trim() || listening} aria-label="Senden"><Send size={17} /></button>
             </form>
-            {remaining !== null && remaining <= 5 ? <p className="assistant-quota">{remaining ? `Heute noch ${remaining} ${remaining === 1 ? 'Anfrage' : 'Anfragen'}` : 'Tageslimit erreicht – morgen geht es weiter'}</p> : null}
+            {remaining !== null ? <p className="assistant-quota">{remaining ? `Noch ${remaining} von ${monthly} Aufgaben in diesem Monat` : 'Monatsguthaben aufgebraucht – am 1. geht es weiter'}</p> : null}
           </aside>
         </div>
       ) : null}
@@ -225,11 +234,97 @@ export function VoiceAssistant() {
   );
 }
 
+function ActionCard({ action, onDocument }: { action: AgentAction; onDocument: (p: AgentProposal) => Promise<void> }) {
+  const [done, setDone] = useState(false);
+  if (action.type === 'email') return <EmailCard p={action} done={done} onDone={() => setDone(true)} />;
+  if (action.type === 'customer') return <CustomerCard p={action} done={done} onDone={() => setDone(true)} />;
+  if (action.type === 'payment') return <PaymentCard p={action} done={done} onDone={() => setDone(true)} />;
+  return <ProposalCard p={action} done={done} onAccept={() => { setDone(true); onDocument(action); }} />;
+}
+
+function EmailCard({ p, done, onDone }: { p: EmailProposal; done: boolean; onDone: () => void }) {
+  const { data, design, activeCompanyId, markSent, setDocStatus } = useStore();
+  const company = data.company!;
+  const doc = data.documents.find((d) => d.id === p.document_id);
+  const customer = data.customers.find((c) => c.id === (p.customer_id || doc?.customerId));
+  const [to, setTo] = useState(p.to || customer?.email || '');
+  const [subject, setSubject] = useState(p.subject);
+  const [text, setText] = useState(p.text);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async () => {
+    setBusy(true);
+    setError('');
+    try {
+      if (doc && doc.kind === 'invoice' && doc.status === 'draft') setDocStatus(doc.id, 'sent');
+      const pdf = doc ? await renderPdf(<DocumentTemplate company={company} doc={doc} design={design} customerNumber={customer?.number} />) : undefined;
+      await sendMail({ to, subject, text, fromName: company.name, replyTo: company.email, bcc: data.settings.email.bcc, pdf, fileName: doc ? docFileName(doc) : undefined, companyId: activeCompanyId, inReplyTo: p.in_reply_to });
+      if (doc) markSent(doc.id, to);
+      onDone();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="proposal">
+      <div className="proposal-head"><strong><Mail size={14} /> E-Mail</strong><span>{p.purpose}</span></div>
+      <label className="proposal-field"><span>An</span><input value={to} onChange={(e) => setTo(e.target.value)} placeholder="E-Mail-Adresse" disabled={done} /></label>
+      <label className="proposal-field"><span>Betreff</span><input value={subject} onChange={(e) => setSubject(e.target.value)} disabled={done} /></label>
+      <textarea className="proposal-text" rows={8} value={text} onChange={(e) => setText(e.target.value)} disabled={done} />
+      {doc ? <small className="muted"><Paperclip size={12} /> {DOC_KINDS[doc.kind].one} {doc.number} als PDF</small> : null}
+      {error ? <small className="field-error">{error}</small> : null}
+      <button className="btn btn-primary" disabled={done || busy || !to.trim() || !subject.trim()} onClick={submit}>
+        {done ? <><Check size={16} /> Gesendet</> : busy ? <><Loader2 size={16} className="spin" /> Wird gesendet …</> : <><Send size={16} /> Jetzt senden</>}
+      </button>
+    </div>
+  );
+}
+
+function CustomerCard({ p, done, onDone }: { p: CustomerProposal; done: boolean; onDone: () => void }) {
+  const { data, saveCustomer } = useStore();
+  const existing = data.customers.find((c) => c.id === p.customer_id);
+  const fields: [string, string][] = [['Name', p.name], ['Ansprechpartner', p.contact_person], ['E-Mail', p.email], ['Telefon', p.phone], ['Adresse', [p.street, [p.zip, p.city].filter(Boolean).join(' ')].filter(Boolean).join(', ')], ['Notiz', p.notes]];
+  const submit = async () => {
+    const base = existing || emptyCustomer(data.company?.country);
+    const saved = await saveCustomer({ ...base, name: p.name, contactPerson: p.contact_person, email: p.email, phone: p.phone, street: p.street, zip: p.zip, city: p.city, notes: p.notes || base.notes });
+    if (saved) onDone();
+  };
+  return (
+    <div className="proposal">
+      <div className="proposal-head"><strong><UserPlus size={14} /> {existing ? 'Kunde ändern' : 'Neuer Kunde'}</strong><span>{existing?.number || ''}</span></div>
+      <ul>{fields.filter(([, v]) => v).map(([k, v]) => <li key={k}><span className="muted">{k}</span><b>{v}</b></li>)}</ul>
+      <button className="btn btn-primary" disabled={done || !p.name.trim()} onClick={submit}>{done ? <><Check size={16} /> Gespeichert</> : <><Check size={16} /> {existing ? 'Änderungen speichern' : 'Kunde anlegen'}</>}</button>
+    </div>
+  );
+}
+
+function PaymentCard({ p, done, onDone }: { p: PaymentProposal; done: boolean; onDone: () => void }) {
+  const { data, setDocStatus } = useStore();
+  const doc = data.documents.find((d) => d.id === p.document_id && d.kind === 'invoice');
+  if (!doc) return <div className="proposal"><small className="muted">Die Rechnung wurde nicht gefunden.</small></div>;
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(p.paid_date) ? p.paid_date : today();
+  const already = doc.status === 'paid';
+  return (
+    <div className="proposal">
+      <div className="proposal-head"><strong><CheckCircle2 size={14} /> Zahlungseingang</strong><span>{doc.recipient.name}</span></div>
+      <ul>
+        <li><span>Rechnung {doc.number}</span><b>{money(docTotals(doc.items, !!data.company?.smallBusiness, doc.kind).gross)}</b></li>
+        <li><span className="muted">Bezahlt am</span><b>{formatDate(date)}</b></li>
+      </ul>
+      <button className="btn btn-primary" disabled={done || already} onClick={() => { setDocStatus(doc.id, 'paid', date); onDone(); }}>
+        {done || already ? <><Check size={16} /> Als bezahlt markiert</> : <><Check size={16} /> Als bezahlt markieren</>}
+      </button>
+    </div>
+  );
+}
+
 function ProposalCard({ p, done, onAccept }: { p: AgentProposal; done: boolean; onAccept: () => void }) {
   const { data } = useStore();
   const small = !!data.company?.smallBusiness;
   const customer = data.customers.find((c) => c.id === p.customer_id);
-  const totals = docTotals(p.items.map((i) => ({ id: '', description: i.description, details: '', quantity: i.quantity, unit: i.unit, unitPrice: i.unit_price, vat: small ? 0 : i.vat, discount: 0 })), small);
+  const totals = docTotals(p.items.filter((i) => !i.monthly).map((i) => ({ id: '', description: i.description, details: '', quantity: i.quantity, unit: i.unit, unitPrice: i.unit_price, vat: small ? 0 : i.vat, discount: 0 })), small);
   const cfg = DOC_KINDS[p.kind] || DOC_KINDS.offer;
   return (
     <div className="proposal">
@@ -237,10 +332,10 @@ function ProposalCard({ p, done, onAccept }: { p: AgentProposal; done: boolean; 
       {p.subject ? <small className="muted">{p.subject}</small> : null}
       <ul>
         {p.items.map((i, k) => (
-          <li key={k}><span>{qty(i.quantity)} {i.unit} {i.description}{i.material_id ? '' : ' *'}</span>{cfg.prices ? <b>{money(i.quantity * i.unit_price)}</b> : null}</li>
+          <li key={k}><span>{qty(i.quantity)} {i.unit} {i.description}{i.material_id ? '' : ' *'}</span>{cfg.prices ? <b>{money(i.quantity * i.unit_price)}{i.monthly ? ' /Monat' : ''}</b> : null}</li>
         ))}
       </ul>
-      {cfg.prices ? <div className="proposal-sum"><span>{small ? 'Summe' : 'Summe netto'}</span><b>{money(totals.net)}</b></div> : null}
+      {cfg.prices ? <div className="proposal-sum"><span>{small ? 'Summe' : 'Summe netto'}{p.items.some((i) => i.monthly) ? ' einmalig' : ''}</span><b>{money(totals.net)}</b></div> : null}
       {p.items.some((i) => !i.material_id) ? <small className="muted">* freie Position (nicht aus dem Materialstamm)</small> : null}
       <button className="btn btn-primary" disabled={done} onClick={onAccept}>{done ? <><Check size={16} /> Übernommen</> : <><Check size={16} /> Als Entwurf übernehmen</>}</button>
     </div>

@@ -25,11 +25,11 @@ function Footer({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** KI-Sprachassistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif */
+/** Assistent: Zusatzbuchung mit eigenem Abo, in jedem Tarif */
 function AiUpgrade({ onClose }: { onClose: () => void }) {
   const f = FEATURES.ai;
   return (
-    <Modal title="KI-Sprachassistent dazubuchen" onClose={onClose} footer={<>
+    <Modal title="Assistent dazubuchen" onClose={onClose} footer={<>
       <button className="btn btn-quiet" onClick={onClose}>Später</button>
       <Link className="btn btn-primary" href="/app/erweiterungen#ki" onClick={onClose}><Sparkles size={16} /> Jetzt buchen</Link>
     </>}>
@@ -42,7 +42,7 @@ function AiUpgrade({ onClose }: { onClose: () => void }) {
       </div>
       <p>Der Assistent ist eine Zusatzbuchung für <strong>{formatPlanPrice(AI_ADDON.monthly)} € im Monat</strong> zzgl. USt. – in jedem Tarif buchbar, auch in Start, monatlich kündbar.</p>
       <ul className="upgrade-list">
-        {['Belege per Sprachmemo diktieren', 'Rückfragen bei Unklarheiten (z. B. welche Variante)', 'Fragen zu Umsatz, offenen Rechnungen und Lager', '14 Tage Widerrufsrecht mit voller Erstattung'].map((x) => <li key={x}><Check size={15} />{x}</li>)}
+        {['E-Mails an Kunden: Zahlungserinnerungen, Mahnungen, Nachfassen, Antworten', 'Tagesbriefing: was heute ansteht', 'Posteingang lesen und Anfragen zusammenfassen', 'Belege und Kunden per Sprache anlegen', '300 Aufgaben im Monat, 14 Tage Widerrufsrecht'].map((x) => <li key={x}><Check size={15} />{x}</li>)}
       </ul>
     </Modal>
   );

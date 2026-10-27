@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import {
-  Building2, Check, CheckCircle2, DatabaseBackup, Download, Hash, Info, Lock, Mail, Palette, Percent, RotateCcw, Sparkles, Type, Upload, XCircle,
+  Building2, Check, Inbox, CheckCircle2, DatabaseBackup, Download, Hash, Info, Lock, Mail, Palette, Percent, RotateCcw, Sparkles, Type, Upload, XCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { today } from '../../../lib/calc';
@@ -18,10 +18,11 @@ import type { Company, DocKind, EmailSettings } from '../../../lib/types';
 import { CompanyForm } from '../../../components/app/company-form';
 import type { CompanySection } from '../../../components/app/company-form';
 import { DesignEditor } from '../../../components/app/design-editor';
+import { MailboxSettings } from '../../../components/app/mailbox-settings';
 import { DocKindSelect, DocTextsFields } from '../../../components/app/doc-texts';
 import { Empty, Field, PageHeader } from '../../../components/app/ui';
 
-type SectionId = 'firma' | 'steuern' | 'nummern' | 'layout' | 'texte' | 'email' | 'daten';
+type SectionId = 'firma' | 'steuern' | 'nummern' | 'layout' | 'texte' | 'email' | 'postfach' | 'daten';
 const SECTIONS: { id: SectionId; label: string; hint: string; icon: LucideIcon; feature?: Feature }[] = [
   { id: 'firma', label: 'Unternehmensdetails', hint: 'Name, Logo, Anschrift, Bank', icon: Building2 },
   { id: 'steuern', label: 'Steuern', hint: 'Steuernummer, USt, Kleinunternehmer', icon: Percent },
@@ -29,6 +30,7 @@ const SECTIONS: { id: SectionId; label: string; hint: string; icon: LucideIcon; 
   { id: 'layout', label: 'Dokumentenlayout', hint: 'Farben, Schrift, Logo, Aufbau', icon: Palette, feature: 'design' },
   { id: 'texte', label: 'Standardtexte', hint: 'Einleitung und Schluss je Belegart', icon: Type, feature: 'design' },
   { id: 'email', label: 'E-Mail-Versand', hint: 'Versandweg und Vorlagen', icon: Mail, feature: 'email' },
+  { id: 'postfach', label: 'E-Mail-Postfach', hint: 'Posteingang für den Assistenten', icon: Inbox },
   { id: 'daten', label: 'Import / Export', hint: 'Sicherung, Wiederherstellung', icon: DatabaseBackup },
 ];
 
@@ -76,6 +78,7 @@ function Section({ id }: { id: SectionId }) {
     case 'layout': return <DesignEditor onEditCompany={() => router.push('/app/einstellungen?bereich=firma')} />;
     case 'texte': return <Texts />;
     case 'email': return <MailSettings />;
+    case 'postfach': return <MailboxSettings />;
     case 'daten': return <Backup />;
   }
 }

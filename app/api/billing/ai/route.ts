@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 
 type Action = 'checkout' | 'portal' | 'cancel' | 'resume' | 'sync' | 'withdraw-info' | 'withdraw';
 
-/** KI-Sprachassistent als Zusatzbuchung (eigenes Stripe-Abo, 25 € / Monat): buchen, verwalten, kündigen, widerrufen. */
+/** Assistent als Zusatzbuchung (eigenes Stripe-Abo, 25 € / Monat): buchen, verwalten, kündigen, widerrufen. */
 export async function POST(req: Request) {
-  if (!aiBookable()) return NextResponse.json({ error: 'Der KI-Sprachassistent ist noch nicht buchbar.' }, { status: 503 });
+  if (!aiBookable()) return NextResponse.json({ error: 'Der Assistent ist noch nicht buchbar.' }, { status: 503 });
   const user = await userFromRequest(req);
   if (!user) return NextResponse.json({ error: 'Bitte melden Sie sich an.' }, { status: 401 });
   const body = await req.json().catch(() => ({}));
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
 
   switch (action) {
     case 'checkout': {
-      if (subId && aiActive(company.ai_status)) return NextResponse.json({ error: 'Der KI-Sprachassistent ist für diese Firma bereits gebucht.' }, { status: 409 });
+      if (subId && aiActive(company.ai_status)) return NextResponse.json({ error: 'Der Assistent ist für diese Firma bereits gebucht.' }, { status: 409 });
       let customer = customerId;
       if (!customer) {
         // Eigener Stripe-Kunde für die Zusatzbuchung – getrennt vom Tarif-Abo (eigene Rechnungen, eigener Widerruf)
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       try {
         const result = await executeWithdrawal(sub, s);
         const mailed = await sendWithdrawalMail([user.email || '', String(company.email || '')], {
-          company: `${company.name} (KI-Sprachassistent)`, name: String(body.name || '').slice(0, 120), date: new Date(), ...result,
+          company: `${company.name} (Assistent)`, name: String(body.name || '').slice(0, 120), date: new Date(), ...result,
         }).catch((e) => { console.error('withdrawal mail', e); return false; });
         return NextResponse.json({ ok: true, ...result, mailed });
       } catch (e) {

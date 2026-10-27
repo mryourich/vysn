@@ -904,6 +904,12 @@ a.tr:hover, .tr[role='button']:hover { background: var(--surface-2); cursor: poi
 .proposal-head span { color: var(--muted); font-size: 13px; text-align: right; }
 .proposal ul { list-style: none; margin: 4px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13.5px; }
 .proposal li { display: flex; justify-content: space-between; gap: 10px; }
+.proposal-head strong { display: inline-flex; gap: 6px; align-items: center; }
+.proposal-field { display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.proposal-field input, .proposal-text { width: 100%; border: 1px solid var(--line-strong); border-radius: 9px; padding: 7px 9px; font: inherit; font-size: 13.5px; color: var(--ink); background: var(--surface); }
+.proposal-text { resize: vertical; line-height: 1.5; min-height: 140px; }
+.proposal small { display: inline-flex; gap: 5px; align-items: center; }
+.assistant-briefing { align-self: flex-start; margin-bottom: 6px; }
 .proposal-sum { display: flex; justify-content: space-between; border-top: 1px solid var(--line); padding-top: 6px; font-size: 14px; }
 .assistant-input { display: flex; gap: 8px; align-items: flex-end; padding: 12px; border-top: 1px solid var(--line); background: var(--surface); }
 .assistant-input textarea { flex: 1; resize: none; min-height: 44px; max-height: 140px; padding: 11px 12px; border: 1px solid var(--line-strong); border-radius: 12px; font: inherit; font-size: 15px; }
