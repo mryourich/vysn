@@ -25,10 +25,10 @@ export default function DashboardPage() {
   const invoices = data.documents.filter((d) => d.kind === 'invoice');
   const openInvoices = invoices.filter((d) => d.status === 'sent');
   const overdue = openInvoices.filter(isOverdue);
-  const openSum = openInvoices.reduce((s, d) => s + docTotals(d.items, small).gross, 0);
-  const overdueSum = overdue.reduce((s, d) => s + docTotals(d.items, small).gross, 0);
+  const openSum = openInvoices.reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0);
+  const overdueSum = overdue.reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0);
   const openOffers = data.documents.filter((d) => d.kind === 'offer' && d.status === 'sent');
-  const offerSum = openOffers.reduce((s, d) => s + docTotals(d.items, small).net, 0);
+  const offerSum = openOffers.reduce((s, d) => s + docTotals(d.items, small, d.kind).net, 0);
   const lowStock = data.materials.filter((m) => m.minStock > 0 && m.stock <= m.minStock);
   const recent = [...data.documents].sort((a, b) => (b.date + b.createdAt).localeCompare(a.date + a.createdAt)).slice(0, 6);
 
@@ -76,7 +76,7 @@ export default function DashboardPage() {
               <li key={d.id}><Link href={docEditPath(d)}>
                 <AlertTriangle size={16} className="text-danger" />
                 <span><strong>{d.number} überfällig</strong><small>{d.recipient.name} · fällig {formatDate(d.dueDate)}</small></span>
-                <b>{money(docTotals(d.items, small).gross)}</b>
+                <b>{money(docTotals(d.items, small, d.kind).gross)}</b>
               </Link></li>
             ))}
             {lowStock.slice(0, 4).map((m) => (
@@ -114,7 +114,7 @@ export default function DashboardPage() {
                   <span className="td-main">{(() => { const I = DOC_ICONS[d.kind]; return <I size={16} />; })()}<span><strong>{d.number}</strong><small>{d.recipient.name || '—'}{d.subject ? ` · ${d.subject}` : ''}</small></span></span>
                   <span className="td-muted hide-sm">{formatDate(d.date)}</span>
                   <span><Badge tone={st.tone}>{st.label}</Badge></span>
-                  <span className="td-num">{money(docTotals(d.items, small).gross)}</span>
+                  <span className="td-num">{money(docTotals(d.items, small, d.kind).gross)}</span>
                 </Link>
               );
             })}

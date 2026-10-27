@@ -7,12 +7,18 @@ Liste der Aufgaben, die noch erledigt werden müssen, bevor bzw. nachdem VYSNER 
 - **Warum:** Seit 19.06.2026 ist die Widerrufsbestätigung per E-Mail Pflicht (§ 356a BGB). Ohne SMTP funktionieren Widerruf, Team-Einladungen und der Belegversand nur ohne E-Mail.
 - **Was zu tun ist:** Bei Hostinger als Umgebungsvariablen hinterlegen:
   `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_SECURE` (bei Port 465 `true`), `MAIL_FROM` (z. B. `VYSNER One <noreply@ihre-domain.de>`).
-  Optional: `WITHDRAWAL_TO` (Empfänger öffentlicher Widerrufe, Standard hallo@vysn.de), `WITHDRAWAL_BCC`.
+  Optional: `WITHDRAWAL_TO` (Empfänger öffentlicher Widerrufe, Standard ist die Kontaktadresse), `WITHDRAWAL_BCC`.
 - **Prüfen:** Einstellungen → E-Mail-Versand zeigt „Direkter Versand aktiv“.
 
-## Firmendaten in Impressum und Widerrufsbelehrung
+## Firmendaten in Impressum, Datenschutz und Widerrufsbelehrung
+- **Status:** offen – **Pflicht vor dem Verkauf**
+- Platzhalter in `app/impressum/page.tsx`, `app/datenschutz/page.tsx` und `app/widerruf/page.tsx` durch echte Angaben ersetzen (Name/Firma, Anschrift, E-Mail, ggf. Telefon, UID, Firmenbuch/Gewerbe, Kammer/Behörde) und Texte rechtlich prüfen lassen.
+
+## Kontakt auf der Website
 - **Status:** offen
-- Platzhalter in `app/impressum/page.tsx` und `app/widerruf/page.tsx` durch echte Angaben ersetzen und Texte rechtlich prüfen lassen.
+- Die Website zeigt `hallo@vysnone.com` – dieses Postfach muss bei Hostinger angelegt sein (oder bei Hostinger `NEXT_PUBLIC_CONTACT_EMAIL` setzen).
+- Telefonnummer erscheint nur, wenn `NEXT_PUBLIC_CONTACT_PHONE` gesetzt ist (z. B. `+43 660 1234567`).
+- Danach neu deployen (NEXT_PUBLIC_*-Werte werden beim Build eingesetzt).
 
 ## KI-Sprachassistent: Zusatzbuchung, API-Schlüssel und Datenschutz
 - **Status:** offen – bewusst ausgeschaltet, bis die ersten Kunden ihn buchen wollen

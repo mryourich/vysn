@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { stripe } from './billing';
 import { applyAnySubscription } from './ai-addon';
 import { mailFrom, smtpConfigured, smtpTransport } from './smtp';
+import { CONTACT_EMAIL } from '../site';
 
 /**
  * Widerrufsrecht (14 Tage ab Vertragsschluss) für Deutschland, Österreich und – freiwillig – die Schweiz.
@@ -60,12 +61,12 @@ export async function sendWithdrawalMail(to: string[], data: { company: string; 
       `Das Abonnement der Firma „${data.company}“ ist beendet; die Firma nutzt ab sofort den kostenlosen Tarif Start. Ihre Daten bleiben erhalten.`,
       data.refunded ? `Der bezahlte Betrag von ${money(data.refunded, data.currency || 'EUR')} wird vollständig auf die ursprüngliche Zahlungsart erstattet. Je nach Bank dauert die Gutschrift 5–10 Werktage.` : 'Es waren keine Zahlungen zu erstatten.',
     ];
-  const text = [...lines, '', 'Mit freundlichen Grüßen', 'VYSNER One', 'hallo@vysn.de'].join('\n');
+  const text = [...lines, '', 'Mit freundlichen Grüßen', 'VYSNER One', CONTACT_EMAIL].join('\n');
   await smtpTransport().sendMail({
     from: mailFrom('VYSNER One'),
     to: [...new Set(to.filter(Boolean))].join(', '),
     bcc: process.env.WITHDRAWAL_BCC || undefined,
-    replyTo: 'hallo@vysn.de',
+    replyTo: CONTACT_EMAIL,
     subject: 'Bestätigung Ihres Widerrufs – VYSNER One',
     text,
   });

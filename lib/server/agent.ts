@@ -266,8 +266,8 @@ function openItems(data: Data) {
       nummer: d.number, kunde: d.recipient.name, betrag_brutto: gross(d.items), rechnungsdatum: d.date, faellig: d.dueDate,
       ueberfaellig_tage: isOverdue(d) ? days(d.dueDate) : 0,
     })).sort((a, b) => b.ueberfaellig_tage - a.ueberfaellig_tage),
-    summe_offen: Math.round(open.reduce((s, d) => s + docTotals(d.items, small).gross, 0) * 100) / 100,
-    summe_ueberfaellig: Math.round(open.filter(isOverdue).reduce((s, d) => s + docTotals(d.items, small).gross, 0) * 100) / 100,
+    summe_offen: Math.round(open.reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0) * 100) / 100,
+    summe_ueberfaellig: Math.round(open.filter(isOverdue).reduce((s, d) => s + docTotals(d.items, small, d.kind).gross, 0) * 100) / 100,
     offene_angebote: data.documents.filter((d) => d.kind === 'offer' && d.status === 'sent').map((d) => ({ nummer: d.number, kunde: d.recipient.name, betrag_brutto: gross(d.items), gueltig_bis: d.dueDate })),
     entwuerfe: data.documents.filter((d) => d.status === 'draft').length,
     unter_mindestbestand: (data.materials as unknown as { number: string; name: string; unit: string; stock: number; minStock: number }[])

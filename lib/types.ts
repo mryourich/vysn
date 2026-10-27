@@ -123,6 +123,8 @@ export type LineItem = {
   chosen?: boolean;
   /** Alternative zu einer anderen Position (Nummer z. B. 1.1) */
   parentId?: string;
+  /** Wiederkehrende Kosten (Wartung, Miete, Lizenz …) – fehlt = einmalig */
+  interval?: 'monthly';
 };
 
 /** Belegarten: Angebot, Auftragsbestätigung, Lieferschein, Rechnung, Bestellung (an Lieferanten). */

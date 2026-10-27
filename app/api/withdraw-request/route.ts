@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { mailFrom, smtpConfigured, smtpTransport } from '../../../lib/server/smtp';
 import { sendWithdrawalMail } from '../../../lib/server/withdrawal';
+import { CONTACT_EMAIL } from '../../../lib/site';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -18,12 +19,12 @@ export async function POST(req: Request) {
   const name = clean(body.name, 120);
   const company = clean(body.company, 160);
   if (!/\S+@\S+\.\S+/.test(email) || !name) return NextResponse.json({ error: 'Bitte Name und E-Mail-Adresse angeben.' }, { status: 400 });
-  if (!smtpConfigured()) return NextResponse.json({ error: 'Der Online-Widerruf ist gerade nicht verfügbar. Bitte senden Sie Ihren Widerruf formlos an hallo@vysn.de.' }, { status: 503 });
+  if (!smtpConfigured()) return NextResponse.json({ error: `Der Online-Widerruf ist gerade nicht verfügbar. Bitte senden Sie Ihren Widerruf formlos an ${CONTACT_EMAIL}.` }, { status: 503 });
   const date = new Date();
   try {
     await smtpTransport().sendMail({
       from: mailFrom('VYSNER One Widerruf'),
-      to: process.env.WITHDRAWAL_TO || 'hallo@vysn.de',
+      to: process.env.WITHDRAWAL_TO || CONTACT_EMAIL,
       replyTo: email,
       subject: `Widerruf: ${company || name}`,
       text: [
@@ -37,6 +38,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error('withdraw-request', e);
-    return NextResponse.json({ error: 'Senden fehlgeschlagen. Bitte senden Sie Ihren Widerruf formlos an hallo@vysn.de.' }, { status: 500 });
+    return NextResponse.json({ error: `Senden fehlgeschlagen. Bitte senden Sie Ihren Widerruf formlos an ${CONTACT_EMAIL}.` }, { status: 500 });
   }
 }

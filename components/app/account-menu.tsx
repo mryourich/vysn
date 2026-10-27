@@ -8,6 +8,7 @@ import { PLANS, featureForPath } from '../../lib/plans';
 import { useStore } from '../../lib/store';
 import { ROLE_LABEL, isAdminRole } from '../../lib/team';
 import { CompanyAvatar, CompanyList, LogoutButton } from './company-switcher';
+import { CONTACT_EMAIL } from '../../lib/site';
 
 export type AccountRow = { href: string; label: string; hint: string; icon: LucideIcon; admin?: boolean; external?: boolean };
 
@@ -18,7 +19,7 @@ export const ACCOUNT_ROWS: AccountRow[] = [
   { href: '/app/team', label: 'Team & Rechte', hint: 'Mitarbeitende einladen, Rollen', icon: UserPlus },
   { href: '/app/tarif', label: 'Abonnement', hint: 'Tarif wechseln, Kontingente', icon: CreditCard, admin: true },
   { href: '/app/tarif#zahlungen', label: 'Zahlungen', hint: 'Zahlungsart und Rechnungen von VYSNER', icon: Receipt, admin: true },
-  { href: 'mailto:hallo@vysn.de?subject=Support%20VYSNER%20One', label: 'Support', hint: 'hallo@vysn.de', icon: LifeBuoy, external: true },
+  { href: `mailto:${CONTACT_EMAIL}?subject=Support%20VYSNER%20One`, label: 'Support', hint: CONTACT_EMAIL, icon: LifeBuoy, external: true },
 ];
 
 /** Klappmenü: schließt bei Klick daneben und mit Escape. */
