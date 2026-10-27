@@ -9,14 +9,14 @@ Belegarten, Tarife und den Datenbankzugriff aus `../lib` nach `src/shared/` (aut
 | | |
 |---|---|
 | App-ID (Android & iOS) | `com.vysnone.app` |
-| Version | 1.0.0 (Build 1) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
+| Version | 1.1.0 (Build 2) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
 
 ## Funktionen
 - **Anmelden** mit dem Konto von vysnone.com, **Firma wechseln**
 - **Übersicht:** offene und überfällige Rechnungen, Monatsumsatz, offene Angebote, Mindestbestand, zuletzt bearbeitete Belege
 - **Belege** (Angebote, Auftragsbestätigungen, Lieferscheine, Rechnungen, Bestellungen): anlegen, Kunde wählen,
   Positionen aus dem Material oder frei, Optional/Alternative (1.1), Festschreiben, Zahlung erfassen, Storno,
-  Folgebelege, **PDF teilen** (Mail, WhatsApp …) und **drucken**
+  Folgebelege, einmalige und monatliche Positionen, **PDF teilen** (Mail, WhatsApp …) und **drucken**
 - **Kunden:** anlegen, bearbeiten, anrufen, E-Mail, Karte, Belege des Kunden
 - **Material:** anlegen, bearbeiten, Lagerzugang/-entnahme, Bewegungen
 - **Lager-Scanner:** QR-Etiketten der Website mit der Kamera scannen
