@@ -1,7 +1,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
-import { docTotals, formatDate, lineNet, money, monthlySeparate, monthlyTotals, positionLabels, qty } from '../shared/calc';
+import { docTotals, formatDate, lineNet, money, monthlyTotals, positionLabels, qty } from '../shared/calc';
 import { DOC_KINDS, docTexts } from '../shared/docs';
 import { formatRate, taxProfile } from '../shared/tax';
 import type { Data, SalesDoc } from '../shared/types';
@@ -26,9 +26,8 @@ export function docHtml(data: Data, doc: SalesDoc) {
   const cfg = DOC_KINDS[doc.kind];
   const prices = cfg.prices;
   const tax = taxProfile(company);
-  const totals = docTotals(doc.items, company.smallBusiness, doc.kind);
+  const totals = docTotals(doc.items, company.smallBusiness);
   const monthly = monthlyTotals(doc.items, company.smallBusiness);
-  const separate = !!monthly && monthlySeparate(doc.kind);
   const defaults = docTexts(design, doc.kind);
   const intro = fillPlaceholders(doc.intro || defaults.intro, doc, totals.gross);
   const outro = fillPlaceholders(doc.outro || defaults.outro, doc, totals.gross);
@@ -72,9 +71,8 @@ export function docHtml(data: Data, doc: SalesDoc) {
       <tr class="sum"><td>${esc(sumLabel)}</td><td class="num">${money(t.gross)}</td></tr>`;
   const totalRows = prices ? `
     <table class="totals">
-      ${separate ? '<tr><td colspan="2" class="group">Einmalige Kosten</td></tr>' : ''}
-      ${sumRows(totals, 'Nettobetrag', separate ? `${cfg.totalLabel || 'Summe'} einmalig` : cfg.totalLabel || 'Summe')}
-      ${separate && monthly ? `<tr><td colspan="2" class="group">Monatlich wiederkehrende Kosten</td></tr>${sumRows(monthly, 'Nettobetrag pro Monat', 'Summe pro Monat')}` : ''}
+      ${sumRows(totals, 'Nettobetrag', monthly ? `${cfg.totalLabel || 'Summe'} (inkl. 1. Monat)` : cfg.totalLabel || 'Summe')}
+      ${monthly ? `<tr class="after"><td>danach monatlich</td><td class="num">${money(monthly.gross)}</td></tr>` : ''}
     </table>` : '';
 
   const footer = design.showFooter ? `<div class="footer">${[
@@ -110,7 +108,7 @@ export function docHtml(data: Data, doc: SalesDoc) {
   tr.alt td { color: #4a5159; }
   table.totals { margin: 10px 0 0 auto; border-collapse: collapse; min-width: 52%; }
   table.totals td { padding: 3px 4px; } table.totals tr.sum td { font-weight: bold; font-size: 11pt; border-top: 1.5px solid ${accent}; padding-top: 6px; }
-  table.totals td.group { font-weight: bold; padding-top: 12px; }
+  table.totals tr.after td { font-weight: bold; padding-top: 6px; }
   .muted { color: #6a717a; font-size: 8.5pt; margin-top: 8px; }
   .outro { margin-top: 18px; }
   .footer { position: fixed; bottom: -22mm; left: 0; right: 0; display: flex; gap: 14px; border-top: 0.5px solid #dcdfe3; padding-top: 6px; font-size: 6.8pt; color: #6a717a; }
@@ -130,7 +128,6 @@ export function docHtml(data: Data, doc: SalesDoc) {
   </table>
   ${totalRows}
   ${prices && doc.items.some((i) => i.variant) ? `<div class="muted">Optionale Positionen und Alternativen (Beträge in Klammern) sind in der ${esc(cfg.totalLabel || 'Summe')} nicht enthalten.</div>` : ''}
-  ${monthly && !separate ? `<div class="muted">Monatliche Positionen (${money(monthly.gross)}) sind für den Abrechnungszeitraum enthalten.</div>` : ''}
   ${prices && company.smallBusiness ? `<div class="muted">${esc(tax.smallBusinessNote)}</div>` : ''}
   ${outro ? `<div class="outro">${lines(outro)}</div>` : ''}
   ${company.owner ? `<div>${esc(company.owner)}</div>` : ''}

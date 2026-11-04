@@ -2,7 +2,7 @@
   "expo": {
     "name": "VYSNER One",
     "slug": "vysner-one",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "vysnerone",
@@ -10,7 +10,7 @@
     "backgroundColor": "#f4f6f9",
     "ios": {
       "bundleIdentifier": "com.vysnone.app",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "supportsTablet": true,
       "config": {
         "usesNonExemptEncryption": false
@@ -21,7 +21,7 @@
     },
     "android": {
       "package": "com.vysnone.app",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

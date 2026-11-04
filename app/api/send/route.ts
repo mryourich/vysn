@@ -4,6 +4,7 @@ import MailComposer from 'nodemailer/lib/mail-composer';
 import { mailFrom, smtpConfigured, smtpTransport } from '../../../lib/server/smtp';
 import { aiActive } from '../../../lib/server/ai-addon';
 import { getMailAccount, mailboxConfigured, smtpTransportFor, storeSent } from '../../../lib/server/mailbox';
+import { requestToken } from '../../../lib/server/supabase-admin';
 
 /**
  * Versendet Angebote/Rechnungen per E-Mail über einen SMTP-Server.
@@ -27,7 +28,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 async function authenticate(req: Request): Promise<string | null> {
   if (supabaseUrl && supabaseKey) {
-    const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    const token = requestToken(req);
     if (!token) return null;
     const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
     const { data, error } = await sb.auth.getUser(token);
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
   // E-Mail-Versand ist ab dem Tarif Business oder mit dem Assistenten enthalten – Firma prüfen (mit dem Token des Nutzers, RLS)
   const companyId = typeof body.companyId === 'string' ? body.companyId : '';
   if (supabaseUrl && supabaseKey) {
-    const token = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    const token = requestToken(req);
     const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
     const { data: company } = companyId ? await sb.from('companies').select('plan, ai_status').eq('id', companyId).maybeSingle() : { data: null };
     if (!company) return NextResponse.json({ error: 'Firma nicht gefunden.' }, { status: 403 });

@@ -16,7 +16,7 @@ export default function Dashboard() {
   const invoices = data.documents.filter((d) => d.kind === 'invoice');
   const open = invoices.filter((d) => d.status === 'sent');
   const overdue = open.filter(isOverdue);
-  const sum = (list: typeof invoices, f: 'net' | 'gross') => list.reduce((s, d) => s + docTotals(d.items, small, d.kind)[f], 0);
+  const sum = (list: typeof invoices, f: 'net' | 'gross') => list.reduce((s, d) => s + docTotals(d.items, small)[f], 0);
   const monthRevenue = sum(invoices.filter((d) => (d.status === 'sent' || d.status === 'paid') && d.date.startsWith(month)), 'net');
   const openOffers = data.documents.filter((d) => d.kind === 'offer' && d.status === 'sent');
   const lowStock = data.materials.filter((m) => m.minStock > 0 && m.stock <= m.minStock);
@@ -56,7 +56,7 @@ export default function Dashboard() {
           const st2 = displayStatus(d);
           return (
             <Row key={d.id} title={`${DOC_KINDS[d.kind].one} ${d.number}`} sub={`${d.recipient.name || 'Ohne Empfänger'} · ${formatDate(d.date)}`}
-              right={<Badge label={st2.label} tone={st2.tone} />} rightSub={DOC_KINDS[d.kind].prices ? money(docTotals(d.items, small, d.kind).gross) : undefined}
+              right={<Badge label={st2.label} tone={st2.tone} />} rightSub={DOC_KINDS[d.kind].prices ? money(docTotals(d.items, small).gross) : undefined}
               last={i === recent.length - 1} onPress={() => router.push(`/beleg/${d.id}`)} />
           );
         }) : <Empty icon={ReceiptText} title="Noch keine Belege" text="Erstellen Sie Ihr erstes Angebot oder Ihre erste Rechnung." />}

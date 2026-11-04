@@ -1,6 +1,6 @@
 'use client';
 
-import { docTotals, formatDate, lineNet, money, monthlySeparate, monthlyTotals, positionLabels, qty } from '../../lib/calc';
+import { docTotals, formatDate, lineNet, money, monthlyTotals, positionLabels, qty } from '../../lib/calc';
 import { formatRate, taxProfile } from '../../lib/tax';
 import { DOC_KINDS, docTexts } from '../../lib/docs';
 import type { Company, InvoiceDesign, SalesDoc } from '../../lib/types';
@@ -38,9 +38,8 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
   const prices = cfg.prices;
   const defaults = docTexts(design, doc.kind);
   const tax = taxProfile(company);
-  const totals = docTotals(doc.items, company.smallBusiness, doc.kind);
+  const totals = docTotals(doc.items, company.smallBusiness);
   const monthly = monthlyTotals(doc.items, company.smallBusiness);
-  const separate = !!monthly && monthlySeparate(doc.kind);
   const accent = design.accent;
   const font = design.font;
   const bold = { fontFamily: font, fontWeight: 'bold' } as Style;
@@ -176,17 +175,16 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
 
   const totalsBlock = (
     <V wrap={false} style={{ flexDirection: 'row', justifyContent: 'flex-end', marginTop: 10 }}>
-      <V style={{ width: 220 }}>
-        {separate ? <T style={[bold, { marginBottom: 3 }]}>Einmalige Kosten</T> : null}
+      <V style={{ width: monthly ? 260 : 220 }}>
         {company.smallBusiness ? null : totalRow('Nettobetrag', money(totals.net))}
         {company.smallBusiness ? null : totals.vatGroups.map((g) => totalRow(`zzgl. ${formatRate(g.rate)} ${tax.label} auf ${money(g.net)}`, money(g.vat)))}
-        {totalRow(separate ? `${cfg.totalLabel} einmalig` : cfg.totalLabel, money(totals.gross), true)}
-        {separate && monthly ? <V>
-          <T style={[bold, { marginTop: 12, marginBottom: 3 }]}>Monatlich wiederkehrende Kosten</T>
-          {company.smallBusiness ? null : totalRow('Nettobetrag pro Monat', money(monthly.net))}
-          {company.smallBusiness ? null : monthly.vatGroups.map((g) => totalRow(`zzgl. ${formatRate(g.rate)} ${tax.label} auf ${money(g.net)}`, money(g.vat)))}
-          {totalRow('Summe pro Monat', money(monthly.gross), true)}
-        </V> : null}
+        {totalRow(monthly ? `${cfg.totalLabel} (inkl. 1. Monat)` : cfg.totalLabel, money(totals.gross), true)}
+        {monthly ? (
+          <V style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4, paddingHorizontal: 6, marginTop: 3 }}>
+            <T style={bold}>danach monatlich</T>
+            <T style={bold}>{money(monthly.gross)}</T>
+          </V>
+        ) : null}
       </V>
     </V>
   );
@@ -234,9 +232,6 @@ export function DocumentTemplate({ company, doc, design, customerNumber }: Templ
       {prices ? totalsBlock : null}
       {prices && doc.items.some((i) => i.variant) ? (
         <T style={{ marginTop: 8, fontSize: 8.2, color: MUTED }}>Optionale Positionen und Alternativen (Beträge in Klammern) sind in der {cfg.totalLabel || 'Summe'} nicht enthalten.</T>
-      ) : null}
-      {monthly && !separate ? (
-        <T style={{ marginTop: 8, fontSize: 8.2, color: MUTED }}>Monatliche Positionen ({money(monthly.gross)}) sind für den Abrechnungszeitraum enthalten.</T>
       ) : null}
       {prices && company.smallBusiness ? <T style={{ marginTop: 10, fontSize: 8.5, color: MUTED }}>{tax.smallBusinessNote}</T> : null}
       {outro ? <T wrap={false} style={{ marginTop: 18 }}>{outro}</T> : null}

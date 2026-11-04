@@ -12,18 +12,18 @@ export function SiteFooter() {
         </div>
         <div>
           <h4>Produkt</h4>
-          <a href="/#funktionen">Funktionen</a>
-          <a href="/#laufende-kosten">Monatliche Kosten</a>
-          <a href="/#app">App für iPhone & Android</a>
-          <a href="/#rechnungsdesign">Rechnungsdesign</a>
-          <a href="/#preise">Preise</a>
+          <Link href="/#funktionen">Funktionen</Link>
+          <Link href="/#laufende-kosten">Monatliche Kosten</Link>
+          <Link href="/#app">App für iPhone & Android</Link>
+          <Link href="/#rechnungsdesign">Rechnungsdesign</Link>
+          <Link href="/#preise">Preise</Link>
           <Link href="/app">Anwendung öffnen</Link>
         </div>
         <div>
           <h4>Unternehmen</h4>
-          <a href="/#kontakt">Kontakt</a>
+          <Link href="/#kontakt">Kontakt</Link>
           <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          <a href="/#faq">Häufige Fragen</a>
+          <Link href="/#faq">Häufige Fragen</Link>
         </div>
         <div>
           <h4>Rechtliches</h4>

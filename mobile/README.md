@@ -9,7 +9,7 @@ Belegarten, Tarife und den Datenbankzugriff aus `../lib` nach `src/shared/` (aut
 | | |
 |---|---|
 | App-ID (Android & iOS) | `com.vysnone.app` |
-| Version | 1.2.0 (Build 3) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
+| Version | 1.3.0 (Build 4) – in `app.json` (`version`, `android.versionCode`, `ios.buildNumber`) |
 
 ## Funktionen
 - **Anmelden** mit dem Konto von vysnone.com, **Firma wechseln**

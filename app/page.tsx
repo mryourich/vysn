@@ -18,7 +18,7 @@ const FAQ = [
   ['Sind die Rechnungen rechtlich korrekt?', 'Die Vorlagen enthalten die Pflichtangaben für Deutschland (§ 14 UStG), Österreich (§ 11 UStG) und die Schweiz (Art. 26 MWSTG): Anschriften, Steuer- bzw. UID-Nummer, fortlaufende Rechnungsnummer, Leistungsdatum, Netto, Steuersatz und Steuerbetrag. Für Kleinunternehmer wird automatisch der passende Hinweis gesetzt.'],
   ['Funktioniert VYSNER One auch in Österreich und der Schweiz?', 'Ja. Mit dem Firmenland stellen sich Steuersätze (z. B. 20/13/10 % in Österreich, 8,1/3,8/2,6 % MWST in der Schweiz), Bezeichnungen, Rechnungshinweise und die Währung (EUR oder CHF) automatisch ein. Abweichende Steuersätze können Sie jederzeit frei eingeben.'],
   ['Kann ich mein eigenes Logo und Design verwenden?', 'Ja. Sie laden Ihr Logo hoch und wählen Layout, Akzentfarbe, Schrift und Tabellenstil. Die Vorschau zeigt jede Änderung sofort, der PDF-Export sieht exakt so aus.'],
-  ['Kann ich monatliche Kosten anbieten und abrechnen?', 'Ja. Jede Position ist entweder einmalig oder monatlich – zum Beispiel Einrichtung einmalig und Wartung, Miete oder Betreuung monatlich. Angebote und Auftragsbestätigungen weisen beide Summen getrennt aus, Rechnungen berechnen monatliche Positionen für den Abrechnungszeitraum.'],
+  ['Kann ich monatliche Kosten anbieten und abrechnen?', 'Ja. Jede Position ist entweder einmalig oder monatlich – zum Beispiel Einrichtung einmalig und Wartung, Miete oder Betreuung monatlich. Der Gesamtpreis enthält den ersten Monat, darunter steht, was danach monatlich anfällt – in Angeboten, Auftragsbestätigungen und Rechnungen.'],
   ['Funktioniert VYSNER One auf dem Smartphone?', 'Ja. Die Anwendung läuft im Browser auf Smartphone, Tablet und Desktop. Dazu kommt eine eigene App für iPhone und Android: Belege unterwegs anlegen, als PDF per Mail oder WhatsApp senden, Kunden anrufen und das Lager per Kamera scannen.'],
   ['Wie lange bin ich gebunden?', 'Gar nicht. Den Tarif Start nutzen Sie dauerhaft kostenlos. Bezahlte Tarife sind bei monatlicher Zahlung monatlich kündbar, bei jährlicher Zahlung zum Ende des Jahres. Für Verbraucher gilt zusätzlich das 14-tägige Widerrufsrecht.'],
   ['Kann ich meine Daten mitnehmen?', 'Jederzeit. Über „Datensicherung“ laden Sie alle Daten vollständig herunter, alle Belege gibt es als PDF, und für die Steuerberatung steht ein DATEV-Export bereit.'],
@@ -166,9 +166,9 @@ export default function Home() {
           <div data-reveal>
             <span className="kicker">Neu · Monatliche Kosten</span>
             <h2 className="split-title">Einmalig und monatlich – in einem Angebot.</h2>
-            <p className="split-lead">Einrichtung, Montage oder Projekt einmalig, Wartung, Miete, Lizenz oder Betreuung monatlich: Jede Position bekommt ihre Abrechnungsart. Ihr Kunde sieht auf einen Blick, was einmalig anfällt und was jeden Monat dazukommt.</p>
+            <p className="split-lead">Einrichtung, Montage oder Projekt einmalig, Wartung, Miete, Lizenz oder Betreuung monatlich: Jede Position bekommt ihre Abrechnungsart. Ihr Kunde sieht auf einen Blick den Gesamtpreis inklusive erstem Monat – und was danach monatlich anfällt.</p>
             <ul className="check-list">
-              <li><Check size={16} /> Getrennte Summen „einmalig“ und „pro Monat“ – netto, Steuer und brutto</li>
+              <li><Check size={16} /> Gesamtpreis inklusive erstem Monat, darunter „danach monatlich“</li>
               <li><Check size={16} /> Kombinierbar mit optionalen Positionen und Alternativen</li>
               <li><Check size={16} /> Vom Angebot zur Rechnung mit einem Klick – die Abrechnungsart wird übernommen</li>
               <li><Check size={16} /> Im Web und in der App, im PDF sauber ausgewiesen</li>
@@ -330,7 +330,7 @@ const PAINS: [string, string][] = [
 
 const AUDIENCE = [
   { icon: HardHat, title: 'Handwerk & Bau', text: 'Material mit Einkaufs- und Verkaufspreis, Lager, Lieferscheine und Angebote mit Alternativen.', points: ['Optionale Positionen & Alternativen', 'Lager mit QR-Scanner', 'Belege direkt vor Ort per App'] },
-  { icon: Briefcase, title: 'Dienstleister & Agenturen', text: 'Stunden, Pauschalen und laufende Betreuung – sauber getrennt in einmalig und monatlich.', points: ['Monatliche Kosten in Angeboten', 'Eigenes Design mit Logo', 'E-Mail-Versand mit PDF'] },
+  { icon: Briefcase, title: 'Dienstleister & Agenturen', text: 'Stunden, Pauschalen und laufende Betreuung – mit klar ausgewiesenen monatlichen Kosten.', points: ['Monatliche Kosten in Angeboten', 'Eigenes Design mit Logo', 'E-Mail-Versand mit PDF'] },
   { icon: Store, title: 'Handel & kleine Unternehmen', text: 'Artikelstamm, Bestellungen beim Lieferanten und ein klarer Blick auf Umsatz und Ergebnis.', points: ['Bestellungen an Lieferanten', 'Mehrere Firmen unter einem Login', 'GuV & Umsatzsteuer'] },
 ];
 
@@ -338,7 +338,7 @@ const COMPARE: [string, boolean][] = [
   ['Angebote & Rechnungen als PDF', true],
   ['Fortlaufende Nummern & Pflichtangaben automatisch', false],
   ['Angebot mit einem Klick zur Rechnung', false],
-  ['Einmalige und monatliche Summen getrennt', false],
+  ['Monatliche Kosten klar ausgewiesen', false],
   ['Offene & überfällige Rechnungen im Blick', false],
   ['Material & Lager mit Abbuchung', false],
   ['GuV, Umsatzsteuer & DATEV-Export', false],
@@ -379,8 +379,8 @@ function RecurringMock() {
         ))}
       </div>
       <div className="rec-sums">
-        <div><small>Einmalig</small><span>Netto 1.810,00 €</span><strong>2.153,90 €</strong></div>
-        <div className="rec-monthly"><small><Repeat size={12} /> Pro Monat</small><span>Netto 134,00 €</span><strong>159,46 €</strong></div>
+        <div><small>Gesamt</small><span>inkl. 1. Monat</span><strong>2.313,36 €</strong></div>
+        <div className="rec-monthly"><small><Repeat size={12} /> Danach monatlich</small><span>inkl. USt.</span><strong>159,46 €</strong></div>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowDown, ArrowLeft, Check, ArrowUp, Ban, CloudOff, PackageCheck, Undo2, Mail, MailCheck, Boxes, CheckCircle2, Copy, Download, Eye, FileOutput, Lock, Pencil, Plus, Repeat, Search, Send, Trash2, UserPlus, XCircle,
 } from 'lucide-react';
-import { displayStatus, docTotals, formatDate, lineNet, money, monthlySeparate, monthlyTotals, positionLabels, qty, today } from '../../lib/calc';
+import { displayStatus, docTotals, formatDate, lineNet, money, monthlyTotals, positionLabels, qty, today } from '../../lib/calc';
 import { UNITS, emptyItem } from '../../lib/defaults';
 import { useStore } from '../../lib/store';
 import type { LineItem, Material, SalesDoc } from '../../lib/types';
@@ -51,7 +51,7 @@ function Editor({ doc }: { doc: SalesDoc }) {
   // Festgeschriebene Rechnungen und eingebuchte Bestellungen sind nicht mehr änderbar
   const locked = (isInvoice && doc.status !== 'draft') || (isOrder && doc.status === 'accepted');
   const texts = docTexts(store.design, doc.kind);
-  const totals = docTotals(doc.items, company.smallBusiness, doc.kind);
+  const totals = docTotals(doc.items, company.smallBusiness);
   const monthly = monthlyTotals(doc.items, company.smallBusiness);
   const status = displayStatus(doc);
   const customer = data.customers.find((c) => c.id === doc.customerId);
@@ -333,14 +333,8 @@ function Editor({ doc }: { doc: SalesDoc }) {
             {cfg.prices ? <div className="sum">
               {!company.smallBusiness ? <div><span>Netto</span><span>{money(totals.net)}</span></div> : null}
               {!company.smallBusiness ? totals.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {formatRate(g.rate)} {tax.label}</span><span>{money(g.vat)}</span></div>) : null}
-              <div className="sum-total"><span>{monthly && monthlySeparate(doc.kind) ? `${cfg.totalLabel} (einmalig)` : cfg.totalLabel}</span><span>{money(totals.gross)}</span></div>
-              {monthly && monthlySeparate(doc.kind) ? <>
-                <div className="sum-sub"><Repeat size={14} /> Monatlich wiederkehrend</div>
-                {!company.smallBusiness ? <div><span>Netto / Monat</span><span>{money(monthly.net)}</span></div> : null}
-                {!company.smallBusiness ? monthly.vatGroups.map((g) => <div key={g.rate}><span>zzgl. {formatRate(g.rate)} {tax.label}</span><span>{money(g.vat)}</span></div>) : null}
-                <div className="sum-total"><span>Summe monatlich</span><span>{money(monthly.gross)}</span></div>
-              </> : null}
-              {monthly && !monthlySeparate(doc.kind) ? <small className="muted">Enthält monatliche Positionen über {money(monthly.gross)} für den Abrechnungszeitraum.</small> : null}
+              <div className="sum-total"><span>{monthly ? `${cfg.totalLabel} (inkl. 1. Monat)` : cfg.totalLabel}</span><span>{money(totals.gross)}</span></div>
+              {monthly ? <div className="sum-sub sum-after"><span><Repeat size={14} /> danach monatlich</span><span>{money(monthly.gross)}</span></div> : null}
               {company.smallBusiness ? <small className="muted">{tax.smallBusinessNote}</small> : null}
             </div> : null}
           </fieldset>

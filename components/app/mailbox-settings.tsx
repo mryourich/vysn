@@ -23,7 +23,7 @@ async function call(method: string, body?: unknown, query = '') {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
   if (supabaseConfigured) {
     const { data } = await getSupabase().auth.getSession();
-    if (data.session) headers.authorization = `Bearer ${data.session.access_token}`;
+    if (data.session) { headers.authorization = `Bearer ${data.session.access_token}`; headers['x-vysn-token'] = data.session.access_token; }
   }
   const res = await fetch(`/api/mailbox${query}`, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const json = await res.json().catch(() => ({}));
